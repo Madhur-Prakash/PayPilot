@@ -1,0 +1,203 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Surfaces: near-neutral with a faint blue cast so data colours stay legible. */
+    --background: 210 40% 98.5%;
+    --foreground: 222 32% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 32% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 32% 12%;
+
+    /* Paypal blue is the single interaction accent. */
+    --primary: 211 100% 42%;
+    --primary-foreground: 0 0% 100%;
+    --primary-muted: 211 92% 95%;
+
+    --secondary: 214 32% 95%;
+    --secondary-foreground: 222 32% 18%;
+    --muted: 214 32% 95.5%;
+    --muted-foreground: 215 16% 45%;
+    --accent: 211 92% 95%;
+    --accent-foreground: 211 100% 32%;
+
+    /* Semantic colours are reserved for meaning, never decoration. */
+    --success: 152 62% 33%;
+    --success-foreground: 0 0% 100%;
+    --destructive: 355 72% 48%;
+    --destructive-foreground: 0 0% 100%;
+    --warning: 32 92% 44%;
+    --warning-foreground: 0 0% 100%;
+    --info: 199 89% 42%;
+    --info-foreground: 0 0% 100%;
+
+    --border: 214 28% 89%;
+    --input: 214 28% 89%;
+    --ring: 211 100% 42%;
+
+    --sidebar: 222 34% 11%;
+    --sidebar-foreground: 214 24% 82%;
+    --sidebar-accent: 211 100% 42%;
+    --sidebar-border: 222 28% 20%;
+
+    /* Categorical series: distinguishable in both themes and for most CVD types. */
+    --chart-1: 211 100% 45%;
+    --chart-2: 168 68% 36%;
+    --chart-3: 265 64% 58%;
+    --chart-4: 32 92% 48%;
+    --chart-5: 199 89% 46%;
+    --chart-6: 340 70% 52%;
+
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 222 34% 8%;
+    --foreground: 213 28% 93%;
+    --card: 222 30% 11%;
+    --card-foreground: 213 28% 93%;
+    --popover: 222 30% 11%;
+    --popover-foreground: 213 28% 93%;
+
+    --primary: 211 96% 58%;
+    --primary-foreground: 222 40% 8%;
+    --primary-muted: 211 60% 18%;
+
+    --secondary: 222 24% 16%;
+    --secondary-foreground: 213 28% 93%;
+    --muted: 222 24% 16%;
+    --muted-foreground: 215 18% 62%;
+    --accent: 211 55% 18%;
+    --accent-foreground: 211 96% 74%;
+
+    --success: 152 55% 45%;
+    --success-foreground: 222 40% 8%;
+    --destructive: 355 78% 62%;
+    --destructive-foreground: 222 40% 8%;
+    --warning: 32 92% 56%;
+    --warning-foreground: 222 40% 8%;
+    --info: 199 85% 56%;
+    --info-foreground: 222 40% 8%;
+
+    --border: 222 22% 20%;
+    --input: 222 22% 22%;
+    --ring: 211 96% 58%;
+
+    --sidebar: 222 36% 6.5%;
+    --sidebar-foreground: 214 22% 78%;
+    --sidebar-accent: 211 96% 58%;
+    --sidebar-border: 222 24% 16%;
+
+    --chart-1: 211 96% 62%;
+    --chart-2: 168 62% 50%;
+    --chart-3: 265 72% 72%;
+    --chart-4: 32 92% 60%;
+    --chart-5: 199 85% 58%;
+    --chart-6: 340 78% 66%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings:
+      "cv02",
+      "cv03",
+      "cv04",
+      "cv11";
+  }
+
+  /* Tabular figures everywhere a number can change - stops KPI values jittering. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  ::selection {
+    @apply bg-primary/20;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full border-4 border-solid border-transparent bg-muted-foreground/25 bg-clip-content;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/40;
+  }
+
+  /* Respect reduced-motion: keep meaning, drop movement. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Soft ambient wash used behind hero sections. Deliberately low-contrast:
+     it should read as depth, not as a gradient feature. */
+  .surface-aurora {
+    position: relative;
+    isolation: isolate;
+  }
+  .surface-aurora::before {
+    content: "";
+    position: absolute;
+    inset: -40% -10% auto -10%;
+    height: 320px;
+    z-index: -1;
+    background:
+      radial-gradient(42% 60% at 18% 40%, hsl(var(--primary) / 0.16), transparent 70%),
+      radial-gradient(38% 55% at 78% 30%, hsl(var(--chart-3) / 0.12), transparent 72%);
+    filter: blur(28px);
+    pointer-events: none;
+  }
+
+  .grid-texture {
+    background-image:
+      linear-gradient(to right, hsl(var(--border) / 0.55) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border) / 0.55) 1px, transparent 1px);
+    background-size: 32px 32px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+  }
+
+  .skeleton {
+    @apply relative overflow-hidden rounded-md bg-muted;
+  }
+  .skeleton::after {
+    content: "";
+    @apply absolute inset-0 -translate-x-full animate-shimmer;
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      hsl(var(--foreground) / 0.06),
+      transparent
+    );
+  }
+
+  .focus-ring {
+    @apply outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+  }
+}
