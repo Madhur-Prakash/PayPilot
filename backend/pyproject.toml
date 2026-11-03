@@ -1,0 +1,94 @@
+[project]
+name = "paypilot-backend"
+version = "1.0.0"
+description = "AI Growth Scientist for merchants - FastAPI + LangGraph + Postgres/pgvector"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.141.1",
+    "uvicorn[standard]>=0.53.0",
+    "python-multipart>=0.0.32",
+    "pydantic>=2.13.5",
+    "pydantic-settings>=2.15.0",
+    "email-validator>=2.3.0",
+    "SQLAlchemy[asyncio]>=2.0.52",
+    "asyncpg>=0.31.0",
+    "alembic>=1.20.0",
+    "fastembed>=0.8.0",
+    "logifyx>=1.1.3",
+    "pgvector>=0.5.0",
+    "greenlet>=3.5.5",
+    "PyJWT>=2.14.0",
+    "argon2-cffi>=25.1.0",
+    "httpx>=0.28.1",
+    "tenacity>=9.1.4",
+    "orjson>=3.12.0",
+    # Held below 1.0 so cognee[groq] can share it. The app only uses
+    # AsyncGroq(...) and chat.completions.create(...), which are identical
+    # across the 0.x and 1.x lines - and `max_tokens` / `response_format`
+    # are the 0.x spelling this code already uses.
+    "groq>=0.37.1,<1.0.0",
+    "langgraph>=1.2.11",
+    "langchain-core>=1.6.3",
+    "langfuse>=4.15.2",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "aiosqlite>=0.22.1",
+    "ruff>=0.16.7",
+    "mypy>=2.3.1",
+    "types-python-dateutil>=2.9.0.20260807",
+    "google-auth>=2.58.0",
+    "google-api-python-client>=2.200.0",
+    "jinja2>=3.1.6",
+    "google-auth-oauthlib>=1.4.1",
+    "openpyxl>=3.1.5",
+    # Agent long-term memory. A direct dependency, not an optional extra:
+    # MEMORY_ENABLED defaults the feature on, and a sync that drops this leaves
+    # memory dead with no visible cause.
+    # The groq extra, so cognee uses the same provider the app does rather
+    # than falling back to OpenAI for graph extraction.
+    "cognee[groq]>=1.5.4",
+]
+
+
+[tool.uv]
+# Which platforms a resolution has to actually work on.
+#
+# Without this uv resolves against the current interpreter only, and picked
+# lancedb 0.39.0 - which ships manylinux and macOS arm64 wheels but nothing for
+# Windows. `uv sync` then failed on a Windows machine with no source
+# distribution to fall back to. Naming both targets makes uv choose a version
+# with wheels for each, so the lockfile installs on a developer laptop and in
+# the Linux container alike.
+required-environments = [
+    "sys_platform == 'win32' and platform_machine == 'AMD64'",
+    "sys_platform == 'linux' and platform_machine == 'x86_64'",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = ["alembic/versions", ".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "C4", "SIM", "RUF"]
+ignore = ["B008", "RUF012", "E501", "B904", "SIM108"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.mypy]
+python_version = "3.11"
+plugins = []
+ignore_missing_imports = true
+warn_unused_ignores = false
+disallow_untyped_defs = false
+exclude = "(alembic|tests)"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+# Session-scoped async fixtures (the engine) need a loop that outlives a
+# single test. pytest-asyncio 1.x rejects the mismatch outright.
+asyncio_default_fixture_loop_scope = "session"
+testpaths = ["tests"]
+addopts = "-q --disable-warnings"
+filterwarnings = ["ignore::DeprecationWarning"]

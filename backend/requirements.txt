@@ -1,0 +1,66 @@
+# Pinned to the versions the test suite actually runs against.
+#
+# pyproject.toml is the source of truth for *what* this project depends on; this
+# file pins *which* versions, for installing with pip rather than uv. Regenerate
+# both together - a requirements.txt that resolves to a different set than the
+# one under test is worse than none at all.
+#
+# Optional extras live alongside:
+#   requirements-optional.txt  - degrade gracefully if unavailable
+
+# ---- Web framework -----------------------------------------------------------------
+fastapi==0.141.1
+uvicorn[standard]==0.53.0
+python-multipart==0.0.32
+
+# ---- Validation / settings ---------------------------------------------------------
+pydantic==2.13.5
+pydantic-settings==2.15.0
+email-validator==2.3.0
+
+# ---- Database ----------------------------------------------------------------------
+SQLAlchemy[asyncio]==2.0.52
+asyncpg==0.31.0
+alembic==1.20.0
+pgvector==0.5.0
+greenlet==3.5.5
+
+# ---- Security ----------------------------------------------------------------------
+PyJWT==2.14.0
+argon2-cffi==25.1.0
+
+# ---- HTTP / resilience -------------------------------------------------------------
+httpx==0.28.1
+tenacity==9.1.4
+orjson==3.12.0
+
+# ---- LLM / agents ------------------------------------------------------------------
+groq==0.37.1
+langgraph==1.2.11
+langchain-core==1.6.3
+
+# ---- Email (Gmail API) -------------------------------------------------------------
+google-api-python-client==2.200.0
+google-auth==2.58.0
+google-auth-oauthlib==1.4.1
+Jinja2==3.1.6
+
+# ---- Spreadsheets (inventory book export + bulk import) ----------------------------
+openpyxl==3.1.5
+
+# ---- Observability / logging -------------------------------------------------------
+langfuse==4.15.2
+
+# ---- Testing / tooling -------------------------------------------------------------
+pytest==9.1.1
+pytest-asyncio==1.4.0
+aiosqlite==0.22.1
+ruff==0.16.7
+mypy==2.3.1
+types-python-dateutil==2.9.0.20260807
+
+# ---- Agent memory --------------------------------------------------------------
+# Brings roughly 75 packages with it (litellm, lancedb, pyarrow). Listed here
+# rather than in an extra because MEMORY_ENABLED defaults the feature on, and a
+# sync that quietly drops it leaves memory dead with no visible cause.
+cognee[groq]==1.5.4
