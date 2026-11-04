@@ -196,7 +196,8 @@ class Settings(BaseSettings):
     #: leave on: only allow-listed *read* tools are callable, whatever the server
     #: offers - see integrations/paypal/mcp.py. Set false to disable it entirely.
     paypal_mcp_enabled: bool = True
-    #: Blank derives the sandbox/production MCP endpoint from PAYPAL_ENVIRONMENT.
+    #: Blank derives the sandbox/production MCP endpoint (HTTP+SSE at /sse) from
+    #: PAYPAL_ENVIRONMENT. A URL not ending in /sse is treated as Streamable HTTP.
     paypal_mcp_url: str = ""
 
     # ---------------------------------------------------------------- sponsor integrations
@@ -345,7 +346,7 @@ class Settings(BaseSettings):
         if self.paypal_mcp_url:
             return self.paypal_mcp_url.rstrip("/")
         host = "mcp.paypal.com" if self.paypal_environment == "live" else "mcp.sandbox.paypal.com"
-        return f"https://{host}/http"
+        return f"https://{host}/sse"
 
     @property
     def zapier_signing_key(self) -> bytes:

@@ -8,7 +8,7 @@
 
 PayPal AI Hackathon 2026 · Idea 4 (Growth Autopilot) + Idea 5 (Supply Agents) · Team PayFlux
 
-[![Tests](https://img.shields.io/badge/backend_tests-288_passing-16a34a?style=flat-square&logo=pytest&logoColor=white)](docs/TESTING.md)
+[![Tests](https://img.shields.io/badge/backend_tests-389_passing-16a34a?style=flat-square&logo=pytest&logoColor=white)](docs/TESTING.md)
 [![Lint](https://img.shields.io/badge/ruff-clean-16a34a?style=flat-square&logo=ruff&logoColor=white)](docs/CONTRIBUTING.md)
 [![Types](https://img.shields.io/badge/typecheck-clean-16a34a?style=flat-square&logo=typescript&logoColor=white)](docs/CONTRIBUTING.md)
 [![PayPal](https://img.shields.io/badge/PayPal-Orders_v2_·_Invoicing_·_Payouts_·_Subscriptions_·_Webhooks-003087?style=flat-square&logo=paypal&logoColor=white)](docs/PAYPAL.md)
@@ -24,6 +24,7 @@ PayPal AI Hackathon 2026 · Idea 4 (Growth Autopilot) + Idea 5 (Supply Agents) �
 **[Demo (3 min)](docs/DEMO.md)** ·
 **[Hackathon notes](docs/HACKATHON.md)** ·
 **[PayPal](docs/PAYPAL.md)** ·
+**[Sponsor tools](docs/SPONSORS.md)** ·
 **[Supply Agents](docs/SUPPLY_AGENTS.md)** ·
 **[Architecture](docs/ARCHITECTURE.md)** ·
 **[All docs](docs/README.md)**
@@ -120,6 +121,7 @@ Details: [docs/SECURITY.md](docs/SECURITY.md) · [docs/SUPPLY_AGENTS.md](docs/SU
 | Payouts | Cashback rewards - approval-gated; never used for supplier settlement |
 | Catalog / Plans / Subscriptions | Plans, lifecycle actions, failed-payment recovery |
 | Webhooks (verify-webhook-signature) | Captures, refunds, payouts, invoices, subscription events |
+| Agent Toolkit via MCP (read-only) | PayPal's own reporting/dispute/invoice read tools through PayPilot's tool registry; the 30 of 46 tools that create, pay or send are blocked in code ([details](docs/SPONSORS.md#paypal-agent-toolkit-over-mcp)) |
 
 Without credentials everything runs against a deterministic simulator with `SIM-`
 identifiers. See **[docs/PAYPAL.md](docs/PAYPAL.md)**.
@@ -140,15 +142,26 @@ labelled *Deterministic mode*.
 
 ## Sponsor tools actually used
 
-* **AG Grid Community** - transactions, quote comparison, invoices, receipts,
-  reconciliations, payments, RFQs.
-* **Render** - complete Blueprint (`render.yaml`: API, web, worker, Postgres);
-  not deployed from this environment.
-* **Postman** - [`postman/PayPilot.postman_collection.json`](postman/PayPilot.postman_collection.json)
-  walks the whole signature scenario.
+Full, honest detail (what is live, what is a labelled fallback, what was verified and how):
+**[docs/SPONSORS.md](docs/SPONSORS.md)**. The same facts are served by
+`GET /api/v1/integrations/status` and shown on the **Integrations** screen.
 
-Not used, so not claimed: APIMatic, AG Studio, Bryntum, Elastic, PayPal Agent
-Toolkit/MCP at runtime ([why](docs/PAYPAL.md#agent-toolkit-and-mcp)).
+* **AG Grid Community** (v36.3) - transactions, quote comparison, invoices, receipts,
+  reconciliations, payments, RFQs, evidence.
+* **AG Studio** - *Dashboard Studio*: merchants build dashboards over PayPilot's computed
+  datasets (evaluation mode without a licence key).
+* **Bryntum Gantt** - *Procurement timeline*: every real stage from RFQ to payment, partial
+  deliveries and blocked invoices visible (trial build).
+* **Channel3** - market price reference next to a purchase (labelled fallback without a key).
+* **Elasticsearch** - ranked evidence search (keyword fallback without `ELASTIC_URL`).
+* **Kernel** - observe-only supplier-page verification (labelled fallback without a key).
+* **Zapier** - signed, de-duplicated business-event notifications (off without a hook URL).
+* **Render** - complete Blueprint (`render.yaml`); not deployed from this environment.
+* **Postman** - collection + environment, 53 requests with assertions.
+* **APIMatic** - OpenAPI export only (`python scripts/export_openapi.py` -> `docs/openapi.json`).
+
+Not used, so not claimed: the APIMatic Context Plugin, Astropods, AG Studio's agent framework.
+None of these tools can move money or widen a limit.
 
 ## Architecture
 
@@ -166,10 +179,10 @@ FastAPI (Pydantic v2) ── auth → merchant scope → require_permission
    ├─ Agents: LangGraph (growth + procurement) · 36-tool registry · signed agent protocol
    └─ Unified events (transactional outbox) ──► n8n / worker / WebSocket
    ▼
-PostgreSQL 16 + pgvector (56 tables) · SQLAlchemy 2 · Alembic
+PostgreSQL 16 + pgvector (57 tables) · SQLAlchemy 2 · Alembic
 ```
 
-148 API endpoints · 56 tables · 36 agent tools · 51 permissions · 44 dashboard screens.
+155 API operations · 57 tables · 39 agent tools · 51 permissions · 48 dashboard screens.
 
 ## Getting started
 
@@ -249,7 +262,7 @@ Full reference: [docs/CONFIGURATION.md](docs/CONFIGURATION.md).
 ## Testing
 
 ```bash
-make test-backend    # 288 tests: unit, integration, API - SQLite, no Docker, no keys
+make test-backend    # 389 tests: unit, integration, API - SQLite, no Docker, no keys
 make test-frontend   # vitest
 ```
 
@@ -291,18 +304,29 @@ automation, vendors/POs, RBAC, LangGraph agents, voice). **After October 1,
   external memory library), **19 new screens** with AG Grid, US localization,
   `make init` + cross-platform scripts, Render Blueprint, Postman collection and
   **80 new tests**.
+* **sponsor integrations** (Bryntum Gantt timeline, AG Studio dashboards, Channel3 market reference,
+  Elasticsearch evidence search, Kernel supplier-page checks, Zapier notifications), a **read-only PayPal
+  Agent Toolkit (MCP) bridge** verified against the live sandbox, customer lifetime value and purchase
+  frequency analytics, and the tests for all of it ([docs/SPONSORS.md](docs/SPONSORS.md)).
 
 Full breakdown: [docs/HACKATHON.md](docs/HACKATHON.md).
 
 ## Known limitations
 
-* No PayPal credentials were available while building: PayPal paths are verified
-  against the simulator and mocked PayPal responses; follow
-  [docs/PAYPAL.md](docs/PAYPAL.md#using-the-sandbox) to run against the sandbox.
-* Supplier agents in the demo are simulated policy engines (labelled as such);
-  external agents can connect through the signed inbound endpoint.
-* Analytics run on a seeded demo dataset; synced PayPal transactions are shown
-  separately with their mode.
+* PayPal sandbox **authentication is verified live**; the REST payment paths are verified against
+  the simulator and mocked PayPal responses, so run the sandbox steps in
+  [docs/PAYPAL.md](docs/PAYPAL.md#using-the-sandbox) to confirm a payment end to end.
+* PayPal's sandbox **MCP runtime currently returns an internal error for every tool call**
+  (`Unsupported cache mode: default`); the bridge reports it faithfully. See
+  [docs/SPONSORS.md](docs/SPONSORS.md#paypal-agent-toolkit-over-mcp).
+* Channel3, Kernel, Elasticsearch and Zapier were verified against **mocked HTTP only** and run
+  on labelled fallbacks until their keys are set. The new migration (`0006`) was validated as
+  Postgres SQL offline; Docker was unavailable to run it against a live Postgres.
+* Bryntum (trial) and AG Studio (evaluation) show watermarks; production use needs their licences.
+* Supplier agents in the demo are simulated policy engines (labelled as such); external agents can
+  connect through the signed inbound endpoint.
+* Analytics run on a seeded demo dataset; synced PayPal transactions are shown separately with
+  their mode. CLV is an *estimate* with its assumptions returned beside it.
 * Sandbox supplier payments need a payer approval in PayPal before capture.
 * Not done from this environment: Render deployment, demo video, Devpost submission.
 

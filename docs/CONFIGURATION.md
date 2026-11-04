@@ -432,6 +432,20 @@ print('cors     :', settings.cors_origins)
 
 ---
 
+## PayPal MCP and sponsor integrations
+
+All optional; blank means a labelled fallback (never a silent one). Details and verification
+status for each: [SPONSORS.md](SPONSORS.md).
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `PAYPAL_MCP_ENABLED` | `true` | Read-only bridge to PayPal's MCP server. Set `false` to disable it entirely |
+| `PAYPAL_MCP_URL` | derived | Blank derives `https://mcp.sandbox.paypal.com/sse` (or `mcp.paypal.com` when `PAYPAL_ENVIRONMENT=live`). A URL not ending in `/sse` is treated as Streamable HTTP |
+| `CHANNEL3_API_KEY` / `CHANNEL3_BASE_URL` | blank / `https://api.trychannel3.com` | Market price reference. Blank = reference catalogue, labelled `SIMULATED` |
+| `KERNEL_API_KEY` / `KERNEL_BASE_URL` | blank / `https://api.onkernel.com` | Supplier-portal browser sessions. Blank = no browser is started |
+| `ELASTIC_URL` / `ELASTIC_API_KEY` / `ELASTIC_INDEX_PREFIX` | blank / blank / `paypilot` | Evidence search. Blank URL = in-process keyword fallback |
+| `ZAPIER_WEBHOOK_URL` / `ZAPIER_SIGNING_SECRET` | blank | Catch Hook for signed event notifications (the URL is a secret). Blank = off |
+
 ## Full variable reference
 
 | Variable | Default | Required | Section |

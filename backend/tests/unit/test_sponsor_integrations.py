@@ -3,6 +3,7 @@ runs; only the network is replaced. No keys, no Docker."""
 
 from __future__ import annotations
 
+import asyncio
 import json
 import uuid
 from decimal import Decimal
@@ -267,13 +268,26 @@ class FakeToken:
         return "paypal-access-token"
 
 
-@pytest.fixture
-def live_mcp(monkeypatch):
-    """A 'configured' PayPal with an MCP server that answers like the real protocol."""
+def _configure_live_paypal(monkeypatch, mcp_url: str) -> None:
     monkeypatch.setattr(settings, "paypal_client_id", "id")
     monkeypatch.setattr(settings, "paypal_client_secret", "secret")
     monkeypatch.setattr(settings, "paypal_mcp_enabled", True)
+    monkeypatch.setattr(settings, "paypal_mcp_url", mcp_url)
     set_paypal_gateway(FakeToken())  # type: ignore[arg-type]
+
+
+@pytest.fixture
+def live_mcp(monkeypatch):
+    """A 'configured' PayPal whose MCP endpoint speaks Streamable HTTP (any non-/sse URL)."""
+    _configure_live_paypal(monkeypatch, "https://mcp.example.test/http")
+    yield
+    set_paypal_gateway(None)
+
+
+@pytest.fixture
+def live_sse(monkeypatch):
+    """A 'configured' PayPal on the default endpoint: PayPal's real HTTP+SSE transport."""
+    _configure_live_paypal(monkeypatch, "")
     yield
     set_paypal_gateway(None)
 
@@ -367,6 +381,118 @@ class TestMCPClient:
             await client.call_read_tool("create_refund")
         names = {t["name"]: t["read_only"] for t in await client.list_tools()}
         assert names["create_order"] is False and names["list_disputes"] is True
+
+
+# --------------------------------------------------------------------------- #
+# PayPal MCP over HTTP+SSE - the transport the real sandbox serves
+# --------------------------------------------------------------------------- #
+class _QueueStream(httpx.AsyncByteStream):
+    """A server-sent-events body fed from a queue, like a long-lived /sse response."""
+
+    def __init__(self, queue: asyncio.Queue) -> None:
+        self.queue = queue
+
+    async def __aiter__(self):
+        while True:
+            chunk = await self.queue.get()
+            if chunk is None:
+                return
+            yield chunk
+
+
+class SSEServer:
+    """Behaves like mcp.sandbox.paypal.com: GET /sse streams; replies to POSTs arrive on the stream."""
+
+    def __init__(self, tools: list[dict], *, announce: str = "/sse/message?sessionId=abc123", get_status: int = 200) -> None:
+        self.tools, self.announce, self.get_status = tools, announce, get_status
+        self.queue: asyncio.Queue = asyncio.Queue()
+        self.requests: list[httpx.Request] = []
+
+    def __call__(self, request: httpx.Request) -> httpx.Response:
+        self.requests.append(request)
+        if request.method == "GET":
+            if self.get_status != 200:
+                return httpx.Response(self.get_status, json={"error": "invalid_token"})
+            self.queue.put_nowait(f"event: endpoint\ndata: {self.announce}\n\n".encode())
+            return httpx.Response(200, headers={"content-type": "text/event-stream"}, stream=_QueueStream(self.queue))
+        message = json.loads(request.content)
+        if "id" in message:
+            method = message["method"]
+            if method == "initialize":
+                result: dict = {"protocolVersion": "2024-11-05", "capabilities": {"tools": {}}, "serverInfo": {"name": "paypal"}}
+            elif method == "tools/list":
+                result = {"tools": self.tools}
+            else:
+                result = {"content": [{"type": "text", "text": json.dumps({"currency": "USD", "total": "99.10"})}]}
+            body = json.dumps({"jsonrpc": "2.0", "id": message["id"], "result": result})
+            self.queue.put_nowait(f"event: message\ndata: {body}\n\n".encode())
+        return httpx.Response(202, text="Accepted")
+
+    def methods(self) -> list[str]:
+        return [json.loads(r.content)["method"] for r in self.requests if r.method == "POST"]
+
+
+class TestMCPOverSSE:
+    TOOLS = [{"name": "get_merchant_insights", "description": "insights"}, {"name": "create_order", "description": "creates"}]
+
+    async def test_the_default_endpoint_is_the_sse_transport(self, monkeypatch):
+        monkeypatch.setattr(settings, "paypal_mcp_url", "")
+        assert PayPalMCPClient().uses_sse is True
+        assert PayPalMCPClient().endpoint == "https://mcp.sandbox.paypal.com/sse"
+        monkeypatch.setattr(settings, "paypal_mcp_url", "https://mcp.example.test/http")
+        assert PayPalMCPClient().uses_sse is False
+
+    async def test_a_read_call_streams_replies_and_posts_to_the_announced_endpoint(self, live_sse):
+        server = SSEServer(self.TOOLS)
+        result = await PayPalMCPClient(transport=mock(server)).call_read_tool("get_merchant_insights", {"insight_type": "SALES"})
+        assert result["data"] == {"currency": "USD", "total": "99.10"}
+        assert server.methods() == ["initialize", "notifications/initialized", "tools/list", "tools/call"]
+        get = server.requests[0]
+        assert get.method == "GET" and get.url.path == "/sse" and get.headers["authorization"] == "Bearer paypal-access-token"
+        posts = [r for r in server.requests if r.method == "POST"]
+        assert all(r.url.path == "/sse/message" and r.url.params["sessionId"] == "abc123" for r in posts)
+        assert all(r.headers["authorization"] == "Bearer paypal-access-token" for r in posts)
+
+    async def test_listing_flags_what_is_callable(self, live_sse):
+        tools = await PayPalMCPClient(transport=mock(SSEServer(self.TOOLS))).list_tools()
+        assert {t["name"]: t["read_only"] for t in tools} == {"get_merchant_insights": True, "create_order": False}
+
+    async def test_an_endpoint_on_another_host_never_receives_the_token(self, live_sse):
+        server = SSEServer(self.TOOLS, announce="https://evil.example/collect")
+        with pytest.raises(SponsorError) as raised:
+            await PayPalMCPClient(transport=mock(server)).list_tools()
+        assert "different host" in str(raised.value)
+        assert [r for r in server.requests if r.method == "POST"] == []
+
+    async def test_rejected_credentials_on_the_stream_surface_cleanly(self, live_sse):
+        server = SSEServer(self.TOOLS, get_status=401)
+        with pytest.raises(SponsorError) as raised:
+            await PayPalMCPClient(transport=mock(server)).list_tools()
+        assert "rejected" in str(raised.value) and "paypal-access-token" not in str(raised.value)
+
+    async def test_a_tool_failure_reported_inside_a_successful_response_is_an_error_not_data(self, live_sse):
+        class FailingTools(SSEServer):
+            def __call__(self, request):
+                if request.method == "POST":
+                    message = json.loads(request.content)
+                    if message.get("method") == "tools/call":
+                        failure = {"ok": False, "code": "PAYPAL_API_SETUP_ERROR", "message": "Unsupported cache mode: default"}
+                        body = json.dumps({"jsonrpc": "2.0", "id": message["id"],
+                                           "result": {"content": [{"type": "text", "text": json.dumps(failure)}]}})
+                        self.requests.append(request)
+                        self.queue.put_nowait(f"event: message\ndata: {body}\n\n".encode())
+                        return httpx.Response(202)
+                return super().__call__(request)
+
+        with pytest.raises(SponsorError) as raised:
+            await PayPalMCPClient(transport=mock(FailingTools(self.TOOLS))).call_read_tool("get_merchant_insights")
+        assert "PAYPAL_API_SETUP_ERROR" in str(raised.value) and "could not run get_merchant_insights" in str(raised.value)
+
+    async def test_a_write_tool_never_opens_the_stream(self, live_sse):
+        server = SSEServer(self.TOOLS)
+        with pytest.raises(MCPReadOnlyViolation):
+            await PayPalMCPClient(transport=mock(server)).call_read_tool("pay_order", {"order_id": "X"})
+        assert server.requests == []
 
 
 # --------------------------------------------------------------------------- #

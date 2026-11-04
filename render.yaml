@@ -45,6 +45,22 @@ envVarGroups:
         sync: false
       - key: PAYPAL_SANDBOX_PAYEE_EMAIL
         sync: false
+      # Read-only PayPal Agent Toolkit bridge (writes are blocked in code).
+      - key: PAYPAL_MCP_ENABLED
+        value: "true"
+      # Optional sponsor integrations. Blank = a clearly labelled fallback.
+      - key: CHANNEL3_API_KEY
+        sync: false
+      - key: KERNEL_API_KEY
+        sync: false
+      - key: ELASTIC_URL
+        sync: false
+      - key: ELASTIC_API_KEY
+        sync: false
+      - key: ZAPIER_WEBHOOK_URL
+        sync: false
+      - key: ZAPIER_SIGNING_SECRET
+        generateValue: true
       - key: GROQ_API_KEY
         sync: false
       - key: LANGFUSE_PUBLIC_KEY

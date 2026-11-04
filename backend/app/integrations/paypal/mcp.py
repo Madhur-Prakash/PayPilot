@@ -1,10 +1,18 @@
 """PayPal Agent Toolkit tools, reached through PayPal's MCP server - read-only.
 
-PayPal publishes its Agent Toolkit as an MCP server
-(``https://mcp.sandbox.paypal.com/http`` for the sandbox, ``mcp.paypal.com`` for
-production, Streamable-HTTP transport, ``Authorization: Bearer <token>``). It
-exposes ~40 PayPal operations as agent tools: reporting, disputes, invoices,
-subscriptions, catalog, orders ... and also tools that **move money**.
+PayPal publishes its Agent Toolkit as a remote MCP server: ``mcp.sandbox.paypal.com``
+for the sandbox and ``mcp.paypal.com`` for production, authenticated with
+``Authorization: Bearer <PayPal access token>``. It exposes 46 operations as agent
+tools (verified against the live sandbox): invoicing, subscriptions, catalog,
+shipment tracking, orders, disputes, reporting - and tools that **move money**.
+
+Transport: the server speaks the MCP **HTTP+SSE** transport. ``GET /sse`` opens an
+event stream whose first event (``endpoint``) names a per-session URL; JSON-RPC
+requests are ``POST``ed there (``202 Accepted``) and the replies arrive as
+``message`` events on the stream. (``/http`` does not exist on the sandbox host - a
+POST there is a 404 - so the default endpoint is ``/sse``.) A URL that does not end
+in ``/sse`` is treated as a Streamable-HTTP endpoint, which keeps the client working
+if PayPal moves transports.
 
 PayPilot's rule is that an agent never moves money on its own authority: every
 payment needs a recorded human approval bound to exact terms. A raw MCP
@@ -20,7 +28,12 @@ How the gate works (``assert_read_only``):
      ``pay``, ``capture``, ``send``, ``cancel`` ...) - defence in depth against a
      server that names a write tool ``get_and_pay_...``;
   3. if the server annotates the tool ``readOnlyHint: false`` it is refused even
-     when the name looks harmless.
+     when the name looks harmless. (PayPal's server sends no annotations today, so
+     rules 1 and 2 are what protect you; rule 3 only ever tightens.)
+
+Of PayPal's 46 tools, 16 pass (``list_disputes``, ``get_merchant_insights``,
+``list_transactions`` ...) and 30 are blocked, including every one that creates an
+order, pays, refunds, sends an invoice or accepts a dispute claim.
 
 The bridge is reached through PayPilot's own tool registry (``paypal_mcp_read``),
 so it also inherits tenant scoping, RBAC (``paypal:read``), logging and tracing.
@@ -33,8 +46,12 @@ the feature is demonstrable offline - ``mode`` is ``SIMULATED`` on every result.
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
 import json
+from collections.abc import AsyncIterator
 from typing import Any
+from urllib.parse import urljoin, urlparse
 
 import httpx
 
@@ -45,8 +62,10 @@ from app.integrations.sponsors.base import SponsorError, as_dict
 
 log = get_logger(__name__)
 
-PROTOCOL_VERSION = "2025-03-26"
-TIMEOUT = httpx.Timeout(30.0, connect=8.0)
+SSE_PROTOCOL_VERSION = "2024-11-05"
+HTTP_PROTOCOL_VERSION = "2025-03-26"
+TIMEOUT = httpx.Timeout(30.0, connect=8.0, read=45.0)
+REPLY_TIMEOUT_SECONDS = 30.0
 
 READ_PREFIXES = ("list_", "get_", "show_", "search_")
 #: Fragments that mean "this changes state or moves money". Deliberately broad:
@@ -105,6 +124,8 @@ def _unwrap_tool_result(result: dict[str, Any]) -> Any:
     if result.get("isError"):
         message = " ".join(str(as_dict(c).get("text", "")) for c in result.get("content") or [])[:300]
         raise SponsorError(f"PayPal MCP tool error: {message or 'unknown error'}")
+    if "structuredContent" in result:
+        return result["structuredContent"]
     parts: list[Any] = []
     for item in result.get("content") or []:
         text = as_dict(item).get("text")
@@ -114,24 +135,197 @@ def _unwrap_tool_result(result: dict[str, Any]) -> Any:
             parts.append(json.loads(text))
         except ValueError:
             parts.append(text)
-    if "structuredContent" in result:
-        return result["structuredContent"]
     return parts[0] if len(parts) == 1 else parts
+
+
+def _check_status(response: httpx.Response) -> None:
+    if response.status_code in (401, 403):
+        raise SponsorError(f"PayPal MCP rejected the credentials (HTTP {response.status_code}).",
+                           status_code=response.status_code)
+    if not response.is_success:
+        raise SponsorError(f"PayPal MCP returned HTTP {response.status_code}.", status_code=response.status_code)
+
+
+# --------------------------------------------------------------------------- #
+# Transports
+# --------------------------------------------------------------------------- #
+class _StreamableSession:
+    """MCP Streamable HTTP: every request is a POST answered with JSON or one SSE event."""
+
+    protocol_version = HTTP_PROTOCOL_VERSION
+
+    def __init__(self, client: httpx.AsyncClient, endpoint: str, headers: dict[str, str]) -> None:
+        self._client, self._endpoint, self._headers = client, endpoint, dict(headers)
+        self._ids = 0
+
+    async def start(self) -> None:
+        response = await self._post({"jsonrpc": "2.0", "id": self._next_id(), "method": "initialize",
+                                     "params": _initialize_params(self.protocol_version)})
+        reply = _parse_rpc(response)
+        if "error" in reply:
+            raise SponsorError(f"PayPal MCP initialize failed: {as_dict(reply['error']).get('message', 'error')}")
+        if session_id := response.headers.get("mcp-session-id"):
+            self._headers["Mcp-Session-Id"] = session_id
+        await self.notify("notifications/initialized")
+
+    def _next_id(self) -> int:
+        self._ids += 1
+        return self._ids
+
+    async def _post(self, body: dict[str, Any]) -> httpx.Response:
+        try:
+            response = await self._client.post(self._endpoint, json=body, headers=self._headers)
+        except httpx.HTTPError as exc:
+            raise SponsorError(f"PayPal MCP is unreachable ({type(exc).__name__}).") from exc
+        _check_status(response)
+        return response
+
+    async def notify(self, method: str, params: dict[str, Any] | None = None) -> None:
+        body: dict[str, Any] = {"jsonrpc": "2.0", "method": method}
+        if params is not None:
+            body["params"] = params
+        await self._post(body)
+
+    async def request(self, method: str, params: dict[str, Any]) -> dict[str, Any]:
+        response = await self._post({"jsonrpc": "2.0", "id": self._next_id(), "method": method, "params": params})
+        return _parse_rpc(response)
+
+
+class _SSESession:
+    """MCP HTTP+SSE: GET /sse for the event stream, POST to the announced endpoint.
+
+    The ``endpoint`` event is untrusted input that decides where the bearer token is
+    sent next, so it must resolve to the *same host* as the stream - a hostile or
+    misconfigured server cannot redirect the credential elsewhere.
+    """
+
+    protocol_version = SSE_PROTOCOL_VERSION
+
+    def __init__(self, client: httpx.AsyncClient, stream_url: str, headers: dict[str, str]) -> None:
+        self._client, self._stream_url, self._headers = client, stream_url, dict(headers)
+        self._queue: asyncio.Queue[tuple[str, str]] = asyncio.Queue()
+        self._reader: asyncio.Task[None] | None = None
+        self._stream_cm: Any = None
+        self._response: httpx.Response | None = None
+        self._post_url = ""
+        self._ids = 0
+
+    async def __aenter__(self) -> _SSESession:
+        try:
+            self._stream_cm = self._client.stream(
+                "GET", self._stream_url, headers={**self._headers, "Accept": "text/event-stream"})
+            self._response = await self._stream_cm.__aenter__()
+        except httpx.HTTPError as exc:
+            raise SponsorError(f"PayPal MCP is unreachable ({type(exc).__name__}).") from exc
+        try:
+            _check_status(self._response)
+            self._reader = asyncio.create_task(self._read_events(), name="paypal-mcp-sse")
+            event, data = await self._next_event()
+            if event != "endpoint":
+                raise SponsorError("The PayPal MCP server did not announce a message endpoint.")
+            self._post_url = self._resolve(data)
+            reply = await self.request("initialize", _initialize_params(self.protocol_version))
+            if "error" in reply:
+                raise SponsorError(f"PayPal MCP initialize failed: {as_dict(reply['error']).get('message', 'error')}")
+            await self.notify("notifications/initialized")
+        except BaseException:
+            await self.__aexit__(None, None, None)
+            raise
+        return self
+
+    async def __aexit__(self, *exc_info: object) -> None:
+        if self._reader is not None:
+            self._reader.cancel()
+            with contextlib.suppress(asyncio.CancelledError, Exception):
+                await self._reader
+        if self._stream_cm is not None:
+            with contextlib.suppress(Exception):
+                await self._stream_cm.__aexit__(None, None, None)
+
+    def _resolve(self, announced: str) -> str:
+        url = urljoin(self._stream_url, announced.strip())
+        if urlparse(url).netloc != urlparse(self._stream_url).netloc or (urlparse(url).scheme != "https" and \
+                urlparse(self._stream_url).scheme == "https"):
+            raise SponsorError("The PayPal MCP server announced an endpoint on a different host; refusing to send credentials.")
+        return url
+
+    async def _read_events(self) -> None:
+        assert self._response is not None
+        event = "message"
+        data: list[str] = []
+        try:
+            async for line in self._response.aiter_lines():
+                if line == "":
+                    if data:
+                        await self._queue.put((event, "\n".join(data)))
+                    event, data = "message", []
+                elif line.startswith("event:"):
+                    event = line[6:].strip()
+                elif line.startswith("data:"):
+                    data.append(line[5:].lstrip())
+            await self._queue.put(("__closed__", ""))
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            await self._queue.put(("__error__", type(exc).__name__))
+
+    async def _next_event(self) -> tuple[str, str]:
+        try:
+            event, data = await asyncio.wait_for(self._queue.get(), REPLY_TIMEOUT_SECONDS)
+        except TimeoutError as exc:
+            raise SponsorError("PayPal MCP did not answer in time.") from exc
+        if event in ("__closed__", "__error__"):
+            raise SponsorError("The PayPal MCP stream closed unexpectedly.")
+        return event, data
+
+    async def _post(self, body: dict[str, Any]) -> None:
+        try:
+            response = await self._client.post(self._post_url, json=body, headers=self._headers)
+        except httpx.HTTPError as exc:
+            raise SponsorError(f"PayPal MCP is unreachable ({type(exc).__name__}).") from exc
+        _check_status(response)
+
+    async def notify(self, method: str, params: dict[str, Any] | None = None) -> None:
+        body: dict[str, Any] = {"jsonrpc": "2.0", "method": method}
+        if params is not None:
+            body["params"] = params
+        await self._post(body)
+
+    async def request(self, method: str, params: dict[str, Any]) -> dict[str, Any]:
+        self._ids += 1
+        request_id = self._ids
+        await self._post({"jsonrpc": "2.0", "id": request_id, "method": method, "params": params})
+        while True:
+            event, data = await self._next_event()
+            if event != "message":
+                continue
+            try:
+                message = as_dict(json.loads(data))
+            except ValueError:
+                continue
+            if message.get("id") == request_id:
+                return message
+
+
+def _initialize_params(version: str) -> dict[str, Any]:
+    return {"protocolVersion": version, "capabilities": {},
+            "clientInfo": {"name": "paypilot", "version": settings.app_version}}
 
 
 # --------------------------------------------------------------------------- #
 # Simulator
 # --------------------------------------------------------------------------- #
 _SIM_TOOLS: list[dict[str, Any]] = [
-    {"name": "get_merchant_insights", "description": "Sales or order insights over a period", "annotations": {"readOnlyHint": True}},
-    {"name": "list_transactions", "description": "List transactions in a date range", "annotations": {"readOnlyHint": True}},
-    {"name": "list_disputes", "description": "List disputes", "annotations": {"readOnlyHint": True}},
-    {"name": "get_dispute", "description": "Get one dispute", "annotations": {"readOnlyHint": True}},
-    {"name": "list_invoices", "description": "List invoices", "annotations": {"readOnlyHint": True}},
-    {"name": "list_products", "description": "List catalog products", "annotations": {"readOnlyHint": True}},
-    {"name": "create_order", "description": "Create a PayPal order", "annotations": {"readOnlyHint": False}},
-    {"name": "create_refund", "description": "Refund a captured payment", "annotations": {"readOnlyHint": False}},
-    {"name": "send_invoice", "description": "Send an invoice to a customer", "annotations": {"readOnlyHint": False}},
+    {"name": "get_merchant_insights", "description": "Sales or order insights over a period"},
+    {"name": "list_transactions", "description": "List transactions in a date range"},
+    {"name": "list_disputes", "description": "List disputes"},
+    {"name": "get_dispute", "description": "Get one dispute"},
+    {"name": "list_invoices", "description": "List invoices"},
+    {"name": "list_products", "description": "List catalog products"},
+    {"name": "create_order", "description": "Create a PayPal order"},
+    {"name": "pay_order", "description": "Pay (capture) an approved order"},
+    {"name": "create_refund", "description": "Refund a captured payment"},
+    {"name": "send_invoice", "description": "Send an invoice to a customer"},
 ]
 
 _SIM_RESULTS: dict[str, Any] = {
@@ -160,6 +354,10 @@ class PayPalMCPClient:
     def endpoint(self) -> str:
         return settings.paypal_mcp_endpoint
 
+    @property
+    def uses_sse(self) -> bool:
+        return urlparse(self.endpoint).path.rstrip("/").endswith("/sse")
+
     def __repr__(self) -> str:
         return f"PayPalMCPClient(mode={self.mode}, enabled={settings.paypal_mcp_enabled})"
 
@@ -171,59 +369,40 @@ class PayPalMCPClient:
             raise SponsorError("PayPal credentials are required to reach the MCP server.")
         return str(await token_fn())
 
-    async def _rpc(self, client: httpx.AsyncClient, headers: dict[str, str], method: str,
-                   params: dict[str, Any] | None = None, *, request_id: int | None = 1) -> httpx.Response:
-        body: dict[str, Any] = {"jsonrpc": "2.0", "method": method}
-        if request_id is not None:
-            body["id"] = request_id
-        if params is not None:
-            body["params"] = params
-        try:
-            response = await client.post(self.endpoint, json=body, headers=headers)
-        except httpx.HTTPError as exc:
-            raise SponsorError(f"PayPal MCP is unreachable ({type(exc).__name__}).") from exc
-        if response.status_code in (401, 403):
-            raise SponsorError(f"PayPal MCP rejected the credentials (HTTP {response.status_code}).",
-                               status_code=response.status_code)
-        if not response.is_success:
-            raise SponsorError(f"PayPal MCP returned HTTP {response.status_code}.", status_code=response.status_code)
-        return response
-
-    async def _session(self, client: httpx.AsyncClient) -> dict[str, str]:
-        """initialize -> notifications/initialized; returns the headers for later calls."""
+    @contextlib.asynccontextmanager
+    async def _open(self) -> AsyncIterator[_SSESession | _StreamableSession]:
+        """An initialised MCP session over whichever transport the endpoint speaks."""
+        if not settings.paypal_mcp_enabled:
+            raise SponsorError("The PayPal MCP bridge is disabled (PAYPAL_MCP_ENABLED=false).")
         headers = {
             "Authorization": f"Bearer {await self._token()}",
             "Content-Type": "application/json",
             "Accept": "application/json, text/event-stream",
         }
-        response = await self._rpc(client, headers, "initialize", {
-            "protocolVersion": PROTOCOL_VERSION,
-            "capabilities": {},
-            "clientInfo": {"name": "paypilot", "version": settings.app_version},
-        })
-        reply = _parse_rpc(response)
+        async with httpx.AsyncClient(timeout=TIMEOUT, transport=self._transport) as client:
+            if self.uses_sse:
+                async with _SSESession(client, self.endpoint, headers) as session:
+                    yield session
+            else:
+                streamable = _StreamableSession(client, self.endpoint, headers)
+                await streamable.start()
+                yield streamable
+
+    @staticmethod
+    def _result(reply: dict[str, Any], what: str) -> dict[str, Any]:
         if "error" in reply:
-            raise SponsorError(f"PayPal MCP initialize failed: {as_dict(reply['error']).get('message', 'error')}")
-        session_id = response.headers.get("mcp-session-id")
-        if session_id:
-            headers["Mcp-Session-Id"] = session_id
-        await self._rpc(client, headers, "notifications/initialized", request_id=None)
-        return headers
+            raise SponsorError(f"PayPal MCP {what} failed: {as_dict(reply['error']).get('message', 'error')}")
+        return as_dict(reply.get("result"))
 
     # ------------------------------------------------------------------ public API
     async def list_tools(self) -> list[dict[str, Any]]:
-        """Every tool the server offers, each flagged ``read_only`` and ``callable``."""
+        """Every tool the server offers, each flagged ``read_only`` (callable) or not."""
         if self.simulated:
-            raw = _SIM_TOOLS
+            raw: list[Any] = _SIM_TOOLS
         else:
-            if not settings.paypal_mcp_enabled:
-                raise SponsorError("The PayPal MCP bridge is disabled (PAYPAL_MCP_ENABLED=false).")
-            async with httpx.AsyncClient(timeout=TIMEOUT, transport=self._transport) as client:
-                headers = await self._session(client)
-                reply = _parse_rpc(await self._rpc(client, headers, "tools/list", {}, request_id=2))
-            if "error" in reply:
-                raise SponsorError(f"PayPal MCP tools/list failed: {as_dict(reply['error']).get('message', 'error')}")
-            raw = as_dict(reply.get("result")).get("tools") or []
+            async with self._open() as session:
+                reply = await session.request("tools/list", {})
+            raw = self._result(reply, "tools/list").get("tools") or []
         tools = []
         for tool in raw:
             tool = as_dict(tool)
@@ -245,23 +424,25 @@ class PayPalMCPClient:
             if data is None:
                 raise SponsorError(f"The simulated PayPal MCP has no '{name}' tool.")
             return {"mode": self.mode, "tool": name, "data": data, "source": "simulator"}
-        if not settings.paypal_mcp_enabled:
-            raise SponsorError("The PayPal MCP bridge is disabled (PAYPAL_MCP_ENABLED=false).")
 
-        async with httpx.AsyncClient(timeout=TIMEOUT, transport=self._transport) as client:
-            headers = await self._session(client)
-            # Second gate: the server's own annotations.
-            listing = _parse_rpc(await self._rpc(client, headers, "tools/list", {}, request_id=2))
-            for tool in as_dict(listing.get("result")).get("tools") or []:
+        async with self._open() as session:
+            # Second gate: the server's own annotations, when it sends any.
+            listing = self._result(await session.request("tools/list", {}), "tools/list")
+            for tool in listing.get("tools") or []:
                 if as_dict(tool).get("name") == name:
                     assert_read_only(name, as_dict(as_dict(tool).get("annotations")) or None)
-            reply = _parse_rpc(await self._rpc(client, headers, "tools/call",
-                                               {"name": name, "arguments": arguments}, request_id=3))
-        if "error" in reply:
-            raise SponsorError(f"PayPal MCP call failed: {as_dict(reply['error']).get('message', 'error')}")
+            reply = await session.request("tools/call", {"name": name, "arguments": arguments})
+        data = _unwrap_tool_result(self._result(reply, "call"))
+        # PayPal's toolkit reports its own failures *inside* a successful MCP response
+        # as {"ok": false, "code": ..., "message": ...}. That is an error, not data -
+        # showing it as a result would let a failure read like an empty answer.
+        if isinstance(data, dict) and data.get("ok") is False:
+            raise SponsorError(
+                f"PayPal's MCP server could not run {name}: {data.get('code', 'error')} - "
+                f"{str(data.get('message', 'no detail'))[:200]}"
+            )
         log.info("paypal_mcp_read", tool=name, mode=self.mode)
-        return {"mode": self.mode, "tool": name, "data": _unwrap_tool_result(as_dict(reply.get("result"))),
-                "source": "paypal-mcp"}
+        return {"mode": self.mode, "tool": name, "data": data, "source": "paypal-mcp"}
 
 
 _client: PayPalMCPClient | None = None

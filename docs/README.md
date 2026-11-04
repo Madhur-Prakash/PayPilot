@@ -27,6 +27,7 @@ New to the project? Read in this order.
 | 3 | [Hackathon notes](HACKATHON.md) | 5 min | What was built for the PayPal AI Hackathon, tools used, judge testing |
 | 4 | [Supply Agents](SUPPLY_AGENTS.md) | 15 min | The agent-to-agent procurement network and its controls |
 | 5 | [PayPal](PAYPAL.md) | 10 min | Every PayPal API used, modes, webhooks, sandbox setup |
+| 5b | [Sponsor tools](SPONSORS.md) | 10 min | What each sponsor tool is used for, what is live vs a labelled fallback, how it was verified |
 | 6 | [Architecture](ARCHITECTURE.md) | 15 min | Why it is built this way |
 | 7 | [Agents](AGENTS.md) | 15 min | How the AI layer actually works |
 | 8 | [Agent memory](MEMORY.md) | 10 min | What the agents remember (pgvector), and how tenants stay apart |

@@ -111,16 +111,26 @@ version) and are re-verified at execution. Owners are not exempt.
 
 ## Agent Toolkit and MCP
 
-The PayPal Agent Toolkit and the PayPal MCP server expose PayPal operations as
-agent tools. PayPilot deliberately routes every agent action through its **own**
-tool registry instead, because that registry enforces what PayPilot's financial
-controls require on every call: tenant scoping, server-side RBAC, structured
-logging and tracing, and - for anything that moves money - a recorded human
-approval bound to exact terms. Toolkit tools call PayPal APIs directly and would
-bypass those gates, so they are not wired into the runtime. The PayPal
-capabilities agents can use are read-only (`get_paypal_transaction_insights`,
-`sync_paypal_transactions`); money-moving tools (`approve_purchase`,
-`pay_supplier_invoice`) exist only to refuse and point at the human approval path.
+PayPal publishes its Agent Toolkit as a remote **MCP server** (46 tools: invoicing,
+subscriptions, catalog, shipment tracking, orders, disputes, reporting - and tools that move
+money). PayPilot connects to it, **read-only**, through its own tool registry
+(`paypal_mcp_read`, permission `paypal:read`), so tenant scoping, RBAC, logging and tracing
+still apply and an agent can never use it to bypass the approval gates:
+
+* Transport is HTTP+SSE (`GET /sse`, then POST to the announced per-session endpoint) with the
+  same cached OAuth token every REST call uses - verified against the live sandbox.
+* A tool is callable only if its name starts with `list_`, `get_`, `show_` or `search_`, has no
+  state-changing fragment, and is not annotated `readOnlyHint: false`. That is decided in code
+  **before any network request**. 16 of the 46 tools pass; the 30 that create orders, pay,
+  refund, send invoices or accept disputes are refused for every role, the Owner included.
+* Money-moving PayPal operations stay on the approval-gated REST path
+  (`services/paypal/finance.py`); `approve_purchase` and `pay_supplier_invoice` exist only to
+  refuse and point at the human approval path.
+* **Known PayPal-side issue (observed 2026-11-04):** every sandbox tool call returns
+  `PAYPAL_API_SETUP_ERROR: Unsupported cache mode: default` inside a successful MCP reply.
+  PayPilot reports it as an error instead of presenting it as data.
+
+See [SPONSORS.md](SPONSORS.md#paypal-agent-toolkit-over-mcp) for the full account.
 
 ## Known limitations
 

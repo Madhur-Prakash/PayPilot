@@ -35,7 +35,7 @@ a voice assistant, and n8n automation.
 | Frontend | 19 new screens: Command Center, Supply Command Center, Reorder, Supplier Network + profiles, RFQ Management, Live Negotiations + the Negotiation Workspace, Quote Comparison, Goods Receiving, Supplier Invoices, Reconciliation, Approval Center, Agent Communication, PayPal Transactions, Payments, Payouts, Invoices, Subscriptions, Webhooks; navigation regrouped into Command / Growth / Supply / Agents / Finance / Governance; AG Grid for data-heavy tables |
 | Localization | US merchant (Juniper & Oak Coffee, Portland), USD everywhere, US names, PayPal spelling; Paytm-specific "PayPal-side audience" logic reframed to PayPal-powered levers the merchant controls |
 | Tooling | `make init` and a cross-platform task runner (`scripts/tasks.py`) behind Make, PowerShell and bash; Render Blueprint; background worker; Postman collection; Vitest |
-| Tests | 80 new backend tests (financial engine, protocol security, PayPal client + simulator, PayPal APIs, pgvector memory, the end-to-end procurement lifecycle) - **288 passing** in total - plus frontend unit tests |
+| Tests | 80 new backend tests (financial engine, protocol security, PayPal client + simulator, PayPal APIs, pgvector memory, the end-to-end procurement lifecycle) - **389 passing** in total - plus frontend unit tests |
 
 ## AI and tools actually used
 
@@ -48,14 +48,20 @@ a voice assistant, and n8n automation.
 | Vapi | Optional voice assistant (now with supply/approval/PayPal read tools) |
 | n8n | Event routing from the transactional outbox (never financial logic) |
 | AG Grid Community (v36) | Data grids for transactions, quotes, invoices, receipts, reconciliations, payments |
+| AG Studio | Dashboard Studio - merchant-built dashboards over backend-computed datasets (evaluation mode) |
+| Bryntum Gantt | Procurement timeline of the real RFQ -> payment stages (trial build) |
+| PayPal Agent Toolkit (MCP) | Read-only bridge through PayPilot's tool registry; write tools blocked in code |
+| Channel3 | Market price reference beside a purchase (labelled fallback without a key) |
+| Elasticsearch | Evidence search across audit, messages, offers, invoices, events, reviews (keyword fallback without a node) |
+| Kernel | Observe-only supplier-page verification sessions (labelled fallback without a key) |
+| Zapier | Signed, at-most-once business-event notifications |
 | Render | Deployment Blueprint (`render.yaml`) prepared; not deployed from this environment |
-| Postman | `postman/PayPilot.postman_collection.json` |
+| Postman | `postman/PayPilot.postman_collection.json` + environment (53 requests with assertions) |
+| APIMatic | OpenAPI export (`scripts/export_openapi.py`) ready to import; the Context Plugin was **not** used |
 | Claude Code | Coding assistant used to build the upgrade |
 
-**Not used** (so not claimed): APIMatic Context Plugin, the PayPal AI Toolkit
-build-time assistant, AG Studio / the Studio Agent Framework (AG Grid Community is
-used instead), Bryntum, Elastic, PayPal Agent Toolkit / MCP at runtime (evaluated
-- see [PAYPAL.md](PAYPAL.md#agent-toolkit-and-mcp)).
+**Not used** (so not claimed): the APIMatic Context Plugin, Astropods, AG Studio's agent framework.
+Full, per-tool detail with what was and was not verified: [SPONSORS.md](SPONSORS.md).
 
 ## For judges: testing without keys
 

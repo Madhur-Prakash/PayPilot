@@ -36,6 +36,8 @@ export default function ProcurementGantt({ timeline }: { timeline: ProcurementTi
       <BryntumGantt
         project={project}
         readOnly
+        // Bryntum's default "Project start" line would mislabel a history chart.
+        projectLinesFeature={false}
         startDate={data.range.start}
         endDate={data.range.end}
         viewPreset="weekAndDay"
