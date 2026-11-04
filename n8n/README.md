@@ -59,6 +59,16 @@ dispatch by hand. It is for impatience and debugging, not for correctness.
 
 ## Deploying
 
+**With Docker Compose it is automatic.** `docker compose up -d --build` runs
+`n8n-build` (renders the workflows with `compose_build.py`: callback
+`http://backend:8000`, merchant id read from the database, secret from `.env` or
+a local default), then `n8n-import` (imports and publishes them), and only then
+starts `n8n` - so the webhook is registered on first boot, no restart needed.
+After a `seed --reset` changes the merchant id:
+`docker compose up -d --force-recreate n8n-build n8n-import n8n`.
+
+**Into an n8n you run yourself:**
+
 ```bash
 ./n8n/import.sh            # builds from .env, imports, restarts, confirms
 ./n8n/import.sh my-n8n     # if the container is not called "n8n"

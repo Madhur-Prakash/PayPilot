@@ -67,23 +67,36 @@ Credentials are allowed on CORS, so a wildcard is neither accepted nor safe.
 
 ## Docker Compose (self-contained)
 
-The fastest path to a running deployment. Brings up Postgres with pgvector, the
-backend, and the frontend.
+The fastest path to a running deployment. One command brings up the whole
+product: Postgres with pgvector, the backend, the outbox worker, the frontend and
+n8n with its workflows imported and published.
 
 ```bash
-cp .env.example .env
-# edit .env: JWT_SECRET, APP_ENV, CORS_ORIGINS, REFRESH_COOKIE_SECURE
-make docker-up
-make logs
+cp .env.example .env            # optional; for anything public edit JWT_SECRET, APP_ENV, CORS_ORIGINS, REFRESH_COOKIE_SECURE
+docker compose up -d --build
+docker compose logs -f backend
 ```
+
+`.env` is optional: without it the stack runs with simulated PayPal and
+deterministic agents. `make docker-up` (or `docker compose up -d postgres`)
+starts only Postgres, for `make dev`.
 
 [`docker-compose.yml`](../docker-compose.yml) defines:
 
-| Service | Image / build | Port | Profile |
+| Service | Image / build | Port | What it does |
 | --- | --- | --- | --- |
-| `postgres` | `pgvector/pgvector:pg16` | 5433 | always |
-| `backend` | `backend/Dockerfile` | 8000 | `full` |
-| `frontend` | `frontend/Dockerfile` | 3000 | `full` |
+| `postgres` | `pgvector/pgvector:pg16` | 5433 | Database (pgvector enabled) |
+| `backend` | `backend/Dockerfile` | 8000 | Migrates, seeds, serves the API |
+| `worker` | `backend/Dockerfile` | - | Delivers the event outbox to n8n every 15 s |
+| `frontend` | `frontend/Dockerfile` | 3000 | Next.js app |
+| `n8n-build` | `backend/Dockerfile` | - | One-shot: renders the workflows for the Docker network (`http://backend:8000`, merchant id read from the database) |
+| `n8n-import` | `n8nio/n8n:2.46.5` | - | One-shot: imports and publishes the workflows before n8n boots |
+| `n8n` | `n8nio/n8n:2.46.5` | 5678 | Scheduler and router for inventory automation |
+
+The HMAC secret shared by the backend, worker and workflows is
+`N8N_WEBHOOK_SECRET` from `.env`, falling back to a local-only default when it is
+blank. After `seed --reset` (the merchant id changes), refresh the scheduled
+workflows with `docker compose up -d --force-recreate n8n-build n8n-import n8n`.
 
 The backend container runs migrations and the seed on start:
 

@@ -42,7 +42,9 @@ def load_env() -> dict[str, str]:
     env: dict[str, str] = {}
     path = os.path.join(ROOT, ".env")
     if not os.path.exists(path):
-        raise SystemExit(f"No .env at {path} - copy .env.example and fill it in first.")
+        # Fine when the settings arrive through the environment (the compose
+        # build step); the empty-secret check below still refuses to build.
+        return env
     for raw in io.open(path, encoding="utf-8"):
         raw = raw.strip()
         if raw and not raw.startswith("#") and "=" in raw:
@@ -52,9 +54,17 @@ def load_env() -> dict[str, str]:
 
 
 ENV = load_env()
-SECRET = ENV.get("N8N_WEBHOOK_SECRET", "")
-BACKEND = ENV.get("N8N_BACKEND_URL_FOR_N8N", "http://host.docker.internal:8000")
-MERCHANT = ENV.get("PGA_MERCHANT_ID", "")
+
+
+def setting(key: str, default: str = "") -> str:
+    """The process environment wins over .env, so the docker-compose build step can
+    point n8n at in-network URLs (http://backend:8000) without editing .env."""
+    return os.environ.get(key) or ENV.get(key, default)
+
+
+SECRET = setting("N8N_WEBHOOK_SECRET")
+BACKEND = setting("N8N_BACKEND_URL_FOR_N8N", "http://host.docker.internal:8000")
+MERCHANT = setting("PGA_MERCHANT_ID")
 
 if not SECRET:
     raise SystemExit("N8N_WEBHOOK_SECRET is empty - refusing to build unsigned workflows.")

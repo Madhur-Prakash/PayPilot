@@ -173,6 +173,20 @@ PostgreSQL 16 + pgvector (56 tables) · SQLAlchemy 2 · Alembic
 
 ## Getting started
 
+### Everything in Docker (only Docker needed)
+
+```bash
+cp .env.example .env          # optional - without it: simulated PayPal, deterministic agents
+docker compose up -d --build  # postgres, API, worker, web app and n8n (workflows imported + published)
+```
+
+App <http://localhost:3000> · API docs <http://localhost:8000/docs> · n8n
+<http://localhost:5678> (create the n8n owner account on first visit). The first
+start migrates and seeds the demo merchant, about two minutes.
+`docker compose stop` keeps the data; `docker compose down -v` wipes it.
+
+### Local development
+
 Requires **Python 3.11-3.14**, **Node 20+**, **Git**, and **Docker** (for the
 local Postgres; or bring your own Postgres 16 with `vector`).
 
@@ -251,7 +265,7 @@ invalidation, RBAC denials, tenant isolation, pgvector memory isolation, and the
 `render.yaml` deploys Postgres, the API (Docker), the web app and a background
 worker on Render; secrets are prompted (leave blank for the keyless demo). See
 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md#render-blueprint). Docker Compose runs
-the same stack locally: `make docker-up FULL=1`.
+the same stack locally, plus n8n: `docker compose up -d --build`.
 
 ## What we built during the hackathon
 

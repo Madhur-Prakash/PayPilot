@@ -14,6 +14,7 @@ import asyncio
 import contextlib
 import signal
 
+import app.db.base  # noqa: F401 - registers every model so foreign keys (domain_events -> merchants) resolve
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.db.session import dispose_engine, ping_database

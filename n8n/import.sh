@@ -23,7 +23,10 @@ docker cp deploy "$CONTAINER:/tmp/pga-deploy"
 docker exec "$CONTAINER" n8n import:workflow --separate --input=/tmp/pga-deploy
 
 for id in PGAInventoryRouter PGAInventorySweeps PGAGrowthScan; do
-  docker exec "$CONTAINER" n8n update:workflow --id="$id" --active=true >/dev/null 2>&1 || true
+  # n8n 2.x: publish:workflow; update:workflow --active is the 1.x spelling.
+  docker exec "$CONTAINER" n8n publish:workflow --id="$id" >/dev/null 2>&1 \
+    || docker exec "$CONTAINER" n8n update:workflow --id="$id" --active=true >/dev/null 2>&1 \
+    || true
 done
 
 echo "restarting $CONTAINER so the webhooks register..."
