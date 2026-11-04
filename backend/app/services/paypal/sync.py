@@ -21,6 +21,7 @@ import uuid
 from collections import defaultdict
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from itertools import pairwise
 from typing import Any
 
 from sqlalchemy import func, select
@@ -268,7 +269,9 @@ def _summarise(current: list[PayPalTransactionRecord], previous: list[PayPalTran
         series.append({"date": key, "gross": str(money(daily.get(key, ZERO)))})
         day += timedelta(days=1)
     attempts = int(now["payments"]) + int(now["failed"])
+    loyalty = _purchase_behaviour(current, aov, start, end)
     return {
+        **loyalty,
         "transactions": int(now["payments"]),
         "gross_revenue": str(now["gross"]),
         "net_revenue": str(now["net"]),
@@ -284,4 +287,45 @@ def _summarise(current: list[PayPalTransactionRecord], previous: list[PayPalTran
         "gross_change_pct": str(pct(D(now["gross"]) - D(before["gross"]), before["gross"])) if before["gross"] else None,
         "previous_gross_revenue": str(before["gross"]),
         "daily": series,
+    }
+
+
+#: Customer lifetime value is an *estimate*, and says so: it is the average order
+#: value times the annualised purchase frequency times an assumed customer
+#: lifespan. The lifespan is an assumption, not a measurement, so it is returned
+#: next to the number rather than buried in the formula.
+CLV_ASSUMED_LIFESPAN_YEARS = Decimal("2")
+
+
+def _purchase_behaviour(current: list[PayPalTransactionRecord], aov: Decimal,
+                        start: datetime, end: datetime) -> dict[str, Any]:
+    """Purchase frequency, repeat cadence and an explicit CLV estimate (Decimal only)."""
+    payments = [r for r in current if r.category == "PAYMENT" and r.status_code in ("S", "") and r.payer_hash]
+    by_payer: dict[str, list[datetime]] = defaultdict(list)
+    for r in payments:
+        by_payer[r.payer_hash].append(_aware(r.initiated_at))
+
+    payers = len(by_payer)
+    period_days = max(1, (end - start).days)
+    frequency = (Decimal(len(payments)) / Decimal(payers)).quantize(Decimal("0.01")) if payers else Decimal("0.00")
+
+    gaps: list[Decimal] = []
+    for stamps in by_payer.values():
+        stamps.sort()
+        gaps.extend(Decimal(str((b - a).total_seconds())) / Decimal(86400) for a, b in pairwise(stamps))
+    avg_gap = (sum(gaps, ZERO) / Decimal(len(gaps))).quantize(Decimal("0.1")) if gaps else None
+
+    annual_frequency = (frequency * Decimal(365) / Decimal(period_days)).quantize(Decimal("0.01"))
+    clv = money(D(aov) * annual_frequency * CLV_ASSUMED_LIFESPAN_YEARS) if payers else money(ZERO)
+    return {
+        "purchase_frequency": str(frequency),
+        "avg_days_between_repeat_purchases": str(avg_gap) if avg_gap is not None else None,
+        "annualised_purchase_frequency": str(annual_frequency),
+        "customer_lifetime_value_estimate": str(clv),
+        "clv_assumptions": {
+            "formula": "average order value x annualised purchase frequency x assumed lifespan",
+            "assumed_lifespan_years": str(CLV_ASSUMED_LIFESPAN_YEARS),
+            "basis_days": period_days,
+            "is_estimate": True,
+        },
     }

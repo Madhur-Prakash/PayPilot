@@ -26,6 +26,7 @@ from app.db.models.competitor import Competitor, CompetitorReview
 from app.db.models.experiment import Experiment, ExperimentResult, ExperimentVariant
 from app.db.models.governance import AgentMessage, ApprovalRequest, FinancialExecution
 from app.db.models.growth import GrowthMetric, GrowthOpportunity
+from app.db.models.integrations import IntegrationDelivery
 from app.db.models.inventory import InventoryBatch, InventoryItem, InventoryMovement
 from app.db.models.memory import AgentMemory
 from app.db.models.merchant import Merchant, MerchantMembership
@@ -82,6 +83,7 @@ __all__ = [
     "GoodsReceipt",
     "GrowthMetric",
     "GrowthOpportunity",
+    "IntegrationDelivery",
     "InventoryBatch",
     "InventoryItem",
     "InventoryMovement",

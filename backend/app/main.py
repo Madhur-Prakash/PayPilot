@@ -20,6 +20,7 @@ from app.integrations.langfuse import tracer
 from app.integrations.paypal import close_paypal_gateway
 from app.integrations.vapi import vapi_client
 from app.integrations.vector_memory import memory
+from app.services.integrations.zapier import zapier_relay
 from app.services.inventory.relay import relay
 
 setup_logging()
@@ -100,6 +101,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         relay.start()
     else:
         log.info("outbox_relay_external", hint="Run 'python -m app.worker' to deliver events.")
+    if settings.outbox_relay_in_process:
+        zapier_relay.start()  # no-op unless ZAPIER_WEBHOOK_URL is set
 
     if settings.vapi_active:
         # The assistant's tools and prompt live on Vapi's platform, not in this
@@ -113,6 +116,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     log.info("application_stopping")
     await relay.stop()
+    await zapier_relay.stop()
     # Memory writes are queued off the request path, so a shutdown mid-flight
     # would otherwise silently drop what the last few runs concluded.
     await memory.drain()

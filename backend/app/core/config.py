@@ -191,6 +191,30 @@ class Settings(BaseSettings):
     #: complete end to end against a real sandbox.
     paypal_sandbox_payee_email: str = ""
 
+    # ---------------------------------------------------------------- PayPal Agent Toolkit / MCP
+    #: Read-only bridge to PayPal's MCP server (the Agent Toolkit tools). Safe to
+    #: leave on: only allow-listed *read* tools are callable, whatever the server
+    #: offers - see integrations/paypal/mcp.py. Set false to disable it entirely.
+    paypal_mcp_enabled: bool = True
+    #: Blank derives the sandbox/production MCP endpoint from PAYPAL_ENVIRONMENT.
+    paypal_mcp_url: str = ""
+
+    # ---------------------------------------------------------------- sponsor integrations
+    #: Channel3 product search - market price reference for the buyer agent.
+    #: Blank key = a clearly labelled deterministic reference catalogue.
+    channel3_api_key: str = ""
+    channel3_base_url: str = "https://api.trychannel3.com"
+    #: Kernel cloud browsers - supplier-portal verification sessions.
+    kernel_api_key: str = ""
+    kernel_base_url: str = "https://api.onkernel.com"
+    #: Elasticsearch - evidence search. Blank URL = PostgreSQL full-text fallback.
+    elastic_url: str = ""
+    elastic_api_key: str = ""
+    elastic_index_prefix: str = "paypilot"
+    #: Zapier "Catch Hook" URL - business events fan out to it, signed.
+    zapier_webhook_url: str = ""
+    zapier_signing_secret: str = ""
+
     # ---------------------------------------------------------------- supply agents
     #: HMAC key for agent-to-agent protocol messages. Blank derives one from
     #: JWT_SECRET so a fresh checkout still signs (and verifies) every message.
@@ -315,6 +339,21 @@ class Settings(BaseSettings):
         if self.paypal_environment == "live":
             return "https://api-m.paypal.com"
         return "https://api-m.sandbox.paypal.com"
+
+    @property
+    def paypal_mcp_endpoint(self) -> str:
+        if self.paypal_mcp_url:
+            return self.paypal_mcp_url.rstrip("/")
+        host = "mcp.paypal.com" if self.paypal_environment == "live" else "mcp.sandbox.paypal.com"
+        return f"https://{host}/http"
+
+    @property
+    def zapier_signing_key(self) -> bytes:
+        if self.zapier_signing_secret:
+            return self.zapier_signing_secret.encode("utf-8")
+        import hashlib
+
+        return hashlib.sha256(f"zapier::{self.jwt_secret}".encode()).digest()
 
     @property
     def agent_protocol_key(self) -> bytes:

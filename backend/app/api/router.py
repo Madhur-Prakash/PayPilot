@@ -12,6 +12,7 @@ from app.api.v1 import (
     campaigns,
     dashboard,
     growth,
+    integrations,
     intelligence,
     inventory,
     memory,
@@ -35,6 +36,7 @@ api_router.include_router(supply.router)
 api_router.include_router(approvals.router)
 api_router.include_router(paypal.router)
 api_router.include_router(memory.router)
+api_router.include_router(integrations.router)
 api_router.include_router(admin.router)
 
 __all__ = ["api_router"]

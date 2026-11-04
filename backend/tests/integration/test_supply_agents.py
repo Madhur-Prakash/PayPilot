@@ -166,6 +166,22 @@ class TestSignatureScenario:
         assert Decimal(center["procurement"]["savings"]) > 0
         assert center["margins"]
 
+        # ---- the Gantt shows every stage the system really recorded, chained in order
+        timeline = (await client.get("/supply/timeline", headers=owner_headers)).json()["data"]
+        parent = next(t for t in timeline["tasks"] if t["id"] == rid)
+        by_name = {c["name"]: c for c in parent["children"]}
+        assert {"RFQ & negotiation", "Human approval"} <= set(by_name)
+        po_task = next(c for n, c in by_name.items() if n.startswith("PO ") and "delivery" in n)
+        assert po_task["percentDone"] == 100 and po_task["state"] == "done"      # 100 + 50 of 150, both receipts
+        receipts = [c for c in parent["children"] if c["milestone"]]
+        assert len(receipts) == 2                                                  # partial, then the rest
+        assert any(n.startswith("Invoice ") and c["state"] == "done" for n, c in by_name.items())
+        pay = next(c for n, c in by_name.items() if n.startswith("PayPal payment"))
+        assert "Simulated" in pay["name"] and pay["state"] == "done"
+        ids = {c["id"] for c in parent["children"]}
+        chain = [d for d in timeline["dependencies"] if d["from"] in ids]
+        assert len(chain) == 4 and all(d["to"] in ids for d in chain)              # nego>approval>PO>invoice>payment
+
 
 class TestApprovalBinding:
     async def test_changing_the_terms_invalidates_the_approval(self, client, analyst_headers, owner_headers, network):

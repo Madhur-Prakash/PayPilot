@@ -194,6 +194,14 @@ class PayPalClient:
             log.info("paypal_token_acquired", expires_in=expires_in, mode=self.mode)
             return self._token
 
+    async def access_token(self) -> str:
+        """A valid bearer token for server-side callers (the MCP bridge).
+
+        Never returned to a browser; the cache and refresh logic is the same one
+        every REST call uses.
+        """
+        return await self._access_token()
+
     def invalidate_token(self) -> None:
         self._token = None
         self._token_expires_at = 0.0

@@ -18,6 +18,7 @@ import app.db.base  # noqa: F401 - registers every model so foreign keys (domain
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.db.session import dispose_engine, ping_database
+from app.services.integrations.zapier import zapier_relay
 from app.services.inventory.relay import relay
 
 log = get_logger("app.worker")
@@ -39,11 +40,13 @@ async def main() -> None:
             loop.add_signal_handler(sig, stop.set)
 
     relay.start()
+    zapier_relay.start()
     try:
         await stop.wait()
     finally:
         log.info("worker_stopping")
         await relay.stop()
+        await zapier_relay.stop()
         await dispose_engine()
 
 

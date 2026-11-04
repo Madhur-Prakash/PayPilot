@@ -10,6 +10,7 @@ from app.tools import (  # noqa: F401  (registration side effect)
     actions,
     analytics,
     intelligence,
+    sponsors,
     supply,
 )
 from app.tools.base import ToolContext, ToolRegistry, ToolResult, ToolSpec, registry
@@ -55,6 +56,7 @@ BUYER_AGENT_TOOLS: list[str] = [
     "start_procurement",
     "run_negotiation",
     "get_procurement_status",
+    "get_market_benchmark",
     "search_memory",
 ]
 
@@ -80,6 +82,9 @@ MERCHANT_AGENT_TOOLS: list[str] = [
     "get_procurement_overview",
     "get_pending_approvals",
     "get_paypal_transaction_insights",
+    "paypal_mcp_read",
+    "search_evidence",
+    "get_market_benchmark",
     "search_memory",
 ]
 

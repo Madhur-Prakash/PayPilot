@@ -159,6 +159,17 @@ async def demand_scan(
     )
 
 
+@router.get("/supply/timeline", summary="Procurement timeline for the Gantt (tasks + dependencies)")
+async def procurement_timeline(
+    session: DbSession,
+    limit: Annotated[int, Query(ge=1, le=30)] = 12,
+    principal: Principal = Depends(require_permission(Permission.PROCUREMENT_READ)),
+) -> APIResponse[dict[str, Any]]:
+    from app.services.supply.timeline import build_timeline
+
+    return APIResponse(data=await build_timeline(session, principal.merchant_id, limit=limit))
+
+
 @router.get("/supply/overview", summary="Supply command center")
 async def supply_overview(
     session: DbSession,
