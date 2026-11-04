@@ -125,7 +125,7 @@ async def build_timeline(session: AsyncSession, merchant_id: uuid.UUID, *, limit
 
         # 1. RFQ and negotiation
         mine = offers_by_request.get(request.id, [])
-        negotiation_end = max((_aware(o.created_at) for o in mine if o.created_at), default=None) \
+        negotiation_end = max((t for o in mine if (t := _aware(o.created_at))), default=None) \
             or _aware(request.rfq_deadline)
         start, end = _span(_aware(request.rfq_issued_at) or created, negotiation_end, created)
         negotiated = request.status not in ("DRAFT", "SOURCING", "NEGOTIATING")
@@ -156,7 +156,7 @@ async def build_timeline(session: AsyncSession, merchant_id: uuid.UUID, *, limit
             done_pct = int(min(Decimal(100), (received / ordered * 100) if ordered else ZERO))
             d_start = _aware(po.sent_at) or _aware(po.approved_at) or _aware(po.created_at) or end
             expected = _from_date(po.expected_at)
-            last_receipt = max((_aware(r.received_at) for r in receipts_by_po.get(po.id, [])), default=None)
+            last_receipt = max((t for r in receipts_by_po.get(po.id, []) if (t := _aware(r.received_at))), default=None)
             d_end = (last_receipt if done_pct >= 100 else expected) or last_receipt or expected
             d_start, d_end = _span(d_start, d_end, end)
             overdue = done_pct < 100 and expected is not None and expected < now

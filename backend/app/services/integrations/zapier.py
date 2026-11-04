@@ -145,7 +145,7 @@ async def delivery_summary(session: AsyncSession, merchant_id: Any) -> dict[str,
             IntegrationDelivery.merchant_id == merchant_id, IntegrationDelivery.target == DeliveryTarget.ZAPIER
         ).group_by(IntegrationDelivery.status)
     )).all()
-    counts = dict(rows)
+    counts: dict[str, int] = {str(status): int(n) for status, n in rows}
     last = (await session.execute(
         select(func.max(IntegrationDelivery.delivered_at)).where(
             IntegrationDelivery.merchant_id == merchant_id, IntegrationDelivery.target == DeliveryTarget.ZAPIER

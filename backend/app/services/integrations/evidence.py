@@ -97,58 +97,58 @@ async def collect_documents(session: AsyncSession, merchant_id: uuid.UUID, kinds
     mid = merchant_id
 
     if "audit" in kinds:
-        rows = (await session.execute(
+        audit_rows = (await session.execute(
             select(AuditLog).where(AuditLog.merchant_id == mid).order_by(AuditLog.created_at.desc()).limit(PER_KIND_LIMIT)
         )).scalars().all()
         docs += [_doc(mid, "audit", r.id, f"{r.action} {r.resource}".strip(), f"{r.description} {r.actor_label} {r.status}",
-                      actor=r.actor_label, occurred_at=r.created_at, link="/activity") for r in rows]
+                      actor=r.actor_label, occurred_at=r.created_at, link="/activity") for r in audit_rows]
 
     if "agent_message" in kinds:
-        rows = (await session.execute(
+        message_rows = (await session.execute(
             select(AgentMessage).where(AgentMessage.merchant_id == mid).order_by(AgentMessage.sent_at.desc()).limit(PER_KIND_LIMIT)
         )).scalars().all()
         docs += [_doc(mid, "agent_message", r.id, r.message_type, f"{r.sender} to {r.recipient}. {r.summary}",
                       actor=r.sender, correlation_id=r.correlation_id, occurred_at=r.sent_at,
-                      link="/agents/communication") for r in rows]
+                      link="/agents/communication") for r in message_rows]
 
     if "offer" in kinds:
-        rows = (await session.execute(
+        offer_rows = (await session.execute(
             select(NegotiationOffer).where(NegotiationOffer.merchant_id == mid)
             .order_by(NegotiationOffer.created_at.desc()).limit(PER_KIND_LIMIT)
         )).scalars().all()
         docs += [_doc(mid, "offer", r.id, f"Round {r.round} {r.direction} {r.kind}",
                       f"{r.rationale} unit price {r.unit_price} landed total {r.landed_total} "
                       f"lead time {r.lead_time_days} days validation {r.validation_status}",
-                      actor=r.proposed_by, occurred_at=r.created_at, link="/supply/negotiations") for r in rows]
+                      actor=r.proposed_by, occurred_at=r.created_at, link="/supply/negotiations") for r in offer_rows]
 
     if "procurement" in kinds:
-        rows = (await session.execute(
+        request_rows = (await session.execute(
             select(ProcurementRequest).where(ProcurementRequest.merchant_id == mid)
             .order_by(ProcurementRequest.created_at.desc()).limit(PER_KIND_LIMIT)
         )).scalars().all()
         docs += [_doc(mid, "procurement", r.id, f"{r.reference} {r.product_name}",
                       f"status {r.status} quantity {r.quantity} {r.unit} {r.failure_reason} "
                       f"{(r.recommendation or {}).get('summary', '')}",
-                      correlation_id=r.correlation_id, occurred_at=r.created_at, link="/supply/rfqs") for r in rows]
+                      correlation_id=r.correlation_id, occurred_at=r.created_at, link="/supply/rfqs") for r in request_rows]
 
     if "invoice" in kinds:
-        rows = (await session.execute(
+        invoice_rows = (await session.execute(
             select(SupplierInvoice).where(SupplierInvoice.merchant_id == mid)
             .order_by(SupplierInvoice.created_at.desc()).limit(PER_KIND_LIMIT)
         )).scalars().all()
         docs += [_doc(mid, "invoice", r.id, f"Invoice {r.invoice_number}",
                       f"status {r.status} total {r.total} {r.currency} terms {r.payment_terms} paypal {r.paypal_invoice_id}",
-                      occurred_at=r.issued_at, link="/supply/invoices") for r in rows]
+                      occurred_at=r.issued_at, link="/supply/invoices") for r in invoice_rows]
 
     if "event" in kinds:
-        rows = (await session.execute(
+        event_rows = (await session.execute(
             select(DomainEvent).where(DomainEvent.merchant_id == mid, DomainEvent.event_type.like("business.%"))
             .order_by(DomainEvent.created_at.desc()).limit(PER_KIND_LIMIT)
         )).scalars().all()
         docs += [_doc(mid, "event", r.id, BusinessEvent.LABELS.get(r.event_type, r.event_type),
                       " ".join(f"{k} {v}" for k, v in (r.payload or {}).items() if isinstance(v, (str, int, float))),
                       actor=r.source, correlation_id=r.correlation_id, occurred_at=r.created_at, link="/command")
-                 for r in rows]
+                 for r in event_rows]
 
     if "review" in kinds:
         rows = (await session.execute(

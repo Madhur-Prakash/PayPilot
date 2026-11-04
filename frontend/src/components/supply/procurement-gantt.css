@@ -1,0 +1,29 @@
+/* Colour a Bryntum task bar by the real state of the stage it represents. */
+.pp-gantt-host {
+  height: 560px;
+  min-height: 320px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid hsl(var(--border));
+  background: #fff;
+}
+
+.pp-gantt-host .b-gantt-task.pp-task-done {
+  background-color: #1f9d55;
+}
+.pp-gantt-host .b-gantt-task.pp-task-active {
+  background-color: #0b6bcb;
+}
+.pp-gantt-host .b-gantt-task.pp-task-pending {
+  background-color: #8896a9;
+}
+.pp-gantt-host .b-gantt-task.pp-task-blocked {
+  background-color: #d64545;
+}
+.pp-gantt-host .b-gantt-task .b-task-percent-bar {
+  background-color: rgb(0 0 0 / 0.22);
+}
+.pp-gantt-host .b-milestone.pp-task-done .b-gantt-task-content,
+.pp-gantt-host .b-gantt-task.b-milestone.pp-task-done {
+  background-color: #1f9d55;
+}
