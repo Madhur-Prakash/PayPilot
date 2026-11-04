@@ -78,6 +78,9 @@ services:
       postgres:
         condition: service_healthy
     command: ["python", "-m", "app.worker"]
+    # The image's HEALTHCHECK probes the API port, which the worker never opens.
+    healthcheck:
+      disable: true
 
 volumes:
   pga_pgdata:

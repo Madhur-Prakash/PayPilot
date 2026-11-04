@@ -31,6 +31,11 @@ os.environ["LOG_FORMAT"] = "json"
 os.environ["GROQ_API_KEY"] = ""
 os.environ["LANGFUSE_ENABLED"] = "false"
 os.environ["EMBEDDING_PROVIDER"] = "hash"
+# The suite runs against the PayPal simulator only - never real credentials from .env.
+for _key in ("PAYPAL_CLIENT_ID", "PAYPAL_CLIENT_SECRET", "PAYPAL_WEBHOOK_ID", "PAYPAL_SANDBOX_PAYEE_EMAIL"):
+    os.environ[_key] = ""
+os.environ["PAYPAL_ENVIRONMENT"] = "sandbox"
+os.environ["PAYPAL_SIMULATION_ENABLED"] = "true"
 
 import httpx  # noqa: E402
 from sqlalchemy.ext.asyncio import (  # noqa: E402

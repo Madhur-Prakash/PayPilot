@@ -708,12 +708,22 @@ def _api_error(response: httpx.Response, debug_id: str) -> PayPalAPIError:
     body = _json(response)
     name = str(body.get("name") or body.get("error") or "")
     message = str(body.get("message") or body.get("error_description") or f"PayPal returned {response.status_code}")
+    issues = [i for i in (body.get("details") or []) if isinstance(i, dict)]
+    # The top-level message is generic ("failed business validation"); the first
+    # issue code says what actually went wrong (e.g. CURRENCY_NOT_SUPPORTED).
+    if issues and issues[0].get("issue"):
+        first = issues[0]
+        message = f"{first['issue']}: {first.get('description') or message}"
+    log.warning(
+        "paypal_api_error", http_status=response.status_code, name=name,
+        issues=[i.get("issue") for i in issues][:5], debug_id=debug_id or body.get("debug_id"),
+    )
     return PayPalAPIError(
         message,
         http_status=response.status_code,
         name=name,
         debug_id=debug_id or str(body.get("debug_id") or ""),
-        issues=list(body.get("details") or []),
+        issues=issues,
     )
 
 

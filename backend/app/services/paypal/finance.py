@@ -40,9 +40,14 @@ from app.integrations.paypal import (
     PayPalAPIError,
     get_paypal_gateway,
 )
+from app.integrations.paypal.simulator import SimulatedPayPal
 from app.repositories.merchant import AuditLogRepository
 from app.services.supply.approvals import ApprovalService
 from app.services.supply.policy import D, money, serialisable
+
+#: Seeded demo subscriptions carry simulator ids; they stay on the simulator even
+#: when real credentials are configured, so a sandbox call never sees a SIM- id.
+_SEEDED_SIMULATOR = SimulatedPayPal()
 
 #: Hard ceiling on one cashback batch, whatever an approver is shown.
 MAX_PAYOUT_ITEMS = 500
@@ -322,7 +327,10 @@ class PayPalFinanceService:
         )).scalars().first()
         if record is None:
             raise NotFoundError("Subscription not found.")
-        gateway = get_paypal_gateway()
+        gateway = (
+            _SEEDED_SIMULATOR if record.mode == "SIMULATED" and get_paypal_gateway().mode != "SIMULATED"
+            else get_paypal_gateway()
+        )
         reason = reason or f"{action} requested by {self.actor_label}"
         if action == "suspend":
             await gateway.suspend_subscription(record.paypal_subscription_id, reason=reason)
