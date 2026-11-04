@@ -60,7 +60,4 @@ mypy==2.3.1
 types-python-dateutil==2.9.0.20260807
 
 # ---- Agent memory --------------------------------------------------------------
-# Brings roughly 75 packages with it (litellm, lancedb, pyarrow). Listed here
-# rather than in an extra because MEMORY_ENABLED defaults the feature on, and a
-# sync that quietly drops it leaves memory dead with no visible cause.
-cognee[groq]==1.5.4
+# Stored in Postgres with pgvector (already required above) - no extra package.

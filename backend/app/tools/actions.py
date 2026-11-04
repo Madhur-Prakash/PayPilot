@@ -72,7 +72,7 @@ class CreateExperimentArgs(BaseModel):
     duration_days: int = Field(default=14, ge=1, le=120)
     control_split_pct: float = Field(default=50.0, gt=0, lt=100)
     test_offer_description: str = Field(default="", max_length=500)
-    unit_cost: float = Field(default=0, ge=0, description="Cost per served offer, in rupees.")
+    unit_cost: float = Field(default=0, ge=0, description="Cost per served offer, in USD.")
     opportunity_id: str | None = None
     campaign_id: str | None = None
     audience: SegmentArgs | None = None
@@ -127,7 +127,7 @@ async def create_customer_segment(
         },
         (
             f"Segment '{args.name}' matches {stats['size']} customers with an average order "
-            f"value of Rs {stats['avg_order_value']:,.0f}."
+            f"value of ${stats['avg_order_value']:,.0f}."
         ),
     )
 
@@ -253,7 +253,7 @@ async def get_experiment_results(
         (
             f"{summary.name}: control {summary.control_conversion_rate:.1f}% vs test "
             f"{summary.test_conversion_rate:.1f}% ({summary.conversion_lift_pct:+.1f}% lift), "
-            f"incremental revenue Rs {summary.incremental_revenue:,.0f}, "
+            f"incremental revenue ${summary.incremental_revenue:,.0f}, "
             f"ROI {summary.roi:.1f}x. Decision: {summary.decision}."
         ),
     )
@@ -338,7 +338,7 @@ async def get_top_opportunity(ctx: ToolContext, args: EmptyArgs) -> tuple[dict[s
             }
         },
         (
-            f"{opportunity.title}: Rs {float(opportunity.estimated_value_monthly):,.0f}/month at "
+            f"{opportunity.title}: ${float(opportunity.estimated_value_monthly):,.0f}/month at "
             f"{float(opportunity.confidence):.0%} confidence."
         ),
     )
@@ -347,9 +347,9 @@ async def get_top_opportunity(ctx: ToolContext, args: EmptyArgs) -> tuple[dict[s
 @registry.register(
     "get_growth_allocation",
     description=(
-        "Where the growth budget has actually gone - business-side versus Paypal-side - and "
+        "Where the growth budget has actually gone - business-side versus PayPal-side - and "
         "whether one surface has a measured incremental-ROI edge (a 'growth arbitrage') worth "
-        "shifting budget toward. Answers 'where should my next rupee go'."
+        "shifting budget toward. Answers 'where should my next dollar go'."
     ),
     args_model=EmptyArgs,
     permission=Permission.GROWTH_READ,
@@ -367,7 +367,7 @@ async def get_growth_allocation(ctx: ToolContext, args: EmptyArgs) -> tuple[dict
 
     summary = (
         f"So far {snapshot['business_pct']:.0f}% of growth spend has gone to business-side "
-        f"campaigns and {snapshot['paypal_pct']:.0f}% to Paypal-side, for Rs "
+        f"campaigns and {snapshot['paypal_pct']:.0f}% to PayPal-side, for $"
         f"{snapshot['total_incremental_revenue']:,.0f} in measured incremental revenue."
     )
     if arbitrage:

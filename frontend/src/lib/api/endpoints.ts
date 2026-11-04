@@ -157,12 +157,12 @@ export const growthApi = {
 
   detect: (days = 30) => apiPost<OpportunityRadar>("/opportunities/detect", { days }),
 
-  /** Compares a business-side, Paypal-side and hybrid intervention for this
+  /** Compares a business-side, PayPal-side and hybrid intervention for this
    * opportunity. Read-only - nothing is created until the merchant picks one. */
   missions: (opportunityId: string) =>
     apiGet<GrowthMission>(`/opportunities/${opportunityId}/missions`),
 
-  /** Measured ROI edge between the business and Paypal surfaces, or `null` until
+  /** Measured ROI edge between the business and PayPal surfaces, or `null` until
    * both have at least one measured campaign. */
   arbitrage: () => apiGet<ArbitrageFinding | null>("/growth/arbitrage"),
 

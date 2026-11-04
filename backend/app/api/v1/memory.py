@@ -16,7 +16,7 @@ from app.api.deps import Principal, require_permission
 from app.core.exceptions import BadRequestError
 from app.core.logging import get_logger
 from app.core.permissions import Permission
-from app.integrations.cognee_memory import MemoryKind, memory
+from app.integrations.vector_memory import MemoryKind, memory
 from app.schemas.common import APIResponse, SchemaBase
 
 log = get_logger(__name__)
@@ -28,6 +28,9 @@ class MemoryHitOut(SchemaBase):
     source: str
     kind: str
     score: float | None = None
+    tags: list[str] = Field(default_factory=list)
+    memory_id: str = ""
+    created_at: str | None = None
 
 
 class MemorySearchOut(SchemaBase):
@@ -73,10 +76,11 @@ async def search_memory(
     q: Annotated[str, Query(min_length=2, max_length=500)],
     limit: Annotated[int, Query(ge=1, le=50)] = 10,
     kind: Annotated[str, Query(max_length=32)] = "",
+    tag: Annotated[str, Query(max_length=64, description="Only memories linked to this entity")] = "",
     principal: Principal = Depends(require_permission(Permission.MEMORY_READ)),
 ) -> APIResponse[MemorySearchOut]:
     kinds = (kind,) if kind else ()
-    hits = await memory.recall(principal.merchant_id, q, top_k=limit, kinds=kinds)
+    hits = await memory.recall(principal.merchant_id, q, top_k=limit, kinds=kinds, tags=(tag,) if tag else ())
     return APIResponse(
         data=MemorySearchOut(
             query=q,
@@ -86,13 +90,23 @@ async def search_memory(
     )
 
 
+@router.get("/recent", summary="The most recent memories for this merchant")
+async def recent_memories(
+    limit: Annotated[int, Query(ge=1, le=100)] = 25,
+    kind: Annotated[str, Query(max_length=32)] = "",
+    principal: Principal = Depends(require_permission(Permission.MEMORY_READ)),
+) -> APIResponse[list[MemoryHitOut]]:
+    hits = await memory.recent(principal.merchant_id, limit=limit, kind=kind)
+    return APIResponse(data=[MemoryHitOut(**hit.as_dict()) for hit in hits], meta={"available": memory.enabled})
+
+
 @router.post(
     "/remember",
     summary="Teach the agents something",
     description=(
-        "Writes a note into long-term memory for this merchant. Accepted and "
-        "queued: building the knowledge graph runs an LLM pipeline, so it "
-        "completes after the response."
+        "Writes a note into this merchant's long-term memory. It is embedded "
+        "locally and stored in Postgres (pgvector); the write completes just "
+        "after the response."
     ),
 )
 async def remember(
@@ -117,6 +131,8 @@ async def remember(
         text,
         kind=payload.kind,
         tags=tuple(t[:48] for t in payload.tags),
+        source="user",
+        author_label=principal.label,
     )
     log.info(
         "memory_note_queued",

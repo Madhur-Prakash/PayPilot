@@ -41,7 +41,7 @@ export function GrowthAllocationWidget() {
         ) : !data || !data.has_data ? (
           <p className="py-4 text-center text-sm text-muted-foreground">
             No campaigns have launched yet. Once one runs, this shows the real split between
-            business and Paypal spend.
+            business and PayPal spend.
           </p>
         ) : (
           <>

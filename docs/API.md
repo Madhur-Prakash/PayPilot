@@ -69,7 +69,7 @@ Merchant scope is resolved from your membership. `?merchant_id=` and
 ```bash
 curl -X POST localhost:8000/api/v1/auth/login \
   -H 'Content-Type: application/json' \
-  -d '{"email":"owner@sharmacafe.in","password":"Autopilot@2024"}'
+  -d '{"email":"owner@juniperoak.com","password":"Autopilot@2024"}'
 ```
 
 ---

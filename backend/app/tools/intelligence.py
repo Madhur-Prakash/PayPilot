@@ -164,7 +164,7 @@ async def get_inventory_status(ctx: ToolContext, args: EmptyArgs) -> tuple[dict[
     critical = data.get("critical_items") or []
     summary = (
         f"{data['items_at_risk']} of {data['items_tracked']} items at risk, "
-        f"Rs {data['total_revenue_at_risk']:,.0f} revenue exposed. "
+        f"${data['total_revenue_at_risk']:,.0f} revenue exposed. "
         f"Most urgent: {critical[0]['product']} ({critical[0]['days_of_cover']} days cover)."
         if critical
         else f"All {data['items_tracked']} tracked items have healthy cover."

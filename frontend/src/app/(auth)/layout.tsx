@@ -17,7 +17,7 @@ import { useAuthStore } from "@/stores/auth";
 
 const LOOP = [
   { icon: LineChart, label: "Observe", copy: "Deterministic metrics computed in SQL" },
-  { icon: Stethoscope, label: "Diagnose", copy: "Evidence-backed opportunities, sized in rupees" },
+  { icon: Stethoscope, label: "Diagnose", copy: "Evidence-backed opportunities, sized in dollars" },
   { icon: TestTubeDiagonal, label: "Act", copy: "Controlled experiments with a held-out control" },
   { icon: BadgeCheck, label: "Learn", copy: "Measured lift, ROI and a SCALE or STOP decision" },
 ];
@@ -93,7 +93,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <div className="flex items-start gap-2.5 border-t border-white/10 pt-6 text-2xs leading-relaxed text-sidebar-foreground/50">
             <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <p>
-              Not yet connected to a live Paypal transaction, customer-messaging or
+              Analytics run on a seeded demo dataset. PayPal runs in sandbox or simulation mode - no live PayPal transaction, customer-messaging or
               competitor-platform feed. Actions that move money always require explicit human
               approval.
             </p>

@@ -157,9 +157,9 @@ export default function MemoryPage() {
           <div>
             <p className="text-sm font-medium text-destructive">Memory is on but unreachable</p>
             <p className="mt-1 text-2xs leading-relaxed text-muted-foreground">
-              cognee could not be initialised, so recall returns nothing and writes are dropped.
-              The agents keep working without it. Check the backend logs for{" "}
-              <code className="rounded bg-muted px-1 py-0.5 font-mono">cognee_unavailable</code>.
+              The memory table could not be reached, so recall returns nothing and writes are
+              dropped. The agents keep working without it. Check the backend logs for{" "}
+              <code className="rounded bg-muted px-1 py-0.5 font-mono">memory_write_failed</code>.
             </p>
           </div>
         </div>
@@ -301,8 +301,9 @@ export default function MemoryPage() {
       {status.data && enabled && (
         <p className="text-2xs text-muted-foreground">
           Embeddings run locally via{" "}
-          <span className="font-mono">{status.data.embedding_provider}</span>; the knowledge graph
-          is built with <span className="font-mono">{status.data.llm_model}</span>.
+          <span className="font-mono">{status.data.embedding_provider}</span> and stored in{" "}
+          <span className="font-mono">{status.data.backend}</span>
+          {typeof status.data.memories === "number" ? ` - ${status.data.memories} memories so far.` : "."}
           {status.data.pending_writes > 0 &&
             ` ${status.data.pending_writes} memory write${
               status.data.pending_writes === 1 ? "" : "s"
@@ -393,7 +394,7 @@ function TeachDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
             <p className="text-2xs text-muted-foreground">
               {text.trim().length < 10
                 ? "A little more detail — at least ten characters."
-                : "Queued once saved; the knowledge graph takes a few seconds to build."}
+                : "Embedded and stored the moment you save; searchable straight away."}
             </p>
           </div>
         </div>
@@ -425,8 +426,8 @@ function EraseDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
     if (open) setConfirmation("");
   }, [open]);
 
-  // Typing the word is deliberate friction: this cannot be undone, and there is
-  // no backup of a knowledge graph.
+  // Typing the word is deliberate friction: this cannot be undone, and erased
+  // memories are deleted from the database, not archived.
   const confirmed = confirmation.trim().toUpperCase() === "ERASE";
 
   return (

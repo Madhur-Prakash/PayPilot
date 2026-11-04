@@ -1,4 +1,4 @@
-"""Deterministic dataset generator for the Sharma Cafe demo.
+"""Deterministic dataset generator for the Juniper & Oak Coffee demo.
 
 Pure functions, no database. Given a seed it always produces the identical
 customers / transactions / reviews, which is what makes the demo repeatable and
@@ -220,7 +220,7 @@ def generate_customers(
     dayparts = dayparts[:count]
     rng.shuffle(dayparts)
 
-    channels = ("walk_in", "paypal_app", "referral", "delivery_app")
+    channels = ("walk_in", "paypal_checkout", "referral", "delivery_app")
     channel_weights = (0.52, 0.30, 0.11, 0.07)
 
     customers: list[CustomerRecord] = []
@@ -237,11 +237,11 @@ def generate_customers(
         )
         customers.append(
             CustomerRecord(
-                external_ref=f"SC-CUST-{index + 1:04d}",
+                external_ref=f"JO-CUST-{index + 1:04d}",
                 name=f"{first} {last}",
-                masked_phone=f"+91 98XXXX{rng.randint(1000, 9999)}",
+                masked_phone=f"+1 (503) 555-{rng.randint(1000, 9999)}",
                 email=(
-                    f"{first.lower()}.{last.lower()}{rng.randint(1, 99)}@example.in"
+                    f"{first.lower()}.{last.lower()}{rng.randint(1, 99)}@example.com"
                     if rng.random() < 0.42
                     else None
                 ),
@@ -451,7 +451,7 @@ def generate_transactions(
 
             transactions.append(
                 TransactionRecord(
-                    order_ref=f"SC-ORD-{order_seq:06d}",
+                    order_ref=f"JO-ORD-{order_seq:06d}",
                     customer_ref=customer.external_ref,
                     occurred_at=occurred_at,
                     business_date=day,
@@ -464,11 +464,11 @@ def generate_transactions(
                     cost_amount=cost,
                     item_count=item_count,
                     payment_method=rng.choices(
-                        ("paypal_upi", "paypal_wallet", "card", "cash"),
-                        weights=(0.58, 0.18, 0.14, 0.10),
+                        ("card", "paypal", "venmo", "cash"),
+                        weights=(0.46, 0.30, 0.12, 0.12),
                     )[0],
                     channel=rng.choices(
-                        ("in_store", "paypal_app", "delivery"), weights=(0.72, 0.19, 0.09)
+                        ("in_store", "online_order", "delivery"), weights=(0.72, 0.19, 0.09)
                     )[0],
                     is_repeat=is_repeat,
                     service_minutes=_service_minutes(

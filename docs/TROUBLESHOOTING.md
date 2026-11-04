@@ -420,7 +420,7 @@ Eight consecutive failures. Either wait for the lockout window, or clear it
 locally:
 
 ```sql
-UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE email = 'owner@sharmacafe.in';
+UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE email = 'owner@juniperoak.com';
 ```
 
 ### 403 `PERMISSION_DENIED` when you expect access
@@ -429,11 +429,11 @@ Check the role you signed in as. The demo users are:
 
 | Email | Role |
 | --- | --- |
-| `owner@sharmacafe.in` | OWNER |
-| `admin@sharmacafe.in` | ADMIN |
-| `analyst@sharmacafe.in` | ANALYST |
-| `staff@sharmacafe.in` | STAFF |
-| `viewer@sharmacafe.in` | VIEWER |
+| `owner@juniperoak.com` | OWNER |
+| `admin@juniperoak.com` | ADMIN |
+| `analyst@juniperoak.com` | ANALYST |
+| `staff@juniperoak.com` | STAFF |
+| `viewer@juniperoak.com` | VIEWER |
 
 All use `Autopilot@2024`. The denial is also in the security event log:
 

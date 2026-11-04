@@ -24,10 +24,10 @@ type FormValues = z.infer<typeof schema>;
 
 /** One account per role, so the RBAC story can be demonstrated, not just described. */
 const SAMPLE_ROLES = [
-  { email: "owner@sharmacafe.in", role: "Owner", note: "full control" },
-  { email: "admin@sharmacafe.in", role: "Admin", note: "approve and execute" },
-  { email: "analyst@sharmacafe.in", role: "Analyst", note: "propose, cannot execute" },
-  { email: "viewer@sharmacafe.in", role: "Viewer", note: "read only" },
+  { email: "owner@juniperoak.com", role: "Owner", note: "full control" },
+  { email: "admin@juniperoak.com", role: "Admin", note: "approve and execute" },
+  { email: "analyst@juniperoak.com", role: "Analyst", note: "propose, cannot execute" },
+  { email: "viewer@juniperoak.com", role: "Viewer", note: "read only" },
 ];
 
 export default function LoginPage() {
@@ -44,7 +44,7 @@ export default function LoginPage() {
     setServerError(null);
     try {
       await login(values.email, values.password);
-      router.replace("/dashboard");
+      router.replace("/command");
     } catch (error) {
       setServerError(
         error instanceof ApiError ? error.message : "Could not sign in. Please try again.",

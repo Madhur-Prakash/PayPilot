@@ -1,174 +1,107 @@
-<div align="center">
+# Agent memory (Postgres + pgvector)
 
-# Agent memory
+[Back to docs](README.md)
 
-[![Docs index](https://img.shields.io/badge/-Docs_index-475569?style=flat-square&logo=markdown&logoColor=white)](README.md)
-[![Agents](https://img.shields.io/badge/-Agents-64748b?style=flat-square)](AGENTS.md)
-[![Architecture](https://img.shields.io/badge/-Architecture-2563eb?style=flat-square)](ARCHITECTURE.md)
-[![Configuration](https://img.shields.io/badge/-Configuration-16a34a?style=flat-square)](CONFIGURATION.md)
+The agents keep long-term memory so a later run knows what an earlier run
+concluded: which recommendation a human rejected (and why), what an experiment
+proved, which supplier delivered late, what price a negotiation closed at.
 
-</div>
+Memory lives in the application's own database. There is no separate memory
+service, no LLM in the write path, and no API key required.
 
-The growth agents were amnesiac. Every run recomputed the same facts and could
-re-propose, word for word, something a human had rejected last month. This layer
-gives them somewhere to put what a run *concluded* — and, more importantly, what
-happened next.
-
-It is built on [cognee](https://docs.cognee.ai/), which turns prose into a
-knowledge graph and searches it semantically.
-
-**It is on in this deployment** (`MEMORY_ENABLED=true`). It needs no extra
-credentials — it reuses the Groq key and embeds locally — but it does spend
-tokens on each write, so `MEMORY_ENABLED=false` turns everything here off
-and the agents fall back to starting each run from scratch.
+| | |
+| --- | --- |
+| Storage | `agent_memories` table (migration `0005_supply_paypal_memory`) |
+| Vectors | pgvector `vector(384)` column, **HNSW** index with `vector_cosine_ops` |
+| Embeddings | Local: deterministic hashing by default, `fastembed` (BAAI/bge-small-en-v1.5) optionally |
+| Recall | Cosine distance `<=>` in Postgres; identical in-process cosine on SQLite (tests) |
+| Graph links | `tags` name the entities a memory is about (SKU, supplier agent key, opportunity slug) |
+| Code | [`app/integrations/vector_memory.py`](../backend/app/integrations/vector_memory.py) |
 
 ## What gets remembered
 
-Three things, written automatically. Nobody has to remember to record anything.
+| Kind | Written by | Example |
+| --- | --- | --- |
+| `recommendation` | Growth orchestrator | "Recover lost evening repeat customers - $724/month at 92% confidence…" |
+| `outcome` | Approval decisions | "Jordan Ellis rejected … Reason: kitchen cannot handle the evening rush." |
+| `experiment` | Measurement agent | "Evening win-back: SCALE, +61% conversion lift, p = 0.042." |
+| `procurement` | Reconciliation | "PR-00001 closed: Cascadia won at $1,455.00, saved $248.77, margin 35.6% -> 43.8%." |
+| `supplier` | Reconciliation, seed | "Pacific Bean Exchange deliveries took 9+ days; one invoice billed short-shipped bags." |
+| `inventory` | Seed, agents | "Beans sell mostly through the PayPal online store; demand rises after newsletters." |
+| `note` | People (Memory page) | Anything an Analyst+ wants the agents to know. |
 
-| When | What is written | Why it is worth keeping |
-|---|---|---|
-| An agent run finishes | The question, the opportunity, the recommended action, the evidence and the projected impact | So the next run knows this ground has been covered |
-| A human approves or rejects | The decision, who made it, and any reason given | A rejection is the only record of a judgement the numbers do not explain |
-| An experiment is measured | The decision, the rationale, the learning and the measured figures | The one memory grounded in a result rather than a forecast |
+Narratives are written in full sentences that name the merchant, the action, the
+numbers and the date ([`app/agents/memory.py`](../backend/app/agents/memory.py)),
+because a memory is read months later without its original context.
 
-A rejection memory carries an explicit instruction not to re-propose the same
-action without new evidence. That sentence is the point of the whole layer.
+## Rules
 
-## What gets recalled
+1. **Tenant isolation is a `WHERE` clause.** Every read, write and erase filters on
+   `merchant_id`; no public method takes anything wider than one merchant id. A
+   test writes a "confidential" memory for merchant B and asserts merchant A can
+   never recall it, whatever the query.
+2. **Memory never delays an answer.** Recall is bounded by
+   `MEMORY_RECALL_TIMEOUT_SECONDS` (5s) and returns empty on timeout. Writes run
+   off the request path (`remember_later`).
+3. **Memory never breaks a run.** Every method catches its own failures and
+   degrades to "no memory".
+4. **Memory never overrides policy.** Recalled text is context for a model's
+   *language*. It never feeds a financial calculation, a budget, an approval or an
+   authorisation - those are computed by the deterministic engines.
+5. **The same memory is stored once** (`content_hash` unique per merchant).
 
-At the `intake` node, before any specialist gathers anything, the agent asks
-memory what it already knows about the merchant and the question. Anything found
-is threaded into the state, shown in the trace UI as a **recall** step, and
-handed to the model at `synthesize` — clearly labelled as *prior conclusions,
-not fresh measurements*, with the computed figures explicitly winning any
-disagreement. A stale conclusion must never override today's numbers.
+## Recall
 
-## Tenant isolation, and why it needs two mechanisms
+```python
+from app.integrations.vector_memory import memory, MemoryKind
 
-This is the part to understand before changing anything.
-
-Every merchant gets **its own cognee dataset** *and* **its own cognee user**, and
-`ENABLE_BACKEND_ACCESS_CONTROL` is forced on in code — assigned, never
-defaulted, so an operator who exports it as `false` for some other tool cannot
-silently re-open the hole.
-
-Passing `datasets=[...]` on its own **does not isolate anything**. With access
-control off, cognee keeps a single shared vector collection: a search scoped to
-merchant A returns merchant B's chunks *and stamps them with merchant A's
-`dataset_name` on the way out*, so the leak is invisible to any check that
-trusts the response.
-
-Measured, not assumed — the same two-tenant write then read:
-
-| `ENABLE_BACKEND_ACCESS_CONTROL` | Rows returned to merchant A |
-|---|---|
-| `false` | **2** — one of them merchant B's |
-| `true` | **1** — only its own |
-
-`tests/unit/test_agent_memory.py::TestTenantIsolation::test_access_control_is_forced_on`
-is the regression test. Do not weaken it.
-
-No function in `app/integrations/cognee_memory.py` accepts a dataset or a user.
-They accept a merchant id and derive both, so there is no call site that can get
-the scope wrong.
-
-## Three properties it must keep
-
-**Memory never delays an answer.** Recall is bounded by
-`MEMORY_RECALL_TIMEOUT_SECONDS` and returns an empty list when it expires.
-Measured at roughly **195 ms** median on a warm process — it is a pure vector
-search, with `auto_route=False` and `scope="graph"` so cognee spends no LLM call
-deciding how to search.
-
-**Memory never blocks a request.** Writing runs cognee's full extraction
-pipeline (10–30 s), so it is queued as a background task and drained on
-shutdown. `remember_later()` is the normal entry point; `remember()` is for
-when a caller genuinely needs to wait.
-
-**Memory never breaks a run.** Every public method catches its own failures and
-degrades to "no memory", so the agent behaves exactly as it did before this
-layer existed. A failed import marks the backend broken once rather than
-retrying on every request.
-
-## Configuration
-
-| Variable | Default | Notes |
-|---|---|---|
-| `MEMORY_ENABLED` | `false` | Master switch |
-| `MEMORY_LLM_PROVIDER` | `openai` | cognee routes via litellm |
-| `MEMORY_LLM_MODEL` | *(blank)* | Blank reuses `GROQ_MODEL` as `groq/<model>` |
-| `MEMORY_LLM_API_KEY` | *(blank)* | Blank reuses `GROQ_API_KEY` |
-| `MEMORY_EMBEDDING_PROVIDER` | `fastembed` | Local, no API key, nothing leaves the host |
-| `MEMORY_EMBEDDING_MODEL` | `BAAI/bge-small-en-v1.5` | Downloaded once on first use |
-| `MEMORY_STORAGE_DIR` | *(blank)* | Blank means `backend/.cognee` |
-| `MEMORY_RECALL_TOP_K` | `6` | Prior conclusions pulled into a run |
-| `MEMORY_RECALL_TIMEOUT_SECONDS` | `10` | Recall is abandoned past this |
-| `MEMORY_WRITE_TIMEOUT_SECONDS` | `180` | Writes are off the request path |
-| `MEMORY_TRACING_ENABLED` | `false` | cognee's own OTLP exporter |
-
-Two defaults are deliberate and worth not "fixing":
-
-* **`fastembed`, not cognee's default `hash`.** The hash embedder is not
-  semantic; recall with it returns near-noise.
-* **cognee's session cache is forced off.** It runs a `SessionTurnAnalysis` LLM
-  call on every recall to maintain conversational state. Nothing here passes a
-  `session_id`, so it buys nothing — and on a rate-limited key it was enough to
-  push recall from ~195 ms past its own 10 s timeout.
-
-Installation is an optional extra, because cognee pulls in roughly 75 packages:
-
-```bash
-cd backend && uv pip install ".[memory]"
+hits = await memory.recall(merchant_id, "which supplier was late with beans",
+                           top_k=5, kinds=(MemoryKind.SUPPLIER,), tags=("supplier.pacific",))
 ```
 
-Without it the app runs normally and memory reports itself unavailable.
+On Postgres this is one indexed query:
+
+```sql
+SELECT …, embedding <=> :query_vector AS distance
+FROM agent_memories
+WHERE merchant_id = :merchant AND kind IN (…)
+ORDER BY distance
+LIMIT :k;
+```
 
 ## API
 
 | Method | Path | Permission |
-|---|---|---|
-| `GET` | `/api/v1/memory/status` | `memory:read` |
-| `GET` | `/api/v1/memory/search?q=&limit=&kind=` | `memory:read` |
-| `POST` | `/api/v1/memory/remember` | `memory:write` |
-| `DELETE` | `/api/v1/memory` | `memory:admin` |
+| --- | --- | --- |
+| GET | `/api/v1/memory/status` | `memory:read` |
+| GET | `/api/v1/memory/search?q=&kind=&tag=` | `memory:read` |
+| GET | `/api/v1/memory/recent` | `memory:read` |
+| POST | `/api/v1/memory/remember` | `memory:write` |
+| DELETE | `/api/v1/memory` (`{"confirm": true}`) | `memory:admin` |
 
-`search` returns `available: false` rather than an error when memory is off, so
-the UI can say "memory is off" instead of "nothing found". `DELETE` is
-irreversible and requires `{"confirm": true}`.
+Agents reach memory through the `search_memory` tool (permission-checked, logged,
+traced like every other tool).
 
-Roles: viewer and staff read; analyst and above write; owner and admin erase.
+## Configuration
 
-## The page
+```env
+MEMORY_ENABLED=true            # on by default - no external dependency
+MEMORY_RECALL_TOP_K=6
+MEMORY_RECALL_TIMEOUT_SECONDS=5
+EMBEDDING_PROVIDER=hash        # or fastembed (pip install -r requirements-optional.txt)
+EMBEDDING_DIMENSIONS=384
+```
 
-**Agent Memory** in the sidebar, under Agents. It exists because memory is only
-worth having if a human can check it — an agent quietly carrying a wrong
-conclusion forward is worse than one carrying nothing.
+Changing the embedding provider changes the vector space: each row records
+`embedding_model`, so stale vectors can be identified and re-embedded.
 
-* **Search** it in plain language, filtered by kind.
-* **Teach the agents** something they should know, written as a standalone note.
-* **Erase** everything for this merchant, behind a typed confirmation, because
-  there is no undo and no backup of a knowledge graph.
+## Why not a separate graph or memory service
 
-When memory is off the page says so plainly rather than rendering an empty
-search result, and when it is on but unreachable it says that instead — the two
-look identical from a result list, and they need different fixes.
-
-## Cost
-
-Recall is free — local embeddings, no LLM. Writing costs one extraction pass per
-agent run, per approval and per measurement. On a rate-limited Groq key that is
-the thing to watch: the free tier's 8 000 TPM was enough to make writes queue
-behind each other during testing. `MEMORY_ENABLED=false` stops all of it.
-
-## Files
-
-| Path | What it holds |
-|---|---|
-| `backend/app/integrations/cognee_memory.py` | The cognee adapter; isolation lives here |
-| `backend/app/agents/memory.py` | What gets written, and in what words |
-| `backend/app/api/v1/memory.py` | The four endpoints |
-| `frontend/src/app/(dashboard)/memory/page.tsx` | Search, teach and erase |
-| `backend/tests/unit/test_agent_memory.py` | Isolation, degradation, narrative |
-| `backend/tests/api/test_memory_api.py` | Permissions and the disabled path |
-| `backend/.cognee/` | The graph, vectors and metadata — git-ignored business data |
+The earlier version of this project used an external knowledge-graph library
+(Cognee). It was removed: it needed an LLM to write every memory, added ~75
+transitive dependencies, and isolated tenants through a library flag that, when
+off, leaked rows across merchants. pgvector is already part of the stack, keeps
+isolation inside our own SQL, and makes memory free to run. If richer
+relationship queries are ever needed, the `tags` column is the seam: it already
+encodes entity edges and can be projected into a graph store without changing
+callers.

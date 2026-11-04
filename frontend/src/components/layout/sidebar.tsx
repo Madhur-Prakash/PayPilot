@@ -8,7 +8,6 @@ import * as React from "react";
 
 import { Separator, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/primitives";
 import { NAV_SECTIONS } from "@/lib/constants/navigation";
-import { APP_NAME } from "@/lib/constants/config";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth";
 
@@ -21,6 +20,13 @@ export function Sidebar({
 }) {
   const pathname = usePathname();
   const can = useAuthStore((s) => s.can);
+  // Highlight only the most specific match, so /supply does not light up on /supply/negotiations.
+  const activeHref = React.useMemo(() => {
+    const matches = NAV_SECTIONS.flatMap((section) => section.items)
+      .map((item) => item.href)
+      .filter((href) => pathname === href || pathname.startsWith(`${href}/`));
+    return matches.sort((a, b) => b.length - a.length)[0];
+  }, [pathname]);
 
   return (
     <aside
@@ -37,9 +43,9 @@ export function Sidebar({
         {!collapsed && (
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold leading-tight text-white">
-              Growth Autopilot
+              PayPilot
             </p>
-            <p className="truncate text-2xs text-sidebar-foreground/60">{APP_NAME}</p>
+            <p className="truncate text-2xs text-sidebar-foreground/60">AI operating system for merchants</p>
           </div>
         )}
         <button
@@ -72,7 +78,7 @@ export function Sidebar({
                 </p>
               )}
               {visible.map((item) => {
-                const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                const active = item.href === activeHref;
                 const link = (
                   <Link
                     key={item.href}

@@ -4,7 +4,7 @@
     python -m app.seed.seed --reset    # wipe the demo tenant and rebuild
     python -m app.seed.seed --stats    # print what is currently in the database
 
-Seeds the RBAC catalogue, the demo team, Sharma Cafe, and the full dataset:
+Seeds the RBAC catalogue, the demo team, Juniper & Oak Coffee, and the full dataset:
 products, customers, transactions, reviews, competitors, inventory, external
 signals, two completed historical experiments and the opportunities detected
 from it all.
@@ -69,6 +69,7 @@ from app.seed.operations import (
     seed_growth_metric_snapshots,
     seed_processed_events,
 )
+from app.seed.supply import seed_supply_extras, seed_supply_network
 
 log = get_logger("app.seed")
 
@@ -139,11 +140,11 @@ async def seed_rbac(session: AsyncSession) -> None:
 # --------------------------------------------------------------------------- #
 #: One account per role so the RBAC story is demonstrable, not just described.
 DEMO_TEAM: tuple[tuple[str, str, Role], ...] = (
-    ("Rajesh Sharma", "owner@sharmacafe.in", Role.OWNER),
-    ("Priya Menon", "admin@sharmacafe.in", Role.ADMIN),
-    ("Arjun Iyer", "analyst@sharmacafe.in", Role.ANALYST),
-    ("Neha Kulkarni", "staff@sharmacafe.in", Role.STAFF),
-    ("Vikram Rao", "viewer@sharmacafe.in", Role.VIEWER),
+    ("Morgan Hayes", "owner@juniperoak.com", Role.OWNER),
+    ("Jordan Ellis", "admin@juniperoak.com", Role.ADMIN),
+    ("Avery Chen", "analyst@juniperoak.com", Role.ANALYST),
+    ("Sam Rivera", "staff@juniperoak.com", Role.STAFF),
+    ("Taylor Brooks", "viewer@juniperoak.com", Role.VIEWER),
 )
 
 
@@ -213,22 +214,23 @@ async def seed_merchant(session: AsyncSession, anchor: date) -> Merchant:
     merchant = Merchant(
         name=settings.demo_merchant_name,
         slug=MERCHANT_SLUG,
-        legal_name="Sharma Hospitality Pvt Ltd",
+        legal_name="Juniper & Oak Coffee LLC",
         category="cafe",
         description=(
-            "A neighbourhood speciality cafe serving coffee, chai and all-day snacks, with a "
+            "A neighborhood specialty coffee shop and online bean store, serving espresso, "
+            "cold brew and all-day food, with a "
             "full year of transaction, review and inventory history."
         ),
-        city="Pune",
-        state="Maharashtra",
-        country="India",
-        address="Shop 4, Lane 6, Koregaon Park, Pune 411001",
-        timezone="Asia/Kolkata",
-        currency="INR",
-        locale="en-IN",
-        contact_email="hello@sharmacafe.in",
-        contact_phone="+91 98XXXX4410",
-        monthly_target_revenue=600000,
+        city="Portland",
+        state="OR",
+        country="United States",
+        address="2140 SE Division St, Portland, OR 97202",
+        timezone="America/Los_Angeles",
+        currency="USD",
+        locale="en-US",
+        contact_email="hello@juniperoak.com",
+        contact_phone="+1 (503) 555-0142",
+        monthly_target_revenue=30000,
         opened_at=datetime.combine(
             anchor - timedelta(days=HISTORY_DAYS + 400), datetime.min.time(), tzinfo=UTC
         ),
@@ -524,19 +526,24 @@ async def seed_signals(
 # --------------------------------------------------------------------------- #
 # Reset / stats
 # --------------------------------------------------------------------------- #
+#: Slugs of earlier demo tenants, removed on --reset so an old database converges.
+LEGACY_SLUGS = ("sharma-cafe",)
+
+
 async def reset_demo(session: AsyncSession) -> None:
-    merchant = (
-        (await session.execute(select(Merchant).where(Merchant.slug == MERCHANT_SLUG)))
+    merchants = (
+        (await session.execute(select(Merchant).where(Merchant.slug.in_((MERCHANT_SLUG, *LEGACY_SLUGS)))))
         .scalars()
-        .first()
+        .all()
     )
-    if merchant is None:
+    if not merchants:
         log.info("reset_skipped", reason="demo merchant not present")
         return
-    # ON DELETE CASCADE clears every tenant-scoped table.
-    await session.execute(delete(Merchant).where(Merchant.id == merchant.id))
+    for merchant in merchants:
+        # ON DELETE CASCADE clears every tenant-scoped table.
+        await session.execute(delete(Merchant).where(Merchant.id == merchant.id))
+        log.info("demo_reset", merchant_id=str(merchant.id), slug=merchant.slug)
     await session.flush()
-    log.info("demo_reset", merchant_id=str(merchant.id))
 
 
 async def print_stats(session: AsyncSession) -> None:
@@ -630,6 +637,11 @@ async def run_seed(*, reset: bool = False) -> None:
                     session, existing, actor_id=owner.id if owner else None
                 )
                 await seed_processed_events(session, existing)
+                await seed_supply_network(session, existing)
+                # Make the network durable before the extras read it on their own session.
+                await session.commit()
+                async with session_scope() as extras_session:
+                    await seed_supply_extras(extras_session, existing)
                 await print_stats(session)
                 return
 
@@ -729,12 +741,33 @@ async def run_seed(*, reset: bool = False) -> None:
         await seed_automation_history(session, merchant, actor_id=owner.id if owner else None)
         await seed_processed_events(session, merchant)
 
+    # Supply Agents: the signature demo (rising bean demand, three supplier agents,
+    # PayPal subscriptions). After the legacy automation on purpose - it must not
+    # pick the beans up and raise its own reorder.
+    async with session_scope() as session:
+        merchant = (
+            (await session.execute(select(Merchant).where(Merchant.slug == MERCHANT_SLUG)))
+            .scalars()
+            .first()
+        )
+        assert merchant is not None
+        await seed_supply_network(session, merchant)
+    async with session_scope() as session:
+        merchant = (
+            (await session.execute(select(Merchant).where(Merchant.slug == MERCHANT_SLUG)))
+            .scalars()
+            .first()
+        )
+        assert merchant is not None
+        extras = await seed_supply_extras(session, merchant)
+        log.info("supply_extras_seeded", **{k: v for k, v in extras.items() if k != "paypal_sync"})
+
     async with session_scope() as session:
         await print_stats(session)
 
     log.info("seed_complete", duration_ms=round((time.perf_counter() - started) * 1000, 2))
     print(f"  Owner login: {settings.demo_owner_email} / {settings.demo_owner_password}")
-    print("  Other roles: admin@ / analyst@ / staff@ / viewer@sharmacafe.in (same password)\n")
+    print("  Other roles: admin@ / analyst@ / staff@ / viewer@juniperoak.com (same password)\n")
 
 
 def main() -> None:

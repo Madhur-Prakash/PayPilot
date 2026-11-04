@@ -2,14 +2,15 @@
   "name": "paypilot-frontend",
   "version": "1.0.0",
   "private": true,
-  "description": "An AI Growth Scientist for every merchant - Next.js App Router frontend",
+  "description": "PayPilot - the AI operating system for merchants (Next.js App Router frontend)",
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start -p 3000",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css}\""
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
+    "test": "vitest run"
   },
   "dependencies": {
     "@hookform/resolvers": "3.9.1",
@@ -29,6 +30,8 @@
     "@tanstack/react-query": "5.62.11",
     "@tanstack/react-query-devtools": "5.62.11",
     "@vapi-ai/web": "^2.7.1",
+    "ag-grid-community": "36.2.0",
+    "ag-grid-react": "36.2.0",
     "axios": "1.7.9",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
@@ -58,7 +61,8 @@
     "prettier": "3.4.2",
     "prettier-plugin-tailwindcss": "0.6.9",
     "tailwindcss": "3.4.17",
-    "typescript": "5.7.2"
+    "typescript": "5.7.2",
+    "vitest": "3.2.4"
   },
   "engines": {
     "node": ">=20"

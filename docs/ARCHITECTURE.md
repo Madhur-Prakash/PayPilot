@@ -68,10 +68,10 @@ This is the spec's critical AI-engineering rule, and it drives the whole design.
 ```
 PostgreSQL / Python                  LLM
 ─────────────────────                ───
-revenue        = ₹4.94L      ──►     reads structured metrics
+revenue        = $24.7K      ──►     reads structured metrics
 repeat_rate    = 38.3%               selects which tool to call next
 evening change = −32.3%              writes the hypothesis and the explanation
-opportunity    = ₹14,470/mo          phrases the recommendation
+opportunity    = $724/mo          phrases the recommendation
 confidence     = 0.92
 ```
 
@@ -241,7 +241,7 @@ schema.model_validate() → on failure, return the caller's fallback
 ```
 
 `GrowthRecommendation` also normalises what models actually get wrong:
-`confidence: 82` becomes `0.82`; `"₹9,840"` becomes `9840.0`.
+`confidence: 82` becomes `0.82`; `"$9,840"` becomes `9840.0`.
 
 ---
 

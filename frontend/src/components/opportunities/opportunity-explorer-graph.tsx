@@ -120,11 +120,11 @@ export const DOMAINS: Record<DomainType, DomainConfig> = {
 // Domain-spanning fallback items to guarantee coverage across all 5 requested domains
 const SAMPLE_DOMAIN_OPPORTUNITIES: Partial<Opportunity>[] = [
   {
-    id: "domain-pricing-chai-margin",
-    key: "pricing-chai-margin-opt",
-    title: "Margin recalibration on Masala Chai & Beverages",
+    id: "domain-pricing-drip-margin",
+    key: "pricing-drip-margin-opt",
+    title: "Margin recalibration on drip coffee & beverages",
     summary:
-      "High volume (420+ weekly orders) with inelastic demand. A ₹5 price calibration captures pure margin without impacting order volume.",
+      "High volume (420+ weekly orders) with inelastic demand. A $0.25 price calibration captures pure margin without impacting order volume.",
     kind: "PRICING",
     estimated_value_monthly: 12500,
     confidence: 0.88,
@@ -145,7 +145,7 @@ const SAMPLE_DOMAIN_OPPORTUNITIES: Partial<Opportunity>[] = [
     hypothesis:
       "Customer price sensitivity on signature tea is low compared to dine-in snacks. Minor recalibration directly lifts contribution margin.",
     recommended_action:
-      "Roll out ₹5 adjustment across hot beverages on Paypal POS with an A/B holdout test.",
+      "Roll out a $0.25 adjustment across hot beverages at PayPal Checkout and in store with an A/B holdout test.",
     reasoning: "High frequency allows instant verification within 7 days.",
     graph_path: ["revenue", "margin", "pricing:beverage"],
     target_segment: { channel: "POS", category: "Beverages" },
@@ -162,9 +162,9 @@ const SAMPLE_DOMAIN_OPPORTUNITIES: Partial<Opportunity>[] = [
     experiment_id: null,
   },
   {
-    id: "domain-launch-gourmet-samosa",
+    id: "domain-launch-seasonal-pastry",
     key: "product-launch-gourmet-variant",
-    title: "Launch signature Gourmet Cheese Samosa variant",
+    title: "Launch a signature seasonal pastry",
     summary:
       "Customer review signals and market search show unmet demand for premium snack variants during peak evening tea hours.",
     kind: "PRODUCT",
@@ -187,7 +187,7 @@ const SAMPLE_DOMAIN_OPPORTUNITIES: Partial<Opportunity>[] = [
     hypothesis:
       "Snack buyers have a 32% propensity to upgrade to premium fillings when highlighted at checkout.",
     recommended_action:
-      "Test small-batch weekend production of Gourmet Cheese Samosa priced at ₹45.",
+      "Test small-batch weekend production of seasonal pastry priced at $4.50.",
     reasoning: "Validates recipe and customer willingness to pay before full menu rollout.",
     graph_path: ["product", "launch", "menu:snacks"],
     target_segment: { daypart: "EVENING", spend_tier: "VIP" },
@@ -229,7 +229,7 @@ const SAMPLE_DOMAIN_OPPORTUNITIES: Partial<Opportunity>[] = [
     hypothesis:
       "A timed WhatsApp incentive offering a complimentary beverage on visit #2 lifts cohort retention by 28%.",
     recommended_action:
-      "Launch automated Paypal Growth Agent campaign targeting new customers on Day 3 post-first purchase.",
+      "Launch an automated PayPilot growth campaign targeting new customers on Day 3 post-first purchase.",
     reasoning: "Low marginal food cost with strong recurring revenue upside.",
     graph_path: ["customers", "retention", "cohort:new"],
     target_segment: { order_count: 1, days_since: 3 },

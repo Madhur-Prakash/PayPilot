@@ -153,7 +153,7 @@ class ProvenanceMeta(SchemaBase):
 
     data_source: Literal["SEEDED", "LIVE", "SIMULATED", "PUBLIC_WEB"] = "SEEDED"
     is_simulated: bool = True
-    note: str = "Baseline dataset - not yet connected to a live Paypal merchant account."
+    note: str = "Seeded demo dataset - not computed from a live PayPal merchant account."
 
 
 class ActionAck(SchemaBase):

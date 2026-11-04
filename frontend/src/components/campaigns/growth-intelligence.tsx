@@ -30,7 +30,7 @@ const SURFACE_META: Record<
     className: "border-transparent bg-chart-3/14 text-chart-3",
   },
   PAYPAL: {
-    label: "Paypal",
+    label: "PayPal",
     icon: Wallet,
     className: "border-transparent bg-info/14 text-info",
   },
@@ -118,7 +118,7 @@ export function BudgetAllocationBar({
           )}
         </span>
         <span className="flex items-center gap-1.5">
-          Paypal {paypalPct.toFixed(0)}%
+          PayPal {paypalPct.toFixed(0)}%
           {typeof paypalAmount === "number" && (
             <span className="tabular-nums">· {formatCompactCurrency(paypalAmount)}</span>
           )}

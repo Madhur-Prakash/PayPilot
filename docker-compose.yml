@@ -32,6 +32,7 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://autopilot:autopilot@postgres:5432/autopilot
       FRONTEND_URL: http://localhost:3000
+      OUTBOX_RELAY_IN_PROCESS: "false"
       CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
     ports:
       - "8000:8000"
@@ -59,6 +60,24 @@ services:
       - "3000:3000"
     depends_on:
       - backend
+
+  # Optional: deliver the event outbox from its own process.
+  #   docker compose --profile worker up -d worker
+  worker:
+    profiles: ["worker", "full"]
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pga-worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://autopilot:autopilot@postgres:5432/autopilot
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["python", "-m", "app.worker"]
 
 volumes:
   pga_pgdata:

@@ -9,6 +9,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
+*.pdf
 .Python
 .venv/
 venv/
@@ -57,5 +58,6 @@ n8n/deploy/
 
 # Agent long-term memory: one merchant's knowledge graph, vectors and
 # metadata. Business data, never source.
+
+# Legacy local data from the removed cognee memory backend - safe to delete.
 backend/.cognee/
-.cognee/

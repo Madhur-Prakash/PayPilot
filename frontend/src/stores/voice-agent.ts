@@ -76,7 +76,7 @@ export const useVoiceAgentStore = create<VoiceAgentState>((set, get) => ({
 
   callState: "idle",
   muted: false,
-  language: "en-IN",
+  language: "en-US",
   transcript: [],
   agentActions: [],
 

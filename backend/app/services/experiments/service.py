@@ -546,7 +546,7 @@ class ExperimentService:
                 ExperimentDecision.SCALE,
                 (
                     f"Conversion lift of {lift:+.1f}% clears the {threshold_pct:.0f}% success "
-                    f"threshold, incremental revenue is Rs {incremental_revenue:,.0f}, and the "
+                    f"threshold, incremental revenue is ${incremental_revenue:,.0f}, and the "
                     f"difference is statistically significant (p={p_value:.3f}).{roi_text}"
                 ),
             )
@@ -555,7 +555,7 @@ class ExperimentService:
                 ExperimentDecision.CONTINUE,
                 (
                     f"Conversion lift of {lift:+.1f}% looks promising and incremental revenue is "
-                    f"Rs {incremental_revenue:,.0f}, but the result is not yet statistically "
+                    f"${incremental_revenue:,.0f}, but the result is not yet statistically "
                     f"significant"
                     + (f" (p={p_value:.3f})" if p_value is not None else "")
                     + ". Keep running to accumulate sample."
@@ -576,7 +576,7 @@ class ExperimentService:
                 ExperimentDecision.STOP,
                 (
                     f"The test arm underperformed control ({lift:+.1f}% conversion, "
-                    f"Rs {incremental_revenue:,.0f} incremental revenue). Stop and keep the "
+                    f"${incremental_revenue:,.0f} incremental revenue). Stop and keep the "
                     f"current experience.{certainty}"
                 ),
             )

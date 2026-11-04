@@ -40,9 +40,9 @@ BUNDLE_CAPTURE_RATE = 0.30
 #: Share of a declining product's lost revenue a targeted push can recover.
 PRODUCT_RECOVERY_RATE = 0.25
 #: Minimum monthly value before an opportunity is worth showing at all.
-MIN_OPPORTUNITY_VALUE = 800.0
+MIN_OPPORTUNITY_VALUE = 40.0
 
-IMPACT_THRESHOLDS = ((8000.0, ImpactLevel.HIGH), (3000.0, ImpactLevel.MEDIUM))
+IMPACT_THRESHOLDS = ((400.0, ImpactLevel.HIGH), (150.0, ImpactLevel.MEDIUM))
 
 
 def _impact_for(value: float) -> str:
@@ -53,7 +53,7 @@ def _impact_for(value: float) -> str:
 
 
 def _money(value: float) -> str:
-    return f"Rs {value:,.0f}"
+    return f"${value:,.0f}"
 
 
 def _pct(value: float | None) -> str:
@@ -102,13 +102,26 @@ class OpportunityDetector:
         period = await self.analytics.resolve_period(days=days)
         dayparts = await self.analytics.daypart_breakdown(period)
         products = await self.analytics.product_performance(period)
-        kpis, current, previous = await self.analytics.kpis(period)
+        _kpis, _current, _previous = await self.analytics.kpis(period)
 
         found: list[DetectedOpportunity] = []
         found.extend(await self._detect_lapsed_segment(period, dayparts))
         found.extend(await self._detect_bundle(period))
         found.extend(self._detect_declining_products(period, products))
         found.extend(await self._detect_service_pressure(period, dayparts))
+
+        # Unified intelligence: supply-aware opportunities, and inventory
+        # constraints on the rest. Never allowed to break growth detection.
+        try:
+            from app.services.growth.supply_signals import (
+                apply_inventory_constraints,
+                supply_aware_opportunities,
+            )
+
+            found.extend(await supply_aware_opportunities(self.session, self.merchant_id))
+            found = await apply_inventory_constraints(self.session, self.merchant_id, found)
+        except Exception as exc:  # pragma: no cover - defensive
+            log.warning("supply_signals_failed", detail=str(exc)[:200])
 
         viable = [o for o in found if o.estimated_value_monthly >= MIN_OPPORTUNITY_VALUE]
         viable.sort(key=lambda o: o.priority_score, reverse=True)
@@ -395,7 +408,7 @@ class OpportunityDetector:
         self, period: PeriodInfo, products: list[ProductPerformance]
     ) -> list[DetectedOpportunity]:
         declining = [
-            p for p in products if (p.change_pct or 0) <= -12 and (p.previous_revenue or 0) > 4000
+            p for p in products if (p.change_pct or 0) <= -12 and (p.previous_revenue or 0) > 200
         ]
         declining.sort(key=lambda p: (p.previous_revenue or 0) - p.revenue, reverse=True)
 

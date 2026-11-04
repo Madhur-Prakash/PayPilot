@@ -49,7 +49,7 @@ import { useAuthStore } from "@/stores/auth";
 
 /** Languages Vapi is configured for. */
 const LANGUAGES = [
-  { code: "en-IN", label: "English", flag: "🇺🇸", note: "India" },
+  { code: "en-US", label: "English", flag: "🇺🇸", note: "United States" },
   { code: "es-ES", label: "Español", flag: "🇪🇸", note: "Spain" },
   { code: "hi-IN", label: "हिन्दी", flag: "🇮🇳", note: "Hindi" },
   { code: "ta-IN", label: "தமிழ்", flag: "🇮🇳", note: "Tamil" },

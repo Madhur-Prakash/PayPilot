@@ -19,7 +19,7 @@ export const REQUEST_TIMEOUT_MS = 90_000;
 
 /** Prefilled on the login screen so a reviewer can get in without hunting for credentials. */
 export const SAMPLE_CREDENTIALS = {
-  email: process.env.NEXT_PUBLIC_DEMO_EMAIL ?? "owner@sharmacafe.in",
+  email: process.env.NEXT_PUBLIC_DEMO_EMAIL ?? "owner@juniperoak.com",
   password: process.env.NEXT_PUBLIC_DEMO_PASSWORD ?? "Autopilot@2024",
 };
 

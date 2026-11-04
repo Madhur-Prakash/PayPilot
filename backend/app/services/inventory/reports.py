@@ -26,7 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.models.inventory import InventoryBatch, InventoryItem, InventoryMovement, MovementType
 from app.db.models.procurement import PurchaseOrder, PurchaseOrderLine, Vendor
 
-# Paypal palette, so an exported book looks like the product it came from.
+# PayPal palette, so an exported book looks like the product it came from.
 _NAVY = "FF002E6E"
 _CYAN = "FF00BAF2"
 _INK = "FF0B1B33"

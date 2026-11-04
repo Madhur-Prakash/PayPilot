@@ -61,7 +61,7 @@ make setup          # env -> dependencies -> database -> migrations -> seed
 make dev            # backend :8000, frontend :3000
 ```
 
-Open <http://localhost:3000> and sign in with `owner@sharmacafe.in` /
+Open <http://localhost:3000> and sign in with `owner@juniperoak.com` /
 `Autopilot@2024`.
 
 <details>
@@ -226,7 +226,7 @@ make seed-stats
 ```
 
 ```
-  Merchant : Sharma Cafe (sharma-cafe)
+  Merchant : Juniper & Oak Coffee (juniper-oak-coffee)
   products            : 8
   customers           : 1,700
   transactions        : 14,819
@@ -258,7 +258,7 @@ Revenue should be down roughly 12%, with the evening slot down roughly 32%.
 
 ### The UI loads
 
-Open <http://localhost:3000>, sign in as `owner@sharmacafe.in` /
+Open <http://localhost:3000>, sign in as `owner@juniperoak.com` /
 `Autopilot@2024`, and confirm the Command Center shows four KPI cards with
 negative deltas and an Opportunity Radar with four entries.
 
@@ -380,7 +380,7 @@ Pinned to the versions the test suite runs against. `pyproject.toml` declares *w
 | `httpx`, `tenacity`, `orjson` | HTTP, retries, fast JSON |
 | `groq`, `langgraph`, `langchain-core` | LLM and agent orchestration |
 | `langfuse` | Agent observability |
-| `cognee` | Agent long-term memory (brings ~75 transitive packages) |
+| `pgvector` | Agent long-term memory and semantic search (Postgres extension + Python binding) |
 | `pytest`, `pytest-asyncio`, `aiosqlite` | Testing |
 | `ruff`, `mypy` | Lint and types |
 

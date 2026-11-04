@@ -138,6 +138,15 @@ class VendorProduct(BaseModel):
         Boolean, default=True, nullable=False
     )
 
+    # ---- supplier-agent private terms (Supply Agents) ----
+    #: The lowest unit price the supplier agent will accept. PRIVATE to that
+    #: agent: never serialised to the buyer, other suppliers or the browser.
+    floor_price: Mapped[float | None] = mapped_column(Numeric(12, 4))
+    #: Units the supplier can ship right now. Null = not tracked (unlimited).
+    available_quantity: Mapped[float | None] = mapped_column(Numeric(12, 2))
+    #: [{"min_quantity": 200, "discount_pct": "0.05"}] - volume price breaks.
+    volume_breaks: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)
+
     vendor: Mapped[Vendor] = relationship(back_populates="supplies", lazy="joined")
 
 
@@ -179,7 +188,16 @@ class PurchaseOrder(BaseModel):
     correlation_id: Mapped[str | None] = mapped_column(String(64), index=True)
 
     total_value: Mapped[float] = mapped_column(Numeric(14, 2), default=0, nullable=False)
-    currency: Mapped[str] = mapped_column(String(8), default="INR", nullable=False)
+    currency: Mapped[str] = mapped_column(String(8), default="USD", nullable=False)
+
+    # ---- negotiated orders (Supply Agents) ----
+    #: Set when the order came out of an agent negotiation.
+    procurement_request_id: Mapped[uuid.UUID | None] = mapped_column(GUID(), index=True)
+    #: The approval this order was created under - binds it to exact terms.
+    approval_request_id: Mapped[uuid.UUID | None] = mapped_column(GUID())
+    shipping_amount: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
+    tax_amount: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
+    payment_terms: Mapped[str] = mapped_column(String(24), default="", nullable=False)
 
     requires_approval: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     approved_by_id: Mapped[uuid.UUID | None] = mapped_column(GUID())

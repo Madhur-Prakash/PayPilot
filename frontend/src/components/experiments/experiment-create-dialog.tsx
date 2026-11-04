@@ -103,7 +103,7 @@ export function ExperimentCreateDialog() {
               id="experiment-name"
               value={name}
               onChange={(event) => setName(event.target.value)}
-              placeholder="Loyalty chai pass"
+              placeholder="Loyalty drip card"
               required
               minLength={3}
             />
@@ -115,7 +115,7 @@ export function ExperimentCreateDialog() {
               id="experiment-hypothesis"
               value={hypothesis}
               onChange={(event) => setHypothesis(event.target.value)}
-              placeholder="A pre-paid chai pass will increase visit frequency among customers who already order chai at least twice a week."
+              placeholder="A pre-paid drip coffee card will increase visit frequency among customers who already order chai at least twice a week."
               rows={3}
               required
               minLength={10}
@@ -197,12 +197,12 @@ export function ExperimentCreateDialog() {
               id="experiment-offer"
               value={offer}
               onChange={(event) => setOffer(event.target.value)}
-              placeholder="10 Masala Chai for ₹449, valid 30 days"
+              placeholder="10 House Drip Coffees for $24.50, valid 30 days"
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="experiment-cost">Unit cost (₹)</Label>
+            <Label htmlFor="experiment-cost">Unit cost ($)</Label>
             <Input
               id="experiment-cost"
               type="number"

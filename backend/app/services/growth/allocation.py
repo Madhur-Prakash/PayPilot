@@ -1,18 +1,19 @@
-"""Growth Allocation Engine: "Where should the next Rs 1 of growth budget go?"
+"""Growth Allocation Engine: "Where should the next $1 of growth budget go?"
 
-A Paypal merchant has two growth surfaces - their own existing customers
-(WhatsApp, QR, checkout, loyalty) and Paypal's side (cashback, offers,
-promotional placement). This module is what compares them for one detected
-opportunity and decides how to split a budget across BUSINESS / PAYPAL / HYBRID,
-using this merchant's own real transaction data, not invented figures.
+A merchant selling through PayPal has two growth surfaces: its own existing
+customers (email, SMS, in-store, loyalty) and PayPal-powered levers it controls -
+cashback rewards paid through PayPal Payouts, Pay Later messaging on high-value
+baskets, and promotions at PayPal Checkout on its online store. This module
+compares them for one detected opportunity and decides how to split a budget
+across BUSINESS / PAYPAL / HYBRID, using the merchant's own transaction data.
 
 Three things this deliberately does *not* do:
 
-1. It never calls a live Paypal ads/acquisition API - none exists. Every "Paypal"
-   number is grounded in this merchant's own history of customers whose
-   `acquisition_channel` is already `paypal_app` (a real, seeded column - see
-   `app/seed/generators/dataset.py`), labelled honestly as an estimate rather
-   than presented as live inventory.
+1. It never pretends PayPal provides an audience or delivers marketing. PayPal
+   does not share its consumer base and no such API is used. Every "PayPal"
+   number is grounded in this merchant's own customers whose first order came
+   through PayPal Checkout (`acquisition_channel = 'paypal_checkout'`), labelled
+   honestly as an estimate.
 2. It never reports a historical-performance ratio (the "growth arbitrage")
    until at least one campaign of *each* surface has actually been measured.
    Before that it says so and falls back to an even split - see
@@ -127,7 +128,7 @@ class GrowthAllocationEngine:
         target_segment: dict[str, Any],
         opportunity_id: uuid.UUID | None = None,
     ) -> GrowthMission:
-        """The core comparison: business-side vs Paypal-side vs both, for one
+        """The core comparison: business-side vs PayPal-side vs both, for one
         opportunity's target segment, ending in a budget split and a reason."""
         segment_filter = dict(target_segment)
         segment_filter.pop("name", None)
@@ -146,8 +147,8 @@ class GrowthAllocationEngine:
         business_cost = round(business_aov * INCENTIVE_COST_RATE, 2)
         paypal_cost = round(paypal_aov * INCENTIVE_COST_RATE, 2)
 
-        # Paypal's reach is capped to a comparably sized cohort, so the mission
-        # compares two right-sized options rather than "everyone Paypal has ever
+        # PayPal's reach is capped to a comparably sized cohort, so the mission
+        # compares two right-sized options rather than "everyone PayPal has ever
         # brought in" against a small, specific segment.
         paypal_reach = min(paypal_stats["size"], max(len(business_ids), 10)) if paypal_stats["size"] else 0
 
@@ -167,12 +168,12 @@ class GrowthAllocationEngine:
         )
         paypal_option = self._option(
             surface=CampaignSurface.PAYPAL,
-            label="Acquire new customers through Paypal",
+            label="Reach customers with PayPal-powered offers",
             audience_label=(
                 f"~{paypal_reach} customers, sized from {paypal_stats['size']} customers this "
-                "merchant has historically acquired via Paypal in this slot"
+                "merchant has acquired through PayPal Checkout in this slot"
                 if paypal_stats["size"]
-                else "No historical Paypal-acquired customers yet for this slot"
+                else "No customers acquired through PayPal Checkout yet for this slot"
             ),
             audience_size=paypal_reach,
             conversion_pct=paypal_stats["repeat_rate_pct"] if paypal_reach else None,
@@ -180,13 +181,13 @@ class GrowthAllocationEngine:
             cost_per_customer=paypal_cost,
             channel="paypal_app",
             provenance=(
-                "Estimated from this merchant's own history of Paypal-acquired customers - "
-                "not a live Paypal audience feed (no such integration exists yet)."
+                "Estimated from this merchant's own PayPal Checkout customers - not a live "
+                "PayPal audience feed (PayPal does not share one, and none is implied)."
             ),
         )
         hybrid_option = InterventionOption(
             surface=CampaignSurface.HYBRID,
-            label="Recover existing demand + acquire through Paypal",
+            label="Win back existing customers + PayPal-powered offers",
             audience_label=(
                 f"{business_option.audience_size} existing + up to "
                 f"{paypal_option.audience_size} new"
@@ -266,7 +267,7 @@ class GrowthAllocationEngine:
                 "FREE_ITEM" if aov and aov < 500 else "CASHBACK"
             ),
             offer_description=(
-                f"Rs {cost_per_customer:,.0f} incentive on orders near Rs {aov:,.0f} "
+                f"${cost_per_customer:,.0f} incentive on orders near ${aov:,.0f} "
                 f"({INCENTIVE_COST_RATE:.0%} of this group's average order value)"
                 if aov
                 else "Not enough order history to size an offer yet"
@@ -288,7 +289,7 @@ class GrowthAllocationEngine:
                 f"{high_propensity_pct:.0f}% of this segment has already placed 3 or more "
                 "orders - they historically buy without an incentive. A blanket discount "
                 f"would mostly pay for orders that would have happened anyway. Target the "
-                f"remaining {100 - high_propensity_pct:.0f}% specifically, or use Paypal "
+                f"remaining {100 - high_propensity_pct:.0f}% specifically, or use PayPal "
                 "acquisition to reach people who aren't already your customers."
             ),
         )
@@ -309,18 +310,18 @@ class GrowthAllocationEngine:
             return (
                 CampaignSurface.PAYPAL,
                 "No existing customers match this segment, so there is nothing to win back - "
-                "acquire through Paypal instead.",
+                "use PayPal-powered offers (cashback via Payouts, Pay Later) instead.",
             )
         if paypal.audience_size == 0:
             return (
                 CampaignSurface.BUSINESS,
-                "No historical Paypal-acquired customers for this slot yet - win back the "
+                "No PayPal Checkout customers for this slot yet - win back the "
                 "existing segment directly.",
             )
         if dont_discount:
             return (
                 CampaignSurface.PAYPAL,
-                dont_discount.reasoning + " Lean toward Paypal acquisition for this mission.",
+                dont_discount.reasoning + " Lean toward PayPal-powered offers for this mission.",
             )
         return (
             CampaignSurface.HYBRID,

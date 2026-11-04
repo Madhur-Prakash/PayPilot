@@ -64,7 +64,7 @@ class GrowthRecommendation(SchemaBase):
     @classmethod
     def _strip_currency(cls, value: object) -> object:
         if isinstance(value, str):
-            cleaned = value.replace(",", "").replace("Rs", "").replace("INR", "")
+            cleaned = value.replace(",", "").replace("$", "").replace("USD", "").replace("Rs", "").replace("INR", "")
             cleaned = "".join(ch for ch in cleaned if ch.isdigit() or ch == ".")
             return float(cleaned) if cleaned else 0.0
         return value

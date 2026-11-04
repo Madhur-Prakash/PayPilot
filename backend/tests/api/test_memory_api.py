@@ -1,9 +1,9 @@
 """The agent memory endpoints.
 
 These assert that the surface is correctly guarded, and that a deployment with
-memory switched off still answers sensibly rather than erroring. Whether cognee
-itself recalls the right thing is covered elsewhere - it needs a real knowledge
-graph.
+memory switched off still answers sensibly rather than erroring. Whether the store
+itself recalls the right thing is covered in tests/unit/test_agent_memory.py.
+
 
 The flag is pinned per test rather than inherited from ``.env``. Reading the
 ambient value made these pass or fail depending on whether the machine happened
@@ -25,7 +25,7 @@ def memory_off(monkeypatch):
 
 @pytest.fixture
 def memory_on(monkeypatch):
-    """Memory configured, without requiring a real cognee behind it."""
+    """Memory switched on (stored in the suite database via the pgvector store)."""
     monkeypatch.setattr(settings, "memory_enabled", True)
 
 

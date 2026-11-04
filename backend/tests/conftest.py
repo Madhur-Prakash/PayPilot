@@ -18,7 +18,10 @@ from pathlib import Path
 import pytest
 
 # Configure the environment before anything imports app.core.config.
-TEST_DB = Path(__file__).parent / ".pytest_autopilot.sqlite3"
+#: Overridable so two suites can run side by side without sharing one file.
+TEST_DB = Path(
+    os.environ.get("PGA_TEST_DB") or (Path(__file__).parent / ".pytest_autopilot.sqlite3")
+)
 os.environ["APP_ENV"] = "test"
 os.environ["DATABASE_URL"] = f"sqlite+aiosqlite:///{TEST_DB}"
 os.environ["JWT_SECRET"] = "test-secret-key-for-the-suite-only-not-a-real-secret"

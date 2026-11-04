@@ -72,7 +72,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               className="fixed inset-y-0 left-0 z-50 w-72 overflow-y-auto bg-sidebar p-4 text-sidebar-foreground lg:hidden"
             >
               <div className="mb-4 flex items-center justify-between">
-                <span className="text-sm font-semibold text-white">Growth Autopilot</span>
+                <span className="text-sm font-semibold text-white">PayPilot</span>
                 <Button
                   variant="ghost"
                   size="icon-sm"

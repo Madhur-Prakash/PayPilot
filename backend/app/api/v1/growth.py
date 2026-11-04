@@ -157,7 +157,7 @@ async def update_opportunity_status(
     "/opportunities/{opportunity_id}/missions",
     summary="Generate a Growth Mission for an opportunity",
     description=(
-        "Compares a business-side, a Paypal-side and a hybrid intervention for this "
+        "Compares a business-side, a PayPal-side and a hybrid intervention for this "
         "opportunity's target segment - audience size, offer, budget and expected "
         "customers, each grounded in this merchant's own transaction and "
         "acquisition-channel history. Read-only: nothing is created until the "
@@ -205,7 +205,7 @@ async def opportunity_missions(
     "/growth/arbitrage",
     summary="Growth arbitrage",
     description=(
-        "Compares measured incremental ROI between the business and Paypal surfaces "
+        "Compares measured incremental ROI between the business and PayPal surfaces "
         "across this merchant's past campaigns. Returns null until at least one "
         "campaign of each surface has actually been measured - never a guessed ratio."
     ),

@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
 import type { CampaignSurface } from "@/types/api";
 
 const CHANNELS = [
-  { value: "paypal_app", label: "Paypal app" },
+  { value: "paypal_app", label: "PayPal Checkout offer" },
   { value: "sms", label: "SMS" },
   { value: "whatsapp", label: "WhatsApp" },
   { value: "email", label: "Email" },
@@ -34,7 +34,7 @@ const CHANNELS = [
 
 const SURFACES: { value: CampaignSurface; label: string; hint: string }[] = [
   { value: "BUSINESS", label: "Business", hint: "Your own customers, your budget" },
-  { value: "PAYPAL", label: "Paypal", hint: "Paypal-side reach, cashback or offers" },
+  { value: "PAYPAL", label: "PayPal", hint: "Cashback via PayPal Payouts, Pay Later, checkout offers" },
   { value: "HYBRID", label: "Hybrid", hint: "Both, split across two budgets" },
 ];
 
@@ -251,7 +251,7 @@ export function CampaignCreateDialog() {
 
             {!isHybrid && (
               <div className="space-y-1.5">
-                <Label htmlFor="campaign-budget">Budget (₹)</Label>
+                <Label htmlFor="campaign-budget">Budget ($)</Label>
                 <Input
                   id="campaign-budget"
                   type="number"
@@ -267,7 +267,7 @@ export function CampaignCreateDialog() {
           {isHybrid && (
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="campaign-business-budget">Business budget (₹)</Label>
+                <Label htmlFor="campaign-business-budget">Business budget ($)</Label>
                 <Input
                   id="campaign-business-budget"
                   type="number"
@@ -279,7 +279,7 @@ export function CampaignCreateDialog() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="campaign-paypal-budget">Paypal budget (₹)</Label>
+                <Label htmlFor="campaign-paypal-budget">PayPal budget ($)</Label>
                 <Input
                   id="campaign-paypal-budget"
                   type="number"
@@ -335,7 +335,7 @@ export function CampaignCreateDialog() {
               id="campaign-offer-description"
               value={offerDescription}
               onChange={(event) => setOfferDescription(event.target.value)}
-              placeholder="Chai + snack combo at ₹60, evenings only"
+              placeholder="Cold brew + brownie combo at $11, evenings only"
             />
           </div>
 
@@ -345,7 +345,7 @@ export function CampaignCreateDialog() {
               id="campaign-message"
               value={message}
               onChange={(event) => setMessage(event.target.value)}
-              placeholder="Your evening chai combo is ₹60 this week."
+              placeholder="Your evening cold brew combo is $11 this week."
               rows={3}
               required
             />

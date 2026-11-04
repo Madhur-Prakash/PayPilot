@@ -113,7 +113,7 @@ class TestTokens:
     def test_an_access_token_round_trips(self):
         user_id = uuid.uuid4()
         merchant_id = uuid.uuid4()
-        token, expires = create_access_token(
+        token, _expires = create_access_token(
             user_id, merchant_id=merchant_id, roles=[str(Role.ADMIN)]
         )
         payload = decode_token(token)

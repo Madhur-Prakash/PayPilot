@@ -23,10 +23,13 @@ New to the project? Read in this order.
 | # | Document | Time | What you get |
 | :--: | --- | :--: | --- |
 | 1 | [Installation](INSTALLATION.md) | 10 min | A running local stack |
-| 2 | [Demo script](DEMO.md) | 5 min | The product, end to end |
-| 3 | [Architecture](ARCHITECTURE.md) | 15 min | Why it is built this way |
-| 4 | [Agents](AGENTS.md) | 15 min | How the AI layer actually works |
-| 5 | [Agent memory](MEMORY.md) | 10 min | What the agents remember, and how tenants stay apart |
+| 2 | [Demo script](DEMO.md) | 3 min | The signature scenario, end to end |
+| 3 | [Hackathon notes](HACKATHON.md) | 5 min | What was built for the PayPal AI Hackathon, tools used, judge testing |
+| 4 | [Supply Agents](SUPPLY_AGENTS.md) | 15 min | The agent-to-agent procurement network and its controls |
+| 5 | [PayPal](PAYPAL.md) | 10 min | Every PayPal API used, modes, webhooks, sandbox setup |
+| 6 | [Architecture](ARCHITECTURE.md) | 15 min | Why it is built this way |
+| 7 | [Agents](AGENTS.md) | 15 min | How the AI layer actually works |
+| 8 | [Agent memory](MEMORY.md) | 10 min | What the agents remember (pgvector), and how tenants stay apart |
 
 ---
 
@@ -44,7 +47,7 @@ New to the project? Read in this order.
 
 | Document | |
 | --- | --- |
-| [Deployment](DEPLOYMENT.md) | Docker Compose, managed Postgres, Supabase, cloud platforms |
+| [Deployment](DEPLOYMENT.md) | Docker Compose, managed Postgres, Supabase, cloud platforms, Render Blueprint |
 | [Deployment: production checklist](DEPLOYMENT.md#production-checklist) | What to change before real traffic |
 | [Security](SECURITY.md) | The threat model this implementation addresses |
 
@@ -54,7 +57,9 @@ New to the project? Read in this order.
 | --- | --- |
 | [Architecture](ARCHITECTURE.md) | Layering, the five rules, data model, observability |
 | [Agents](AGENTS.md) | The seven agents, LangGraph wiring, the tool registry |
-| [Agent memory](MEMORY.md) | Long-term memory, cognee, tenant isolation |
+| [Agent memory](MEMORY.md) | Long-term memory on pgvector, tenant isolation |
+| [Supply Agents](SUPPLY_AGENTS.md) | Inventory intelligence, supplier agents, signed protocol, negotiation, lifecycle |
+| [PayPal](PAYPAL.md) | Client, simulator, sync, webhooks, approval gates, Agent Toolkit evaluation |
 | [Inventory automation](../n8n/README.md) | The outbox relay, the n8n workflows, and what triggers them |
 | [Security](SECURITY.md) | Auth, RBAC, tenant isolation, approval gates, auditing |
 | [Data](DATA.md) | How the demo dataset is generated and why it reproduces |
@@ -103,8 +108,8 @@ New to the project? Read in this order.
 make setup     # runs from the repo root
 ```
 
-**Rupee amounts** are written `Rs 9,840` in prose and rendered `₹9,840` in the
-product, using Indian digit grouping.
+**Dollar amounts** are written `$9,840` in prose and rendered `$9,840` in the
+product, using US digit grouping.
 
 **Code references** link to the file:
 [`services/analytics/service.py`](../backend/app/services/analytics/service.py).

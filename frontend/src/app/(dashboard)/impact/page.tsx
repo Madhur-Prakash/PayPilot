@@ -79,7 +79,7 @@ export default function ImpactPage() {
       column: 1,
       title: "Orders",
       subtitle: "Transactions in the window",
-      value: orders ? orders.value.toLocaleString("en-IN") : "—",
+      value: orders ? orders.value.toLocaleString("en-US") : "—",
       changePct: orders?.change_pct ?? null,
     });
     cards.push({

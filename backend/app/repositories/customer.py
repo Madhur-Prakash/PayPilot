@@ -125,17 +125,20 @@ class CustomerRepository(MerchantScopedRepository[Customer]):
     async def paypal_acquired_stats(
         self, *, dayparts: list[str] | None = None
     ) -> dict[str, float]:
-        """Real, historical grounding for "the Paypal surface" - customers this
-        merchant has actually acquired through ``acquisition_channel='paypal_app'``,
-        optionally narrowed to the same daypart an opportunity concerns.
+        """Real, historical grounding for "the PayPal surface" - customers whose
+        first order came through PayPal Checkout on the merchant's online store
+        (``acquisition_channel='paypal_checkout'``), optionally narrowed to the
+        daypart an opportunity concerns.
 
-        This is not a live Paypal audience feed (none exists) - it is what the
-        Growth Allocation Engine uses instead of inventing a reach number: how
-        many customers, with this profile, Paypal has actually already brought in.
+        This is not a PayPal audience feed - PayPal does not share its consumer
+        base, and nothing here pretends it does. It is the merchant's *own*
+        history: how many customers with this profile PayPal Checkout has already
+        brought in, which is what sizes PayPal-powered levers (cashback via
+        Payouts, Pay Later messaging, checkout promotions) honestly.
         """
         conditions: list[Any] = [
             Customer.merchant_id == self.merchant_id,
-            Customer.acquisition_channel == "paypal_app",
+            Customer.acquisition_channel.in_(("paypal_checkout", "paypal_app")),
         ]
         if dayparts:
             conditions.append(Customer.preferred_daypart.in_(dayparts))

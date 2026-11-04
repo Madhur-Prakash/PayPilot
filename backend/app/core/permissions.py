@@ -65,6 +65,27 @@ class Permission(StrEnum):
     PURCHASE_ORDER_APPROVE = "purchase_order:approve"
     PURCHASE_ORDER_RECEIVE = "purchase_order:receive"
 
+    # supply agents (agent-to-agent procurement)
+    PROCUREMENT_READ = "procurement:read"
+    PROCUREMENT_CREATE = "procurement:create"
+    PROCUREMENT_NEGOTIATE = "procurement:negotiate"
+    PROCUREMENT_APPROVE = "procurement:approve"
+    SUPPLIER_INVOICE_READ = "supplier_invoice:read"
+    SUPPLIER_INVOICE_MATCH = "supplier_invoice:match"
+
+    # money movement
+    PAYMENT_APPROVE = "payment:approve"
+    PAYMENT_EXECUTE = "payment:execute"
+
+    # paypal
+    PAYPAL_READ = "paypal:read"
+    PAYPAL_SYNC = "paypal:sync"
+    PAYPAL_MANAGE = "paypal:manage"
+
+    # governance
+    APPROVAL_READ = "approval:read"
+    EVENTS_READ = "events:read"
+
     # automation
     AUTOMATION_VIEW = "automation:view"
     AUTOMATION_MANAGE = "automation:manage"
@@ -111,6 +132,19 @@ PERMISSION_DESCRIPTIONS: dict[Permission, str] = {
     Permission.PURCHASE_ORDER_CREATE: "Raise a purchase order",
     Permission.PURCHASE_ORDER_APPROVE: "Approve or reject a purchase order",
     Permission.PURCHASE_ORDER_RECEIVE: "Record goods received against an order",
+    Permission.PROCUREMENT_READ: "View procurement requests, RFQs, negotiations and quotes",
+    Permission.PROCUREMENT_CREATE: "Raise a procurement request and send an RFQ to supplier agents",
+    Permission.PROCUREMENT_NEGOTIATE: "Run buyer-agent negotiation rounds within policy",
+    Permission.PROCUREMENT_APPROVE: "Approve a negotiated purchase (creates the purchase order)",
+    Permission.SUPPLIER_INVOICE_READ: "View supplier invoices, matches and reconciliations",
+    Permission.SUPPLIER_INVOICE_MATCH: "Run three-way matching and reconciliation",
+    Permission.PAYMENT_APPROVE: "Approve a payment to a supplier or a cashback payout",
+    Permission.PAYMENT_EXECUTE: "Execute an approved PayPal payment",
+    Permission.PAYPAL_READ: "View PayPal transactions, invoices, payouts and subscriptions",
+    Permission.PAYPAL_SYNC: "Synchronise transactions from PayPal",
+    Permission.PAYPAL_MANAGE: "Create PayPal invoices, plans and payout requests",
+    Permission.APPROVAL_READ: "View the approval inbox and decision history",
+    Permission.EVENTS_READ: "View cross-module business events",
     Permission.AUTOMATION_VIEW: "View automation runs and their traces",
     Permission.AUTOMATION_MANAGE: "Retry, pause or resume inventory automation",
     Permission.AGENTS_VIEW: "View agent runs, steps and traces",
@@ -138,6 +172,11 @@ _READ_ONLY: frozenset[Permission] = frozenset(
         Permission.AUTOMATION_VIEW,
         Permission.AGENTS_VIEW,
         Permission.MEMORY_READ,
+        Permission.PROCUREMENT_READ,
+        Permission.SUPPLIER_INVOICE_READ,
+        Permission.PAYPAL_READ,
+        Permission.APPROVAL_READ,
+        Permission.EVENTS_READ,
     }
 )
 
@@ -150,6 +189,10 @@ _ANALYST: frozenset[Permission] = _READ_ONLY | {
     Permission.INVENTORY_VALUE_READ,
     Permission.INVENTORY_REPORTS_EXPORT,
     Permission.MEMORY_WRITE,
+    # Analysts can source and negotiate - nothing they do moves money.
+    Permission.PROCUREMENT_CREATE,
+    Permission.PROCUREMENT_NEGOTIATE,
+    Permission.PAYPAL_SYNC,
 }
 
 _STAFF: frozenset[Permission] = _READ_ONLY | {
@@ -159,6 +202,11 @@ _STAFF: frozenset[Permission] = _READ_ONLY | {
 }
 
 _ADMIN: frozenset[Permission] = _ANALYST | {
+    Permission.PROCUREMENT_APPROVE,
+    Permission.SUPPLIER_INVOICE_MATCH,
+    Permission.PAYMENT_APPROVE,
+    Permission.PAYMENT_EXECUTE,
+    Permission.PAYPAL_MANAGE,
     Permission.CAMPAIGN_APPROVE,
     Permission.CAMPAIGN_EXECUTE,
     Permission.EXPERIMENT_APPROVE,
@@ -199,6 +247,9 @@ APPROVAL_GATED_PERMISSIONS: frozenset[Permission] = frozenset(
         Permission.CAMPAIGN_EXECUTE,
         Permission.EXPERIMENT_APPROVE,
         Permission.CAMPAIGN_APPROVE,
+        Permission.PROCUREMENT_APPROVE,
+        Permission.PAYMENT_APPROVE,
+        Permission.PAYMENT_EXECUTE,
     }
 )
 

@@ -36,7 +36,23 @@ class AgentName:
     MEASUREMENT = "measurement_agent"
     ORCHESTRATOR = "growth_orchestrator"
 
+    # supply agents
+    INVENTORY_INTELLIGENCE = "inventory_agent"
+    BUYER = "buyer_agent"
+    NEGOTIATION = "negotiation_agent"
+    PROCUREMENT_EVALUATION = "procurement_agent"
+    SUPPLIER_NETWORK = "supplier_network"
+    PROCUREMENT_ORCHESTRATOR = "procurement_orchestrator"
+    RECONCILIATION = "reconciliation_agent"
+
     LABELS = {
+        INVENTORY_INTELLIGENCE: "Inventory Intelligence",
+        BUYER: "Buyer Agent",
+        NEGOTIATION: "Negotiation Agent",
+        PROCUREMENT_EVALUATION: "Procurement Evaluation",
+        SUPPLIER_NETWORK: "Supplier Agents",
+        PROCUREMENT_ORCHESTRATOR: "Procurement Orchestrator",
+        RECONCILIATION: "Reconciliation Agent",
         MERCHANT: "Merchant Agent",
         GROWTH_SCIENTIST: "Growth Scientist",
         REVIEW_INTELLIGENCE: "Review Intelligence",
@@ -64,6 +80,7 @@ class AgentWorkflow:
     EXECUTE = "execute"
     MEASURE = "measure"
     VOICE = "voice"
+    PROCUREMENT = "procurement"
 
 
 class AgentRun(BaseModel):

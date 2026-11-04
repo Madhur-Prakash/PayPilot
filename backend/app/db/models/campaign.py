@@ -68,8 +68,8 @@ class CampaignSurface:
 
     BUSINESS: reaches the merchant's own customers, on the merchant's dime -
               WhatsApp, QR, checkout, loyalty.
-    PAYPAL:    reaches customers through a Paypal-side surface - cashback, offers,
-              promotional placement - funded from a Paypal-facing budget.
+    PAYPAL:    uses PayPal-powered levers the merchant controls - cashback via
+              PayPal Payouts, Pay Later messaging, PayPal Checkout promotions.
     HYBRID:   both, split across `business_budget` and `paypal_budget`.
     """
 
@@ -107,7 +107,7 @@ class CampaignObjective:
 
 
 class PaypalSurfaceType:
-    """Which Paypal-side placement a PAYPAL/HYBRID campaign uses. Free text kept
+    """Which PayPal-side placement a PAYPAL/HYBRID campaign uses. Free text kept
     short deliberately - this is a label on a budget line, not an ad platform
     integration (none exists yet; see `services/growth/allocation.py`)."""
 

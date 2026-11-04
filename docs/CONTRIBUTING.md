@@ -77,7 +77,7 @@ would fail — it is not a control.
 
 ### 5. No fake claims
 
-Nothing here touches real money, real Paypal systems, real customer messaging, or
+Nothing here touches real money, real PayPal systems, real customer messaging, or
 real competitor platforms. Simulated data is labelled "Demo Simulation" wherever
 it appears, and the health endpoint reports honestly which integrations are wired.
 

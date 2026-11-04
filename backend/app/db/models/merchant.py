@@ -36,11 +36,11 @@ class Merchant(BaseModel):
 
     city: Mapped[str] = mapped_column(String(80), default="", nullable=False)
     state: Mapped[str] = mapped_column(String(80), default="", nullable=False)
-    country: Mapped[str] = mapped_column(String(80), default="India", nullable=False)
+    country: Mapped[str] = mapped_column(String(80), default="United States", nullable=False)
     address: Mapped[str] = mapped_column(Text, default="", nullable=False)
-    timezone: Mapped[str] = mapped_column(String(64), default="Asia/Kolkata", nullable=False)
-    currency: Mapped[str] = mapped_column(String(8), default="INR", nullable=False)
-    locale: Mapped[str] = mapped_column(String(16), default="en-IN", nullable=False)
+    timezone: Mapped[str] = mapped_column(String(64), default="America/Los_Angeles", nullable=False)
+    currency: Mapped[str] = mapped_column(String(8), default="USD", nullable=False)
+    locale: Mapped[str] = mapped_column(String(16), default="en-US", nullable=False)
 
     contact_email: Mapped[str | None] = mapped_column(String(320))
     contact_phone: Mapped[str | None] = mapped_column(String(32))
@@ -50,7 +50,7 @@ class Merchant(BaseModel):
     opened_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    #: True for tenants not yet connected to a live Paypal merchant account.
+    #: True for tenants not yet connected to a live PayPal merchant account.
     is_demo: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     #: Internal provenance token (not shown to users verbatim - the UI maps it to a label).
     data_source: Mapped[str] = mapped_column(String(32), default="SEEDED", nullable=False)

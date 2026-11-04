@@ -297,7 +297,7 @@ def _trim(data: dict[str, Any], *, max_items: int = 40) -> dict[str, Any]:
     trimmed: dict[str, Any] = {}
     for key, value in data.items():
         if isinstance(value, list) and len(value) > max_items:
-            trimmed[key] = value[:max_items] + [f"...{len(value) - max_items} more"]
+            trimmed[key] = [*value[:max_items], f"...{len(value) - max_items} more"]
         else:
             trimmed[key] = value
     return trimmed

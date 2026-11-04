@@ -6,7 +6,12 @@ modules) wherever the registry is needed.
 
 from __future__ import annotations
 
-from app.tools import actions, analytics, intelligence  # noqa: F401  (registration side effect)
+from app.tools import (  # noqa: F401  (registration side effect)
+    actions,
+    analytics,
+    intelligence,
+    supply,
+)
 from app.tools.base import ToolContext, ToolRegistry, ToolResult, ToolSpec, registry
 
 #: Tool sets per agent. Keeping these explicit stops one agent from reaching for
@@ -42,6 +47,23 @@ EXPERIMENT_AGENT_TOOLS: list[str] = [
 
 MEASUREMENT_AGENT_TOOLS: list[str] = ["get_experiment_results", "list_active_experiments"]
 
+#: Supply Agents. The buyer can source and negotiate; it has no tool that moves money.
+INVENTORY_AGENT_TOOLS: list[str] = ["get_stockout_risks", "get_inventory_status"]
+
+BUYER_AGENT_TOOLS: list[str] = [
+    "list_supplier_agents",
+    "start_procurement",
+    "run_negotiation",
+    "get_procurement_status",
+    "search_memory",
+]
+
+PROCUREMENT_AGENT_TOOLS: list[str] = [
+    "get_procurement_overview",
+    "get_procurement_status",
+    "get_pending_approvals",
+]
+
 MERCHANT_AGENT_TOOLS: list[str] = [
     "get_sales_summary",
     "get_customer_segments",
@@ -54,6 +76,11 @@ MERCHANT_AGENT_TOOLS: list[str] = [
     "list_active_experiments",
     "get_experiment_results",
     "get_growth_allocation",
+    "get_stockout_risks",
+    "get_procurement_overview",
+    "get_pending_approvals",
+    "get_paypal_transaction_insights",
+    "search_memory",
 ]
 
 #: Everything the voice assistant may reach, via the same backend agents.
@@ -67,11 +94,14 @@ VOICE_TOOLS: list[str] = [
 
 __all__ = [
     "ACTION_AGENT_TOOLS",
+    "BUYER_AGENT_TOOLS",
     "EXPERIMENT_AGENT_TOOLS",
     "GROWTH_SCIENTIST_TOOLS",
+    "INVENTORY_AGENT_TOOLS",
     "MARKET_AGENT_TOOLS",
     "MEASUREMENT_AGENT_TOOLS",
     "MERCHANT_AGENT_TOOLS",
+    "PROCUREMENT_AGENT_TOOLS",
     "REVIEW_AGENT_TOOLS",
     "VOICE_TOOLS",
     "ToolContext",

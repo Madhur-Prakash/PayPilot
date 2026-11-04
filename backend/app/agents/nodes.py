@@ -22,8 +22,8 @@ from app.agents import prompts
 from app.agents.state import GraphState
 from app.core.logging import get_logger
 from app.db.models.agent import AgentName
-from app.integrations.cognee_memory import memory as memory_store
 from app.integrations.groq import llm_service
+from app.integrations.vector_memory import memory as memory_store
 from app.schemas.agent import (
     GrowthRecommendation,
     IntentClassification,
@@ -86,7 +86,7 @@ def _track_usage(state: GraphState, result: Any) -> None:
 
 
 def _money(value: float) -> str:
-    return f"Rs {value:,.0f}"
+    return f"${value:,.0f}"
 
 
 def _facts(payload: dict[str, Any]) -> str:

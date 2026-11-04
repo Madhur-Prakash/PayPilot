@@ -43,7 +43,7 @@ HISTORICAL: tuple[dict, ...] = (
             "Pairing a sandwich with a hot beverage at a combo price will lift weekend "
             "morning conversion without discounting either item on its own."
         ),
-        "offer": "Veg Sandwich + Cappuccino combo at Rs 229 (saves Rs 39).",
+        "offer": "Turkey Pesto Panini + Cappuccino combo at $11.95 (saves $1.45).",
         "daypart": DayPart.MORNING,
         "audience_dayparts": [DayPart.MORNING, DayPart.AFTERNOON],
         "days_ago_start": 96,
@@ -52,17 +52,17 @@ HISTORICAL: tuple[dict, ...] = (
         "test_conversion": 0.139,
         "basket_uplift": 1.14,
         "unit_cost": 34.0,
-        "anchor_sku": "SC-VSAN-004",
-        "companion_sku": "SC-CAPP-002",
+        "anchor_sku": "JO-PANI-004",
+        "companion_sku": "JO-CAPP-002",
     },
     {
-        "key": "loyalty-chai-pass",
-        "name": "Loyalty Chai Pass",
+        "key": "loyalty-drip-card",
+        "name": "Loyalty Drip Card",
         "hypothesis": (
-            "A pre-paid chai pass for regulars will increase visit frequency among "
-            "customers who already order chai at least twice a week."
+            "A pre-paid drip coffee card for regulars will increase visit frequency among "
+            "customers who already order drip coffee at least twice a week."
         ),
-        "offer": "10 Masala Chai for Rs 449, valid 30 days.",
+        "offer": "10 House Drip Coffees for $24.50, valid 30 days.",
         "daypart": DayPart.AFTERNOON,
         "audience_dayparts": [DayPart.AFTERNOON],
         "days_ago_start": 58,
@@ -71,7 +71,7 @@ HISTORICAL: tuple[dict, ...] = (
         "test_conversion": 0.124,
         "basket_uplift": 0.96,
         "unit_cost": 45.0,
-        "anchor_sku": "SC-CHAI-003",
+        "anchor_sku": "JO-DRIP-003",
         "companion_sku": None,
     },
 )
@@ -224,7 +224,7 @@ def _learning_for(spec: dict, summary) -> str:
     if summary.decision == "SCALE":
         return (
             f"Bundling drove a {summary.conversion_lift_pct:+.0f}% conversion lift in the "
-            f"{spec['daypart'].lower()} slot at Rs {summary.incremental_revenue:,.0f} incremental "
+            f"{spec['daypart'].lower()} slot at ${summary.incremental_revenue:,.0f} incremental "
             "revenue. Combo framing works better than a straight discount for this base - keep "
             "the held-out control in future tests so the lift stays attributable."
         )
@@ -275,7 +275,7 @@ async def _write_variant_transactions(
             f"{experiment_id}:{variant_key}:{cid}".encode(), digest_size=8
         ).hexdigest(),
     )
-    converters = ordered[: max(int(round(len(ordered) * conversion)), 0)]
+    converters = ordered[: max(round(len(ordered) * conversion), 0)]
     for customer_id in converters:
         day = start + timedelta(days=rng.randrange(window_days))
         hour = rng.randint(8, 20)

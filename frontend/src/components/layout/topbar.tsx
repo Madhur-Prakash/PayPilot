@@ -34,9 +34,10 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
 
   React.useEffect(() => setMounted(true), []);
 
-  const current = ALL_NAV_ITEMS.find(
+  // Most specific match wins: /supply/negotiations/x is "Live Negotiations", not "Supply".
+  const current = ALL_NAV_ITEMS.filter(
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
-  );
+  ).sort((a, b) => b.href.length - a.href.length)[0];
 
   async function handleLogout() {
     await logout();
@@ -59,7 +60,7 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h1 className="truncate text-[0.9375rem] font-semibold leading-tight">
-              {current?.label ?? "Growth Autopilot"}
+              {current?.label ?? "PayPilot"}
             </h1>
           </div>
           <p className="hidden truncate text-xs text-muted-foreground sm:block">

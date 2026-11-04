@@ -96,7 +96,7 @@ async def voice_session(
     kpis, current, _ = await analytics.kpis(period)
     revenue = next((k for k in kpis if k.key == "revenue"), None)
     snapshot = (
-        f"Revenue Rs {current.revenue:,.0f} ({revenue.change_pct:+.1f}%), "
+        f"Revenue ${current.revenue:,.0f} ({revenue.change_pct:+.1f}%), "
         f"{current.orders:,} orders, repeat rate {current.repeat_rate:.1f}%."
         if revenue and revenue.change_pct is not None
         else ""

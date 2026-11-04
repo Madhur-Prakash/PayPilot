@@ -443,7 +443,7 @@ _AGENT_STEPS: tuple[tuple[str, str, str, str, str], ...] = (
         "synthesize",
         AgentName.ORCHESTRATOR,
         "Assembled the evidence into a single schema-validated recommendation.",
-        "Opportunity: recover lost evening repeat customers. Rs 14,470/month at 92% confidence.",
+        "Opportunity: recover lost evening repeat customers. $724/month at 92% confidence.",
         "Recommend a targeted evening win-back against a held-out control group.",
     ),
     (
@@ -457,7 +457,7 @@ _AGENT_STEPS: tuple[tuple[str, str, str, str, str], ...] = (
 
 #: (tool, arguments, one-line result) - the deterministic calls behind the run.
 _AGENT_TOOLS: tuple[tuple[str, str, dict, str], ...] = (
-    ("get_sales_summary", AgentName.GROWTH_SCIENTIST, {"days": 30}, "Revenue Rs 4.94L, down 12.9%."),
+    ("get_sales_summary", AgentName.GROWTH_SCIENTIST, {"days": 30}, "Revenue $24.7K, down 12.9%."),
     ("get_customer_metrics", AgentName.GROWTH_SCIENTIST, {"days": 30}, "Repeat rate 38.3%, down 11.8%."),
     (
         "get_customer_segments",
@@ -481,7 +481,7 @@ _AGENT_TOOLS: tuple[tuple[str, str, dict, str], ...] = (
         "calculate_opportunity_value",
         AgentName.GROWTH_SCIENTIST,
         {"segment": "EVENING", "horizon_days": 30},
-        "Rs 14,470/month recoverable at 92% confidence.",
+        "$724/month recoverable at 92% confidence.",
     ),
 )
 

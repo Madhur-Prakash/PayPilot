@@ -551,7 +551,7 @@ class GrowthOrchestrator:
                 f"Control {summary.control_conversion_rate:.1f}% vs test "
                 f"{summary.test_conversion_rate:.1f}% "
                 f"({summary.conversion_lift_pct:+.1f}% lift). Incremental revenue "
-                f"Rs {summary.incremental_revenue:,.0f}, ROI {summary.roi:.1f}x."
+                f"${summary.incremental_revenue:,.0f}, ROI {summary.roi:.1f}x."
             ),
             decision=summary.decision,
             evidence=[
@@ -562,7 +562,7 @@ class GrowthOrchestrator:
                 },
                 {
                     "metric": "Incremental revenue",
-                    "value": f"Rs {summary.incremental_revenue:,.0f}",
+                    "value": f"${summary.incremental_revenue:,.0f}",
                     "source": "experiments",
                 },
                 {
@@ -590,7 +590,7 @@ class GrowthOrchestrator:
         )
         verdict = fallback
         if llm_service.enabled:
-            verdict, result = await llm_service.structured(
+            verdict, _result = await llm_service.structured(
                 system=prompts.MEASUREMENT_AGENT,
                 user=(
                     "Experiment results (already computed - do not change any figure):\n"

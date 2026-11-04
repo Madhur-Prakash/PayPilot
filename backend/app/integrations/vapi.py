@@ -93,8 +93,8 @@ VOICE_TOOLS: list[dict[str, Any]] = [
         "function": {
             "name": "get_growth_allocation",
             "description": (
-                "Answer 'where should my next rupee of growth budget go' - business-side "
-                "(existing customers) versus Paypal-side (acquisition, cashback, offers). "
+                "Answer 'where should my next dollar of growth budget go' - business-side "
+                "(existing customers) versus PayPal-powered levers (cashback via Payouts, Pay Later, checkout offers). "
                 "Reports how past budget has actually split and performed, and whether "
                 "there's a measured growth arbitrage between the two surfaces yet."
             ),
@@ -234,7 +234,82 @@ PAGE_DIRECTORY: list[dict[str, Any]] = [
         "permission": "settings:manage",
         "description": "Merchant, integrations and RBAC",
     },
+    {
+        "key": "command",
+        "label": "Command Center",
+        "path": "/command",
+        "permission": "dashboard:read",
+        "description": "Revenue, profit, stock risk, negotiations and approvals in one place",
+    },
+    {
+        "key": "supply",
+        "label": "Supply Command Center",
+        "path": "/supply",
+        "permission": "procurement:read",
+        "description": "Stockout risks, active RFQs, negotiations and deliveries",
+    },
+    {
+        "key": "supply_negotiations",
+        "label": "Live Negotiations",
+        "path": "/supply/negotiations",
+        "permission": "procurement:read",
+        "description": "Buyer and supplier agents negotiating in real time",
+    },
+    {
+        "key": "supply_suppliers",
+        "label": "Supplier Network",
+        "path": "/supply/suppliers",
+        "permission": "vendor:read",
+        "description": "Supplier agents, reliability and indicative pricing",
+    },
+    {
+        "key": "approvals",
+        "label": "Approval Center",
+        "path": "/approvals",
+        "permission": "approval:read",
+        "description": "Every money-moving decision waiting for a human",
+    },
+    {
+        "key": "finance_transactions",
+        "label": "PayPal Transactions",
+        "path": "/finance/transactions",
+        "permission": "paypal:read",
+        "description": "Synced PayPal transactions and transaction intelligence",
+    },
 ]
+
+
+def _read_tool(name: str, description: str, properties: dict[str, Any] | None = None) -> dict[str, Any]:
+    return {
+        "type": "function",
+        "function": {
+            "name": name,
+            "description": description,
+            "parameters": {"type": "object", "properties": properties or {}, "required": []},
+        },
+    }
+
+
+#: Supply, approvals and PayPal - all read-only over voice. Voice can describe and
+#: prepare; it can never approve or move money (no such tool is exposed).
+VOICE_TOOLS.extend(
+    [
+        _read_tool("get_stockout_risks", "Which products are about to run out, with days of cover and the suggested reorder quantity."),
+        _read_tool("get_procurement_overview", "Open procurement requests, active supplier negotiations and negotiated savings to date."),
+        _read_tool(
+            "get_procurement_status",
+            "Status, recommendation and savings for one procurement request.",
+            {"reference": {"type": "string", "description": "Procurement reference such as PR-00001."}},
+        ),
+        _read_tool("list_supplier_agents", "The supplier network: reliability, terms and indicative prices per supplier."),
+        _read_tool("get_pending_approvals", "Purchases, supplier payments and payouts waiting for a human approval."),
+        _read_tool(
+            "get_paypal_transaction_insights",
+            "PayPal transaction analytics: gross and net revenue, refund rate, failures, repeat payers.",
+            {"days": {"type": "integer", "description": "Look-back window in days. Defaults to 30."}},
+        ),
+    ]
+)
 
 VOICE_TOOLS.append(
     {
@@ -272,11 +347,11 @@ def resolve_page(key: str) -> dict[str, Any] | None:
 
 
 SYSTEM_PROMPT = (
-    "You are the Growth Scientist for a Paypal merchant, speaking out loud.\n"
+    "You are the Growth Scientist for a PayPal merchant, speaking out loud.\n"
     "\n"
     "Rules:\n"
     "- Always call a tool before stating any number. Never invent or estimate figures.\n"
-    "- Speak Indian Rupee amounts naturally, e.g. 'nine thousand eight hundred and forty rupees'.\n"
+    "- Speak US dollar amounts naturally, e.g. 'nine thousand eight hundred and forty dollars'.\n"
     "- Keep replies under three sentences unless asked to elaborate.\n"
     "- Lead with the answer, then the single most important reason.\n"
     "- You may recommend an action, but you can never approve or execute one. If the merchant "
@@ -289,7 +364,7 @@ SYSTEM_PROMPT = (
     "- The merchant's on-screen context (their current page and, where available, what is "
     "visible on it) is provided in your context. Prefer it over calling a tool again for numbers "
     "already in view.\n"
-    "- If asked whether this is connected to a live Paypal account, answer plainly - it isn't yet.\n"
+    "- If asked whether this is connected to a live PayPal account, answer plainly: analytics use seeded demo data; PayPal runs in sandbox or simulation mode.\n"
 )
 
 

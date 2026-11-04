@@ -384,7 +384,7 @@ def _coerce(raw_value: str, f: ImportField) -> tuple[Any, str | None]:
             return None, f"too long (max {f.max_length} characters)"
         return text, None
     if f.dtype == "number":
-        cleaned = text.replace(",", "").replace("₹", "").replace("Rs.", "").strip()
+        cleaned = text.replace(",", "").replace("$", "").replace("₹", "").replace("Rs.", "").strip()
         try:
             number = float(cleaned)
         except ValueError:

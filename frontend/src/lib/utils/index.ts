@@ -6,41 +6,56 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 // --------------------------------------------------------------------------- //
-// Indian currency + number formatting
+// US dollar + number formatting
 // --------------------------------------------------------------------------- //
-const INR = new Intl.NumberFormat("en-IN", {
+const USD = new Intl.NumberFormat("en-US", {
   style: "currency",
-  currency: "INR",
+  currency: "USD",
   maximumFractionDigits: 0,
 });
 
-const INR_PRECISE = new Intl.NumberFormat("en-IN", {
+const USD_PRECISE = new Intl.NumberFormat("en-US", {
   style: "currency",
-  currency: "INR",
+  currency: "USD",
+  minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
 
-const NUMBER = new Intl.NumberFormat("en-IN");
+const NUMBER = new Intl.NumberFormat("en-US");
 
-/** `₹1,23,456` - Indian digit grouping, which en-US would get wrong. */
-export function formatCurrency(value: number | null | undefined, precise = false): string {
-  if (value == null || Number.isNaN(value)) return "--";
-  return precise ? INR_PRECISE.format(value) : INR.format(value);
+/** Accepts numbers or the decimal strings the API sends for money. */
+export function toNumber(value: number | string | null | undefined): number | null {
+  if (value == null || value === "") return null;
+  const n = typeof value === "number" ? value : Number(value);
+  return Number.isNaN(n) ? null : n;
 }
 
-/** `₹4.94L` / `₹1.2Cr` - the scale Indian merchants actually read. */
-export function formatCompactCurrency(value: number | null | undefined): string {
-  if (value == null || Number.isNaN(value)) return "--";
-  const abs = Math.abs(value);
-  if (abs >= 1_00_00_000) return `₹${(value / 1_00_00_000).toFixed(2)}Cr`;
-  if (abs >= 1_00_000) return `₹${(value / 1_00_000).toFixed(2)}L`;
-  if (abs >= 1_000) return `₹${(value / 1_000).toFixed(1)}K`;
-  return INR.format(value);
+/** `$1,234` (or `$1,234.56` when precise). */
+export function formatCurrency(value: number | string | null | undefined, precise = false): string {
+  const n = toNumber(value);
+  if (n == null) return "--";
+  return precise ? USD_PRECISE.format(n) : USD.format(n);
 }
 
-export function formatNumber(value: number | null | undefined, decimals = 0): string {
-  if (value == null || Number.isNaN(value)) return "--";
-  return NUMBER.format(Number(value.toFixed(decimals)));
+/** Always two decimals - for invoices, offers and payments. */
+export function formatMoney(value: number | string | null | undefined): string {
+  return formatCurrency(value, true);
+}
+
+/** `$24.7K` / `$1.20M` - for dense dashboards. */
+export function formatCompactCurrency(value: number | string | null | undefined): string {
+  const n = toNumber(value);
+  if (n == null) return "--";
+  const abs = Math.abs(n);
+  if (abs >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
+  if (abs >= 10_000) return `$${(n / 1_000).toFixed(1)}K`;
+  return USD.format(n);
+}
+
+export function formatNumber(value: number | string | null | undefined, decimals = 0): string {
+  const n = toNumber(value);
+  if (n == null) return "--";
+  return NUMBER.format(Number(n.toFixed(decimals)));
 }
 
 export function formatPercent(value: number | null | undefined, decimals = 1): string {
@@ -87,19 +102,19 @@ export function formatDuration(ms: number | null | undefined): string {
 export function formatDate(value: string | Date | null | undefined): string {
   if (!value) return "--";
   const date = typeof value === "string" ? new Date(value) : value;
-  return date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  return date.toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" });
 }
 
 export function formatShortDate(value: string | Date | null | undefined): string {
   if (!value) return "--";
   const date = typeof value === "string" ? new Date(value) : value;
-  return date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+  return date.toLocaleDateString("en-US", { day: "numeric", month: "short" });
 }
 
 export function formatDateTime(value: string | Date | null | undefined): string {
   if (!value) return "--";
   const date = typeof value === "string" ? new Date(value) : value;
-  return date.toLocaleString("en-IN", {
+  return date.toLocaleString("en-US", {
     day: "numeric",
     month: "short",
     hour: "2-digit",

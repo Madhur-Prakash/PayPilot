@@ -139,7 +139,7 @@ class Settings(BaseSettings):
     inventory_dry_run: bool = False
     #: Orders at or above this value need a human approval before they are sent.
     #: 0 means every automatic order needs approval.
-    inventory_approval_threshold: float = 10000.0
+    inventory_approval_threshold: float = 500.0
     #: How often the outbox relay delivers pending events to n8n. This is
     #: the only thing that carries a stock change out to the automation, and
     #: the only thing that ever retries a failed delivery - without it,
@@ -150,40 +150,61 @@ class Settings(BaseSettings):
     #: Stock sitting longer than this without movement is AGING.
     inventory_aging_window_days: int = 90
 
-    # ---------------------------------------------------------------- memory (cognee)
-    #: Master switch for agent memory. Off by default: cognee builds a knowledge
-    #: graph with an LLM, which costs tokens and time, so it is opt-in.
-    memory_enabled: bool = False
-    #: LLM used to extract entities and relationships while building the graph.
-    #: "custom" is what cognee's docs specify for Groq: it routes through litellm
-    #: and resolves the endpoint from the "groq/" model prefix, so no endpoint is
-    #: needed. Blank model/key fall back to the Groq settings above.
-    #:
-    #: Note there is a cognee[groq] extra, but it pins groq<1.0 and this project
-    #: needs groq>=1.7 for its own client, so the litellm route is the only one.
-    memory_llm_provider: str = "custom"
-    memory_llm_model: str = ""
-    memory_llm_api_key: str = ""
-    #: Embeddings are local by default. fastembed is already a dependency and
-    #: needs no API key, so memory works without a second vendor relationship.
-    #: cognee's own default is "hash", which is not semantic and recalls badly.
-    memory_embedding_provider: str = "fastembed"
-    memory_embedding_model: str = "BAAI/bge-small-en-v1.5"
-    memory_embedding_dimensions: int = 384
-    #: Where cognee keeps its graph, vectors and metadata. Blank means
-    #: ``backend/.cognee``; the library otherwise writes inside site-packages.
-    memory_storage_dir: str = ""
+    # ---------------------------------------------------------------- memory (pgvector)
+    #: Master switch for agent long-term memory. Memories live in the
+    #: ``agent_memories`` table and are embedded locally with the embedding
+    #: settings above (no API key, no extra service), so it is on by default.
+    memory_enabled: bool = True
     #: How many memories to pull into an agent run.
     memory_recall_top_k: int = 6
     #: A recall that takes longer than this is abandoned. Memory enriches an
     #: answer; it is never allowed to delay one.
-    memory_recall_timeout_seconds: float = 10.0
-    #: Writing memory runs the full extraction pipeline, so it happens off the
-    #: request path with its own, much longer, budget.
-    memory_write_timeout_seconds: float = 180.0
-    #: cognee ships its own OpenTelemetry tracing to Langfuse. Left off so it
-    #: cannot quietly duplicate or compete with the tracing in app/integrations.
-    memory_tracing_enabled: bool = False
+    memory_recall_timeout_seconds: float = 5.0
+
+    # ---------------------------------------------------------------- paypal
+    #: "sandbox" talks to api-m.sandbox.paypal.com, "live" to api-m.paypal.com.
+    paypal_environment: Literal["sandbox", "live"] = "sandbox"
+    #: REST app credentials from developer.paypal.com. Server-side only - these
+    #: never reach the browser. Blank means the deterministic simulator is used
+    #: and every response is labelled SIMULATED.
+    paypal_client_id: str = ""
+    paypal_client_secret: str = ""
+    #: The webhook id PayPal assigned when the listener was registered. Required
+    #: for signature verification; without it inbound webhooks are rejected.
+    paypal_webhook_id: str = ""
+    #: Optional override of the REST base URL (tests, proxies).
+    paypal_api_base_url: str = ""
+    paypal_timeout_seconds: float = 30.0
+    paypal_max_retries: int = 2
+    #: When credentials are missing, fall back to the simulator rather than
+    #: failing. Set false to make a missing credential a hard error.
+    paypal_simulation_enabled: bool = True
+    paypal_brand_name: str = "PayPilot"
+    #: Primary currency for the demo merchant. Amounts in other currencies are
+    #: never added to it without an explicit conversion.
+    default_currency: str = "USD"
+    #: Signs simulator-originated webhook events so the local pipeline can be
+    #: exercised end to end. Never accepted when real credentials are configured.
+    paypal_simulator_webhook_secret: str = ""
+    #: Sandbox business account the demo pays suppliers into. When set, every
+    #: seeded supplier agent uses it as its PayPal payee, so supplier payments
+    #: complete end to end against a real sandbox.
+    paypal_sandbox_payee_email: str = ""
+
+    # ---------------------------------------------------------------- supply agents
+    #: HMAC key for agent-to-agent protocol messages. Blank derives one from
+    #: JWT_SECRET so a fresh checkout still signs (and verifies) every message.
+    agent_protocol_secret: str = ""
+    #: Hard ceiling on negotiation rounds, whatever a policy asks for.
+    procurement_max_negotiation_rounds: int = 4
+    #: How long a supplier quote stays valid.
+    procurement_quote_ttl_hours: int = 48
+    #: Margin the merchant wants to keep when no product-level target exists.
+    procurement_default_target_margin: float = 0.40
+    #: Invoice unit-price variance tolerated by three-way matching (0.02 = 2%).
+    procurement_price_tolerance_pct: float = 0.02
+    #: Absolute tolerance on an invoice total, in the order currency.
+    procurement_total_tolerance_amount: float = 1.00
 
     # ---------------------------------------------------------------- supabase
     supabase_url: str = ""
@@ -207,11 +228,36 @@ class Settings(BaseSettings):
 
     # ---------------------------------------------------------------- demo seed
     seed_random_seed: int = 20240917
-    demo_owner_email: str = "owner@sharmacafe.in"
+    demo_owner_email: str = "owner@juniperoak.com"
     demo_owner_password: str = "Autopilot@2024"
-    demo_merchant_name: str = "Sharma Cafe"
+    demo_merchant_name: str = "Juniper & Oak Coffee"
+
+    # ---------------------------------------------------------------- worker
+    #: Run the outbox relay inside the API process. Set false when a separate
+    #: worker (``python -m app.worker``) delivers events, e.g. on Render.
+    outbox_relay_in_process: bool = True
 
     # ---------------------------------------------------------------- validators
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def _normalise_database_url(cls, value: object) -> object:
+        """Accept the plain URLs hosting providers hand out (Render, Heroku-style).
+
+        ``postgres://`` / ``postgresql://`` become ``postgresql+asyncpg://``, and a
+        ``sslmode`` query parameter (libpq syntax asyncpg does not understand) is
+        translated to asyncpg's ``ssl``.
+        """
+        if not isinstance(value, str):
+            return value
+        url = value.strip()
+        for prefix in ("postgres://", "postgresql://"):
+            if url.startswith(prefix):
+                url = "postgresql+asyncpg://" + url[len(prefix):]
+                break
+        if url.startswith("postgresql+asyncpg://") and "sslmode=" in url:
+            url = url.replace("sslmode=require", "ssl=require").replace("sslmode=disable", "ssl=disable")
+        return url
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def _split_origins(cls, value: object) -> object:
@@ -250,6 +296,34 @@ class Settings(BaseSettings):
     @property
     def vapi_active(self) -> bool:
         return bool(self.vapi_private_key and self.vapi_assistant_id)
+
+    @property
+    def paypal_configured(self) -> bool:
+        """True when real PayPal REST credentials are present."""
+        return bool(self.paypal_client_id and self.paypal_client_secret)
+
+    @property
+    def paypal_mode(self) -> Literal["LIVE", "SANDBOX", "SIMULATED"]:
+        if not self.paypal_configured:
+            return "SIMULATED"
+        return "LIVE" if self.paypal_environment == "live" else "SANDBOX"
+
+    @property
+    def paypal_base_url(self) -> str:
+        if self.paypal_api_base_url:
+            return self.paypal_api_base_url.rstrip("/")
+        if self.paypal_environment == "live":
+            return "https://api-m.paypal.com"
+        return "https://api-m.sandbox.paypal.com"
+
+    @property
+    def agent_protocol_key(self) -> bytes:
+        """Key for signing agent messages, derived when not configured."""
+        if self.agent_protocol_secret:
+            return self.agent_protocol_secret.encode("utf-8")
+        import hashlib
+
+        return hashlib.sha256(f"agent-protocol::{self.jwt_secret}".encode()).digest()
 
     @property
     def sync_database_url(self) -> str:

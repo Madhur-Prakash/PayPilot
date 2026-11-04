@@ -139,8 +139,8 @@ class AuthService:
             slug=slug,
             category="cafe",
             city="",
-            country="India",
-            currency="INR",
+            country="United States",
+            currency="USD",
             is_demo=False,
             data_source="LIVE",
         )

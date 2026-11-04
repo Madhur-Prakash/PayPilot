@@ -534,3 +534,34 @@ That is the point of a seeded generator rather than a SQL dump.
 [Troubleshooting](TROUBLESHOOTING.md)
 
 </div>
+
+---
+
+## Render (Blueprint)
+
+`render.yaml` at the repository root deploys the whole product on
+[Render](https://render.com):
+
+| Resource | Type | Notes |
+| --- | --- | --- |
+| `paypilot-db` | Managed Postgres 16 | The first migration runs `CREATE EXTENSION vector` and `pgcrypto` |
+| `paypilot-api` | Web service (Docker, `backend/`) | Start command runs `alembic upgrade head`, the idempotent demo seed, then uvicorn on `$PORT`; health check `/api/v1/health` |
+| `paypilot-worker` | Background worker (Docker) | `python -m app.worker` delivers the event outbox (the API runs with `OUTBOX_RELAY_IN_PROCESS=false`) |
+| `paypilot-web` | Web service (Node, `frontend/`) | `npm ci && npm run build`, `npx next start -p $PORT` |
+
+Steps:
+
+1. Push the repository to GitHub/GitLab.
+2. Render dashboard -> **New -> Blueprint** -> select the repository.
+3. Render prompts for the `sync: false` secrets. Leave them **blank** for the
+   keyless demo (deterministic agents, simulated PayPal), or fill in
+   `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID`, `GROQ_API_KEY`.
+4. If your service names differ from the defaults, update `FRONTEND_URL`,
+   `CORS_ORIGINS` (API) and `NEXT_PUBLIC_API_URL` (web), then redeploy the web
+   service (Next.js inlines `NEXT_PUBLIC_*` at build time).
+5. For PayPal webhooks, register `https://<api-host>/api/v1/paypal/webhooks` in
+   the PayPal developer dashboard and set `PAYPAL_WEBHOOK_ID`.
+
+`DATABASE_URL` comes from Render as `postgres://…`; the backend normalises it to
+`postgresql+asyncpg://` (and `sslmode=` to asyncpg's `ssl=`) automatically.
+Free-plan databases expire after 30 days and free web services sleep when idle.

@@ -333,7 +333,7 @@ class AnalyticsService:
           2. Daily revenue points more than 2 standard deviations from the mean.
         """
         anomalies: list[Anomaly] = []
-        kpis, current, _previous = await self.kpis(period)
+        kpis, _current, _previous = await self.kpis(period)
 
         for kpi in kpis:
             if kpi.change_pct is None or abs(kpi.change_pct) < ANOMALY_MIN_CHANGE_PCT:

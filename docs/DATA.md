@@ -9,7 +9,7 @@
 
 </div>
 
-`Sharma Café`, Pune. Fully deterministic from seed `20240917`.
+`Juniper & Oak Coffee`, Portland OR. Fully deterministic from seed `20240917`.
 
 ```bash
 make seed                          # idempotent
@@ -121,9 +121,9 @@ Measured by `python -m app.seed.calibrate`, last 30 days vs the previous 30:
 
 | Metric | Current | Previous | Change |
 | --- | --- | --- | --- |
-| Revenue | ₹4,93,862 | ₹5,62,493 | **−12.2%** |
+| Revenue | $24,693 | $28,124 | **−12.2%** |
 | Orders | 2,353 | 2,473 | −4.9% |
-| AOV | ₹209.89 | ₹227.45 | −7.7% |
+| AOV | $10.49 | $11.37 | −7.7% |
 | Repeat rate | 38.3% | 41.4% | −7.7% |
 | Avg service time | 7.43 min | 6.97 min | +6.6% |
 
@@ -145,8 +145,8 @@ Reviews, evening slot only:
 
 Every one of these is *measured from the generated ledger*, not configured.
 
-> The brief's illustrative figures (₹1.84L revenue, 2,341 orders, ₹287 AOV) are
-> not internally consistent — 2,341 × ₹287 is ₹6.7L, not ₹1.84L. The dataset holds
+> The brief's illustrative figures ($9.2K revenue, 2,341 orders, $14.35 AOV) are
+> not internally consistent — 2,341 × $14.35 is $33.5K, not $9.2K. The dataset holds
 > `revenue = orders × AOV` instead, because the Growth Graph presents that
 > relationship as arithmetic and a test asserts it. Order count lands within 0.5%
 > of the brief; the direction and magnitude of every movement match.
@@ -194,11 +194,11 @@ One per role, so the RBAC story can be demonstrated rather than described.
 
 | Name | Email | Role |
 | --- | --- | --- |
-| Rajesh Sharma | `owner@sharmacafe.in` | OWNER |
-| Priya Menon | `admin@sharmacafe.in` | ADMIN |
-| Arjun Iyer | `analyst@sharmacafe.in` | ANALYST |
-| Neha Kulkarni | `staff@sharmacafe.in` | STAFF |
-| Vikram Rao | `viewer@sharmacafe.in` | VIEWER |
+| Morgan Hayes | `owner@juniperoak.com` | OWNER |
+| Jordan Ellis | `admin@juniperoak.com` | ADMIN |
+| Avery Chen | `analyst@juniperoak.com` | ANALYST |
+| Sam Rivera | `staff@juniperoak.com` | STAFF |
+| Taylor Brooks | `viewer@juniperoak.com` | VIEWER |
 
 Password: `Autopilot@2024`
 
@@ -237,7 +237,7 @@ Everything here is fictional demo data, and the product says so:
 - "Demo Simulation" badges in the sidebar, dashboard header, campaigns,
   experiments and competitors
 
-No claim is made anywhere of live Paypal transaction access, real customer
+No claim is made anywhere of live PayPal transaction access, real customer
 messaging, or competitor-platform scraping.
 
 ---

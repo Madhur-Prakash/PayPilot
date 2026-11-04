@@ -2,535 +2,318 @@
 
 # PayPilot
 
-### An AI Growth Scientist for every merchant
+### The AI operating system for merchants
 
-**Team PayFlux**
+**AI Growth Scientist + Agent-to-Agent Supply Network + PayPal financial operations**
 
-[![Status](https://img.shields.io/badge/status-working_demo-16a34a?style=flat-square)](docs/DEMO.md)
-[![Tests](https://img.shields.io/badge/tests-208_passing-16a34a?style=flat-square&logo=pytest&logoColor=white)](docs/TESTING.md)
+PayPal AI Hackathon 2026 · Idea 4 (Growth Autopilot) + Idea 5 (Supply Agents) · Team PayFlux
+
+[![Tests](https://img.shields.io/badge/backend_tests-288_passing-16a34a?style=flat-square&logo=pytest&logoColor=white)](docs/TESTING.md)
 [![Lint](https://img.shields.io/badge/ruff-clean-16a34a?style=flat-square&logo=ruff&logoColor=white)](docs/CONTRIBUTING.md)
 [![Types](https://img.shields.io/badge/typecheck-clean-16a34a?style=flat-square&logo=typescript&logoColor=white)](docs/CONTRIBUTING.md)
+[![PayPal](https://img.shields.io/badge/PayPal-Orders_v2_·_Invoicing_·_Payouts_·_Subscriptions_·_Webhooks-003087?style=flat-square&logo=paypal&logoColor=white)](docs/PAYPAL.md)
 [![License](https://img.shields.io/badge/license-MIT-475569?style=flat-square)](LICENSE)
 
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.141-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org)
-[![pgvector](https://img.shields.io/badge/pgvector-0.8-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://github.com/pgvector/pgvector)
-[![LangGraph](https://img.shields.io/badge/LangGraph-0.2-1C3C3C?style=flat-square&logo=langchain&logoColor=white)](https://langchain-ai.github.io/langgraph/)
-[![Groq](https://img.shields.io/badge/Groq-GPT--OSS-F55036?style=flat-square&logo=groq&logoColor=white)](https://groq.com)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL_16_+_pgvector-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://github.com/pgvector/pgvector)
+[![LangGraph](https://img.shields.io/badge/LangGraph-1C3C3C?style=flat-square&logo=langchain&logoColor=white)](https://langchain-ai.github.io/langgraph/)
+[![Next.js](https://img.shields.io/badge/Next.js_15-000000?style=flat-square&logo=nextdotjs&logoColor=white)](https://nextjs.org)
+[![AG Grid](https://img.shields.io/badge/AG_Grid-v36-0f172a?style=flat-square)](https://www.ag-grid.com)
 
-[![Next.js](https://img.shields.io/badge/Next.js-15.1-000000?style=flat-square&logo=nextdotjs&logoColor=white)](https://nextjs.org)
-[![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
-[![Tailwind](https://img.shields.io/badge/Tailwind-3.4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
-[![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-components-000000?style=flat-square&logo=shadcnui&logoColor=white)](https://ui.shadcn.com)
-[![Docker](https://img.shields.io/badge/Docker-compose-2496ED?style=flat-square&logo=docker&logoColor=white)](docs/DEPLOYMENT.md)
-
-**[Install](docs/INSTALLATION.md)** &nbsp;·&nbsp;
-**[Configure](docs/CONFIGURATION.md)** &nbsp;·&nbsp;
-**[Deploy](docs/DEPLOYMENT.md)** &nbsp;·&nbsp;
-**[Architecture](docs/ARCHITECTURE.md)** &nbsp;·&nbsp;
-**[API](docs/API.md)** &nbsp;·&nbsp;
-**[Demo script](docs/DEMO.md)** &nbsp;·&nbsp;
+**[Demo (3 min)](docs/DEMO.md)** ·
+**[Hackathon notes](docs/HACKATHON.md)** ·
+**[PayPal](docs/PAYPAL.md)** ·
+**[Supply Agents](docs/SUPPLY_AGENTS.md)** ·
+**[Architecture](docs/ARCHITECTURE.md)** ·
 **[All docs](docs/README.md)**
 
 </div>
 
 ---
 
-Most merchant analytics tools show you what happened. This one runs the whole loop:
+> **PayPilot doesn't just tell merchants what happened. It helps them decide what
+> to do next, coordinates the agents that execute it, and measures the impact on
+> their business.**
 
-```
-Observe  ->  Diagnose  ->  Hypothesize  ->  Recommend  ->  Act  ->  Measure  ->  Learn
-```
+## The problem
 
-It finds a growth opportunity, quantifies it in rupees, shows the evidence behind
-it, proposes a specific intervention, waits for your approval, runs it as a
-controlled experiment against a held-out control group, measures the lift, and
-tells you whether to **SCALE** or **STOP**.
+Small merchants run on thin margins and little time. They can see last week's
+sales, but not *why* they moved or what to do about it. When a product suddenly
+sells, they find out it is out of stock after the fact; sourcing more means
+emailing suppliers, chasing quotes, haggling and reconciling invoices by hand -
+and every purchase quietly changes the margin their growth decisions assume.
+Automating any of this is risky, because the steps that matter move money.
 
----
+## What PayPilot does
 
-## Table of contents
+One product connects three layers:
 
-| Section | |
+| Layer | Loop |
 | --- | --- |
-| [What it actually does](#what-it-actually-does) | The demo story, with real numbers |
-| [Five rules this codebase enforces](#five-rules-this-codebase-enforces) | And where each is enforced |
-| [It runs with no API keys](#it-runs-with-no-api-keys) | Deterministic fallback path |
-| [Quick start](#quick-start) | Three commands |
-| [Architecture at a glance](#architecture-at-a-glance) | Layers and the agent graph |
-| [The screens](#the-screens) | All 24 dashboard routes |
-| [Project layout](#project-layout) | Where things live |
-| [Commands](#commands) | The Makefile |
-| [Documentation](#documentation) | Full index |
-| [Team](#team) | PayFlux |
+| **Growth Intelligence** | Observe -> diagnose -> hypothesize -> recommend -> **approve** -> act -> measure (controlled experiment) -> learn |
+| **Procurement Intelligence** | Detect demand -> stock need -> discover suppliers -> RFQ -> **agent-to-agent negotiation** -> evaluate -> **approve** -> PO -> invoice -> receive -> match -> **approve payment** -> PayPal -> reconcile -> learn |
+| **Unified intelligence** | Shared events, memory and financial data: demand drives procurement, procurement cost drives margin, inventory shapes campaigns, supplier outcomes shape future sourcing |
 
----
+**Who it's for:** independent merchants who sell in person and online through
+PayPal - the demo is *Juniper & Oak Coffee*, a Portland coffee shop with an online
+bean store - and the staff roles around them (Owner, Admin, Analyst, Staff, Viewer).
 
-## What it actually does
+## The signature scenario
 
-Sign in as the demo merchant (Sharma Cafe) and the Growth Command Center shows:
+1. Growth Intelligence sees online demand for **Premium Coffee Beans** up **+71%**
+   (7 -> 12 bags/day) and flags *"Capture rising demand"*.
+2. Inventory Intelligence: **42 bags, 3.5 days of cover**, 3-day lead time ->
+   procure **150**, needed within **3 days**.
+3. The deterministic engine sets the limits **before any agent speaks**:
+   `$18.00 × (1 − 40%) = $10.80` max landed per bag, **$1,620** budget.
+4. The Buyer Agent sends an RFQ to **three independent supplier agents** - each
+   with private pricing, stock, delivery and negotiation behaviour.
+5. They negotiate over multiple rounds through **signed, typed protocol
+   messages**; every offer is validated by the backend.
+6. Evaluation recommends **Cascadia Coffee Collective - $1,455.00 landed**,
+   **$248.77** below the best opening quote. Pacific Bean Exchange is excluded
+   (9-day delivery, only 90 bags).
+7. An **Analyst** tries to approve -> **403**. The **Owner** approves the exact,
+   hash-bound terms.
+8. A purchase order is issued; the supplier agent invoices.
+9. **Partial receipt** (100 of 150) -> the three-way match holds payment.
+   The rest arrives -> match clears -> **payment approval**.
+10. **PayPal Orders v2** pays the supplier (simulated without keys, sandbox with keys).
+11. Reconciliation: PO × receipt × invoice × capture agree to the cent; inventory
+    revalued to **$10.12/bag**; product margin **35.6% -> 43.8%**; supplier
+    reliability updated; the Command Center reflects it all.
 
-| Metric | Value | Change |
-| --- | --- | --- |
-| Revenue | Rs 4.94L | **-12.9%** |
-| Orders | 2,353 | -7.9% |
-| Average order value | Rs 210 | -5.5% |
-| Repeat rate | 38.3% | -11.8% |
+Walkthrough: **[docs/DEMO.md](docs/DEMO.md)**.
 
-The Growth Graph decomposes that movement:
+## Non-negotiables, enforced in code
 
-```
-Revenue                       -12.9%
-  |- Orders                    -7.9%     decomposes_into   (arithmetic)
-  |- AOV                       -5.5%     decomposes_into   (arithmetic)
-  `- Repeat customers         -11.8%     correlates_with
-       `- EVENING segment     -32.3%     decomposes_into
-            `- Evening service time  +25.6%   correlates_with
-                 `- Waiting-time complaints  +117%   evidenced_by  (reviews)
-```
+1. **No AI arithmetic.** Every amount comes from a `Decimal` engine
+   ([`services/supply/policy.py`](backend/app/services/supply/policy.py)) or SQL. An
+   LLM may propose a counter-offer; out-of-bounds proposals are refused, not clamped.
+2. **Humans approve money movement** - Owners included. Agents can request,
+   never approve; the agent tools for approving or paying always refuse.
+3. **Approvals bind to exact terms** (SHA-256 of the canonical details, policy
+   version). Any change invalidates the approval, durably.
+4. **Idempotent payments.** `PayPal-Request-Id` / `sender_batch_id` derived from
+   the business action; one live execution per invoice.
+5. **Verified webhooks only.** PayPal's verify-webhook-signature first; event id
+   as replay guard; unverified events stored as rejected and never acted on.
+6. **Signed agent messages.** Per-agent HMAC, schema validation, sender roles,
+   freshness, nonce/idempotency replay protection, tenant isolation.
+7. **Tenant isolation is structural** - merchant from membership, every query scoped.
+8. **Nothing simulated is presented as real** - `SIMULATED` / `SANDBOX` / `LIVE`
+   on every PayPal row and badge; simulated supplier agents are labelled.
+9. **Correlation is not causation** - the Growth Graph only uses
+   `decomposes_into`, `correlates_with`, `evidenced_by`.
 
-The Growth Scientist produces a quantified opportunity:
+Details: [docs/SECURITY.md](docs/SECURITY.md) · [docs/SUPPLY_AGENTS.md](docs/SUPPLY_AGENTS.md).
 
-> **Recover lost evening repeat customers** — Rs 14,470/month, 92% confidence
->
-> **Hypothesis.** Repeat customers in the evening slot are lapsing faster than
-> anywhere else in the business. Average service time in that slot moved +25.6%
-> over the same window, and negative review volume for the same slot moved in
-> step with it. *These are correlated signals observed over the same period, not
-> a demonstrated cause.*
->
-> **Recommended.** Run a targeted evening win-back experiment against the lapsed
-> segment, with a held-out control group so the lift is measurable.
->
-> **Considered and not chosen.** A blanket percentage discount — it cuts margin
-> across customers who were never at risk and does not address the signal the
-> evidence points to.
+## PayPal APIs used
 
-Approve it, and the agents execute:
+| API | Used for |
+| --- | --- |
+| OAuth 2.0 client credentials | Cached, auto-refreshed tokens (server-side only) |
+| Transaction Search | Incremental sync in <=31-day windows -> transaction intelligence (gross/net, fees, refunds, failures, repeat payers) |
+| Orders v2 (+ Payments v2 authorizations) | Supplier invoice settlement, payee = supplier |
+| Invoicing v2 | Merchant -> customer invoices with reminders and cancellation |
+| Payouts | Cashback rewards - approval-gated; never used for supplier settlement |
+| Catalog / Plans / Subscriptions | Plans, lifecycle actions, failed-payment recovery |
+| Webhooks (verify-webhook-signature) | Captures, refunds, payouts, invoices, subscription events |
 
-```
-Created campaign targeting 578 customers
-Created experiment with 285 control / 293 test
-Launched campaign (simulated delivery)
-Generated the experiment trading window so results are measurable
-```
+Without credentials everything runs against a deterministic simulator with `SIM-`
+identifiers. See **[docs/PAYPAL.md](docs/PAYPAL.md)**.
 
-Then the Measurement Agent computes the result from the transaction ledger:
+## AI and services
 
 | | |
 | --- | --- |
-| Control conversion | 8.9% |
-| Test conversion | 14.4% |
-| Conversion lift | **+61.0%** |
-| Incremental revenue | Rs 12,553 |
-| Incremental profit | Rs 8,900 |
-| ROI | 7.85x |
-| Significance | p = 0.042 (two-proportion z-test) |
-| **Decision** | **SCALE** |
+| **LangGraph** | Growth workflow and procurement workflow; both terminate at the approval gate |
+| **Groq GPT-OSS** (`openai/gpt-oss-120b`) | Optional: explanations, intent routing, buyer-agent negotiation strategist |
+| **pgvector** | Agent long-term memory (HNSW cosine) and semantic review search |
+| **Langfuse** | Optional traces for agent runs and tool calls |
+| **Vapi** | Optional voice assistant (growth, supply, approvals, PayPal - read-only) |
+| **n8n** | Event routing from the transactional outbox |
 
-Full walkthrough: **[docs/DEMO.md](docs/DEMO.md)**
+**Runs without any key**: every graph node has a deterministic path; runs are
+labelled *Deterministic mode*.
 
----
+## Sponsor tools actually used
 
-## Five rules this codebase enforces
+* **AG Grid Community** - transactions, quote comparison, invoices, receipts,
+  reconciliations, payments, RFQs.
+* **Render** - complete Blueprint (`render.yaml`: API, web, worker, Postgres);
+  not deployed from this environment.
+* **Postman** - [`postman/PayPilot.postman_collection.json`](postman/PayPilot.postman_collection.json)
+  walks the whole signature scenario.
 
-Not aspirations. Each is enforced in code and covered by a test.
+Not used, so not claimed: APIMatic, AG Studio, Bryntum, Elastic, PayPal Agent
+Toolkit/MCP at runtime ([why](docs/PAYPAL.md#agent-toolkit-and-mcp)).
 
-### 1. The LLM never calculates a business number
+## Architecture
 
-Every financial figure is computed in SQL/Python
-([`repositories/transaction.py`](backend/app/repositories/transaction.py),
-[`services/analytics/service.py`](backend/app/services/analytics/service.py)).
-The model receives a structured fact sheet and reasons over it.
-
-Even when an LLM **is** configured, the orchestrator overwrites
-`estimated_impact`, `confidence` and `requires_approval` with the detector's
-values before persisting. The model may phrase. It may not price.
-
-### 2. Correlation is never presented as causation
-
-Growth-graph edges are only `decomposes_into`, `correlates_with` or
-`evidenced_by`. Every system prompt states the rule.
-`test_the_growth_graph_never_claims_causation` asserts the edge set is closed and
-that "caused by", "because of" and "is causing" never appear in node
-interpretations.
-
-### 3. Humans approve anything that moves money
-
-An agent can create a campaign and an experiment. It cannot approve or launch
-one. `CampaignService.execute` raises `APPROVAL_REQUIRED` without a recorded
-approval — **even for an Owner**. The `execute_campaign` tool refuses outright
-and points at the human approval endpoint.
-
-### 4. Tenant isolation is structural, not remembered
-
-The merchant is resolved from the user's membership, never from a client-supplied
-id. A `merchant_id` in the query string is a *request*, honoured only if an active
-membership exists. `MerchantScopedRepository` filters on `merchant_id` in `get`,
-`list`, `count` and `create`, so a cross-tenant fetch returns *not found* and a
-create cannot write into another tenant.
-
-### 5. Seeded and simulated data is labelled as such
-
-Every relevant response carries `ProvenanceMeta`; the UI badges it. Nothing claims
-live Paypal transaction access, real customer messaging, or competitor-platform
-scraping — because none of that exists here.
-
-Detail: **[docs/SECURITY.md](docs/SECURITY.md)** and
-**[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**
-
----
-
-## It runs with no API keys
-
-With no `GROQ_API_KEY`, no `LANGFUSE_*` and no `VAPI_*`, the dashboard, analytics,
-opportunity detection, growth graph, experiments and **the full agent workflow**
-still run.
-
-Every graph node has a deterministic fallback, so the figures, the opportunity and
-the SCALE/STOP decision are identical either way — only the prose is simpler. Runs
-taken that way are flagged `used_fallback: true` and badged "Deterministic mode"
-in the UI, rather than passed off as model output.
-
-Add a Groq key and the same workflow gains natural-language phrasing, intent
-routing and richer interpretation. See
-**[docs/CONFIGURATION.md](docs/CONFIGURATION.md#groq-llm)**.
-
----
-
-## Quick start
-
-Requires **Docker**, **Python 3.11+**, **Node 20+**. Full guide with
-platform-specific notes: **[docs/INSTALLATION.md](docs/INSTALLATION.md)**.
-
-```bash
-cp .env.example .env
-make setup     # env -> dependencies -> database -> migrations -> seed
-make dev       # backend :8000 + frontend :3000
+```
+Next.js 15 (React 19, TypeScript, Tailwind, shadcn/ui, TanStack Query, AG Grid, Recharts)
+   │  one Axios client · polling + WebSocket hub
+   ▼
+FastAPI (Pydantic v2) ── auth → merchant scope → require_permission
+   │
+   ├─ Growth: analytics · Growth Graph · opportunities (+ supply-aware) · campaigns · experiments
+   ├─ Supply: inventory intelligence · supplier agents · buyer agent · negotiation · evaluation
+   │          · approvals · PO · receiving · three-way match · reconciliation
+   ├─ Finance: PayPal gateway (client | simulator) · sync · webhooks · invoices · payouts · subscriptions
+   ├─ Governance: approval inbox · audit log · RBAC (51 permissions, 5 roles)
+   ├─ Agents: LangGraph (growth + procurement) · 36-tool registry · signed agent protocol
+   └─ Unified events (transactional outbox) ──► n8n / worker / WebSocket
+   ▼
+PostgreSQL 16 + pgvector (56 tables) · SQLAlchemy 2 · Alembic
 ```
 
-Open <http://localhost:3000>.
+148 API endpoints · 56 tables · 36 agent tools · 51 permissions · 44 dashboard screens.
+
+## Getting started
+
+Requires **Python 3.11-3.14**, **Node 20+**, **Git**, and **Docker** (for the
+local Postgres; or bring your own Postgres 16 with `vector`).
+
+```bash
+make init     # tools check -> .env (never overwritten) -> deps -> Postgres -> migrations -> demo seed
+make dev      # backend http://localhost:8000 (docs at /docs) + frontend http://localhost:3000
+```
+
+Windows PowerShell without Make:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\setup.ps1
+powershell -ExecutionPolicy Bypass -File scripts\dev.ps1
+```
+
+### Demo credentials
 
 | Role | Email | Can |
 | --- | --- | --- |
-| Owner | `owner@sharmacafe.in` | Everything, including user management |
-| Admin | `admin@sharmacafe.in` | Approve and execute |
-| Analyst | `analyst@sharmacafe.in` | Propose — **cannot** execute |
-| Staff | `staff@sharmacafe.in` | Operations, inventory actions |
-| Viewer | `viewer@sharmacafe.in` | Read only |
+| Owner | `owner@juniperoak.com` | Everything, including users |
+| Admin | `admin@juniperoak.com` | Approve purchases and payments, execute |
+| Analyst | `analyst@juniperoak.com` | Source and negotiate - **cannot** approve or pay |
+| Staff | `staff@juniperoak.com` | Receive goods, inventory actions |
+| Viewer | `viewer@juniperoak.com` | Read only |
 
-Password for all: `Autopilot@2024`
+Password for all: `Autopilot@2024`.
 
-Sign in as Analyst, then as Owner, and watch the same button disappear while the
-same API call returns `403 PERMISSION_DENIED`.
-
-> **Port 8000 already in use?** `make backend PORT=8010`, then set
-> `NEXT_PUBLIC_API_URL=http://localhost:8010/api/v1` in the root `.env`.
-> More in [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
-
----
-
-## Architecture at a glance
-
-```
-Next.js 15 App Router  (TypeScript, Tailwind, shadcn/ui, Framer Motion, Recharts)
-    |   one Axios client - auth, correlation id, envelope unwrap, silent refresh
-    |   TanStack Query for server state, Zustand for the session only
-    v
-FastAPI  (Pydantic v2)
-    |   middleware:  request id -> rate limit -> CORS -> security headers
-    |   deps:        authenticate -> resolve merchant -> require_permission
-    v
-Services  ---->  Repositories  ---->  PostgreSQL 16 + pgvector
-                 (all tenant-scoped)
-    |
-    v
-LangGraph agents  ---->  Tool registry   typed - authorized - scoped
-    |                                    logged - traced - recorded
-    |-- Groq (GPT-OSS)   interpretation only, never arithmetic
-    |-- Langfuse         traces, generations, tool spans, latency
-    `-- Logifyx          structured logging
-```
-
-### The agent graph
-
-```
-START
-  |
-  v
-intake                     intent classification (LLM, or keyword fallback)
-  |
-  v
-growth_scientist           deterministic metrics + opportunity detection
-  |
-  |--> review_intelligence       emerging complaints, quoted evidence
-  |--> market_intelligence       competitor perception, external signals
-  |
-  v
-synthesize                 evidence -> GrowthRecommendation (schema-validated)
-  |
-  v
-approval_gate              <-- THE GRAPH ENDS HERE for money-moving actions
-  |
-  v
-respond -> END
-```
-
-Resuming after approval is **not a path the model can take**. The approval
-endpoint — authenticated and permission-checked — drives Action Agent ->
-Experiment Agent -> Measurement Agent -> Learning.
-
-Deep dive: **[docs/AGENTS.md](docs/AGENTS.md)** ·
-**[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**
-
----
-
-## The screens
-
-Twenty-four routes, grouped the way the sidebar groups them - around the growth
-loop rather than the database schema.
-
-### Observe
-
-| Route | What it is |
-| --- | --- |
-| `/dashboard` | Command Center: revenue, orders, AOV, repeat rate, anomalies |
-| `/growth` | Growth Graph: revenue decomposed to its root causes |
-
-### Diagnose
-
-| Route | What it is |
-| --- | --- |
-| `/opportunities` | Opportunity constellation, ranked by value. Nodes can be added by hand and dismissed |
-| `/reviews` | Topic and sentiment mining, with search, star filters and pagination |
-| `/competitors` | Competitive position and comparative ratings |
-| `/signals` | External market events, scored against this merchant's revenue exposure |
-
-### Act
-
-| Route | What it is |
-| --- | --- |
-| `/campaigns` | Drafts, the approval gate, and execution |
-| `/experiments` | Test versus control, with a two-proportion significance test |
-| `/impact` | Impact Tree: recommendation to action to measurement to learning |
-
-### Understand
-
-| Route | What it is |
-| --- | --- |
-| `/customers` | RFM segmentation and retention |
-| `/products` | Performance and market-basket pairs |
-| `/inventory` | Live stock, reorder policy, and the automation that acts on it |
-| `/inventory/[id]` | One SKU: position, the reorder decision and its blockers, batches, movements |
-| `/inventory/book` | Opening, movements and closing per SKU, with an Excel export |
-| `/inventory/ledger` | Every stock movement, filterable by item, type or correlation id |
-| `/vendors` | Who the automation can order from, and what each supplies |
-| `/purchase-orders` | Raised orders, the approval gate, and goods receiving |
-| `/inventory/automation` | Automation Center: every automated run, its steps and its reasoning |
-
-### Agents
-
-| Route | What it is |
-| --- | --- |
-| `/agents` | Agent activity: tool calls, evidence and decisions |
-| `/memory` | What the agents remember. Search it, add to it, erase it |
-| `/voice` | Voice Growth Scientist |
-| `/observability` | Langfuse traces, token usage and latency per run |
-| `/activity` | Audit log: every consequential action, with its actor |
-| `/settings` | Merchant, integrations and RBAC |
-
----
-
-## Project layout
-
-```
-.
-|-- backend/
-|   |-- app/
-|   |   |-- api/v1/         auth · dashboard · growth · campaigns · agents · inventory · memory · voice · admin
-|   |   |-- core/           config · security · permissions · exceptions · logging · middleware
-|   |   |-- db/             session · portable column types · 39 models
-|   |   |-- repositories/   all database access, tenant-scoped by construction
-|   |   |-- services/       analytics · growth · campaigns · experiments · inventory · reviews · ...
-|   |   |-- agents/         LangGraph state, nodes, graph, orchestrator, prompts, memory
-|   |   |-- tools/          the 24-tool agent registry
-|   |   |-- integrations/   groq · langfuse · vapi · cognee · email · embeddings · external search
-|   |   `-- seed/           deterministic demo dataset + calibration harness
-|   |-- alembic/            migrations
-|   `-- tests/              unit · integration · api   (208 tests)
-|-- frontend/
-|   `-- src/
-|       |-- app/            (auth) and (dashboard) route groups
-|       |-- components/     ui · layout · charts · growth · agents · opportunities · inventory · voice
-|       |-- lib/api/        the single Axios client + typed endpoints
-|       |-- hooks/          React Query hooks
-|       `-- stores/         auth session
-|-- n8n/                    workflow generator, deploy script, HMAC library
-|-- samples/                inventory import demo workbook
-|-- docker/                 Postgres init (pgvector, pgcrypto)
-|-- docs/                   full documentation
-|-- scripts/                verify.sh
-|-- docker-compose.yml
-|-- Makefile
-`-- .env.example
-```
-
-By the numbers: **85 API endpoints**, **39 tables**, **24 agent tools**,
-**38 permissions** across **5 roles**, **208 tests**, **24 dashboard routes**.
-
----
-
-## Commands
+### Commands
 
 ```bash
-make help          # list every target
-
-make setup         # one-shot: env, deps, database, migrations, seed
-make dev           # backend + frontend together
-make backend       # FastAPI only      (PORT=8010 to override)
-make frontend      # Next.js only      (WEB_PORT=3001 to override)
-
-make db            # start Postgres + pgvector
-make migrate       # alembic upgrade head
-make migration MSG="add x"
-make downgrade     # roll back one
-
-make seed          # idempotent
-make reseed        # wipe and rebuild the demo tenant
-make demo          # database + migrations + fresh seed
-make calibrate     # verify the seeded story without a database
-
-make test          # 105 backend tests (SQLite, no Docker needed)
-make lint / format / typecheck
-make check         # everything CI would run
-
-make docker-up     # the whole stack in containers
-make docker-down
-make logs
+make help        # every target
+make check       # tools, versions, .env, PayPal/LLM mode
+make test        # backend pytest (SQLite, no Docker) + frontend vitest
+make lint        # ruff + next lint
+make typecheck   # tsc (+ advisory mypy)
+make build       # backend import check + next build
+make docker-up   # Postgres (FULL=1 for the whole stack)
+make migrate     # alembic upgrade head
+make seed        # idempotent demo seed   ·   make seed-reset to rebuild it
+make reset-db    # DESTRUCTIVE - requires CONFIRM=yes
+make clean       # caches and build output only
 ```
 
----
+### Configuration
 
-## Documentation
+One `.env` at the repository root (created by `make env` from `.env.example`;
+the copy works as-is). Key settings:
 
-Start at the **[documentation index](docs/README.md)**.
-
-### Getting running
-
-| Document | What it covers |
+| Variable | Purpose |
 | --- | --- |
-| [Installation](docs/INSTALLATION.md) | Prerequisites, platform notes, step-by-step, verification |
-| [Configuration](docs/CONFIGURATION.md) | Every environment variable; Groq, Langfuse, Vapi, Supabase setup |
-| [Deployment](docs/DEPLOYMENT.md) | Docker Compose, managed Postgres, cloud platforms, hardening |
-| [Troubleshooting](docs/TROUBLESHOOTING.md) | Symptoms, causes, fixes |
+| `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_ENVIRONMENT` | Sandbox/live PayPal; blank = simulator |
+| `PAYPAL_WEBHOOK_ID` | Required to accept real webhooks |
+| `PAYPAL_SANDBOX_PAYEE_EMAIL` | Sandbox business account used as supplier payee |
+| `GROQ_API_KEY` | Optional LLM; blank = deterministic mode |
+| `PROCUREMENT_*` | Negotiation rounds, quote TTL, default margin, matching tolerances |
+| `MEMORY_ENABLED` | pgvector agent memory (on by default) |
 
-### Understanding it
-
-| Document | What it covers |
-| --- | --- |
-| [Architecture](docs/ARCHITECTURE.md) | Layering, the rules, data model, observability, bugs the tests caught |
-| [Agents](docs/AGENTS.md) | The seven agents, the graph, the tool registry, LLM failure handling |
-| [Agent memory](docs/MEMORY.md) | What the agents remember, how tenants stay isolated, cognee setup |
-| [Inventory automation](n8n/README.md) | The outbox relay, the n8n workflows, and what actually triggers them |
-| [Security](docs/SECURITY.md) | Auth, RBAC, tenant isolation, approval gates, audit logging |
-| [Data](docs/DATA.md) | How the demo dataset is generated and why it reproduces exactly |
-
-### Using it
-
-| Document | What it covers |
-| --- | --- |
-| [API reference](docs/API.md) | Every endpoint, envelopes, error codes, permission matrix |
-| [Demo script](docs/DEMO.md) | Five-minute walkthrough with the exact numbers |
-| [Testing](docs/TESTING.md) | What is tested, how to run it, how to add to it |
-| [Contributing](docs/CONTRIBUTING.md) | Conventions, workflow, adding a feature end to end |
-
-Interactive API docs are served by the running backend at
-<http://localhost:8000/docs> (Swagger), `/redoc`, and `/openapi.json`.
-
----
-
-## Demo data
-
-`Sharma Cafe`, Pune. Deterministic from seed `20240917`:
-
-- 8 products, 1,700 customers, ~14,800 transactions across 180 days
-- ~2,475 reviews, 3 competitors with ~495 seeded reviews
-- 2 completed historical experiments — one SCALE, one STOP
-
-The business story is **discoverable, never asserted**. No code says "the answer
-is waiting time". Evening regulars churn on staggered days, their baskets shrink,
-service times drift up, and reviews are generated *from the orders they describe*
-— so complaint volume rises on its own. The analytics layer surfaces the
-correlations and the agent reasons over them.
-
-Verify without a database:
-
-```bash
-make calibrate
-```
-
-Details: **[docs/DATA.md](docs/DATA.md)**
-
----
+Full reference: [docs/CONFIGURATION.md](docs/CONFIGURATION.md).
 
 ## Testing
 
 ```bash
-make test
+make test-backend    # 288 tests: unit, integration, API - SQLite, no Docker, no keys
+make test-frontend   # vitest
 ```
 
-208 tests on SQLite, so they need no Docker. The portable column types in
-[`db/types.py`](backend/app/db/types.py) let the same models run on both engines.
+Highlights: the financial engine (Decimal limits, tampered totals), the agent
+protocol (bad signatures, cross-tenant, stale, schema violations, replays), the
+PayPal client against mocked PayPal responses (token refresh, retries,
+idempotency, 31-day windows, webhook verification), the simulator, approval
+invalidation, RBAC denials, tenant isolation, pgvector memory isolation, and the
+**end-to-end procurement lifecycle through the real API**.
 
-The suite is weighted toward what the system must **refuse** to do — cross-tenant
-reads, unauthorised writes, execution without approval, refresh-token replay.
-Three real bugs were found and fixed by writing it; they are documented in
-[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#8-bugs-the-tests-caught).
+## Deployment
 
-Full breakdown: **[docs/TESTING.md](docs/TESTING.md)**
+`render.yaml` deploys Postgres, the API (Docker), the web app and a background
+worker on Render; secrets are prompted (leave blank for the keyless demo). See
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md#render-blueprint). Docker Compose runs
+the same stack locally: `make docker-up FULL=1`.
 
----
+## What we built during the hackathon
 
-## Production considerations
+PayPilot started as our "Growth Autopilot" from a previous hackathon (growth
+analytics, Growth Graph, opportunities, campaigns, experiments, inventory
+automation, vendors/POs, RBAC, LangGraph agents, voice). **After October 1,
+2026** we added:
 
-Honest about what is and is not production-ready.
+* the **PayPal integration layer** (client + simulator, transaction sync and
+  intelligence, Orders v2 settlement, invoicing, payouts, subscriptions,
+  verified webhooks, reconciliation);
+* the **Supply Agents network** (Inventory Intelligence, three independent
+  supplier agents, the Buyer Agent, multi-round negotiation, deterministic
+  evaluation, the procurement LangGraph workflow);
+* the **signed agent-to-agent protocol**;
+* the **deterministic financial and negotiation engine**;
+* the **full procurement lifecycle** (hash-bound approvals, POs, invoices,
+  partial receiving, three-way matching, PayPal payment, reconciliation,
+  supplier learning);
+* **unified intelligence** (business events, supply-aware growth opportunities,
+  inventory constraints on campaigns, procurement cost -> margin);
+* the **Approval Center**, 13 new permissions, **pgvector memory** (replacing an
+  external memory library), **19 new screens** with AG Grid, US localization,
+  `make init` + cross-platform scripts, Render Blueprint, Postman collection and
+  **80 new tests**.
 
-**Ready.** Argon2id hashing, rotating refresh tokens with family revocation on
-replay, server-side RBAC, structural tenant isolation, Alembic migrations,
-structured logging with secret redaction, audit logging that survives a
-rolled-back request, request ids, security headers, schema-validated LLM output
-with bounded retries and fallbacks.
+Full breakdown: [docs/HACKATHON.md](docs/HACKATHON.md).
 
-**Before real traffic.** Rate limiting is in-process — move the counter to Redis
-for multi-worker deployments. Analytics are computed per request — add a cache or
-materialised rollups. Campaign delivery is simulated — a real channel is a new
-adapter behind `CampaignService`. Add refresh-token cleanup, password-reset email
-delivery and 2FA. Set `REFRESH_COOKIE_SECURE=true` and a real `JWT_SECRET`.
+## Known limitations
 
-**Deliberately not built.** The ML pricing/demand model — excluded from this stage
-by the brief. `OpportunityKind.PRICING` is the extension point.
+* No PayPal credentials were available while building: PayPal paths are verified
+  against the simulator and mocked PayPal responses; follow
+  [docs/PAYPAL.md](docs/PAYPAL.md#using-the-sandbox) to run against the sandbox.
+* Supplier agents in the demo are simulated policy engines (labelled as such);
+  external agents can connect through the signed inbound endpoint.
+* Analytics run on a seeded demo dataset; synced PayPal transactions are shown
+  separately with their mode.
+* Sandbox supplier payments need a payer approval in PayPal before capture.
+* Not done from this environment: Render deployment, demo video, Devpost submission.
 
-Checklist: **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md#production-checklist)**
+## Project layout
 
----
-
-## Team
-
-<div align="center">
-
-### PayFlux
-
-| | |
-| :--: | :--: |
-| [![Bhanvi Nayer](https://img.shields.io/badge/Bhanvi_Nayer-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/bhanvinayer) | [![Madhur Prakash Mangal](https://img.shields.io/badge/Madhur_Prakash_Mangal-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Madhur-Prakash) |
-| [github.com/bhanvinayer](https://github.com/bhanvinayer) | [github.com/Madhur-Prakash](https://github.com/Madhur-Prakash) |
-
-</div>
-
----
+```
+backend/app/
+  api/v1/            auth · dashboard · growth · campaigns · agents · inventory · supply · approvals
+                     · paypal · intelligence · memory · voice · admin
+  services/          analytics · growth · campaigns · experiments · inventory
+                     · supply (policy, demand, protocol, supplier/buyer agents, negotiation,
+                       evaluation, approvals, lifecycle) · paypal (sync, webhooks, finance)
+                     · intelligence (events, unified)
+  integrations/      paypal (client, simulator, gateway) · vector_memory · groq · langfuse · vapi
+  agents/            growth graph · procurement_graph · orchestrator · memory narratives
+  tools/             36-tool registry (incl. supply, PayPal, memory)
+  db/models/         … · supply · governance · paypal · memory
+  seed/              deterministic demo (US merchant) + supply network
+frontend/src/app/(dashboard)/
+  command · supply/* · approvals · finance/* · agents/communication · (growth screens) · …
+scripts/             tasks.py (cross-platform) · setup/dev/check (.ps1 + .sh)
+postman/             PayPilot.postman_collection.json
+render.yaml · docker-compose.yml · Makefile · .env.example
+```
 
 ## License
 
-[MIT](LICENSE). All demo data is fictional.
+MIT - see [LICENSE](LICENSE).

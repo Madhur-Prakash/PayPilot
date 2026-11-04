@@ -1,0 +1,125 @@
+# PayPilot - Render Blueprint (https://render.com/docs/blueprint-spec)
+#
+# Deploys: managed Postgres 16 (pgvector is enabled by the first migration),
+# the FastAPI API (Docker), the Next.js web app (Node) and an outbox worker.
+# Secrets are `sync: false` - Render prompts for them on first deploy; leave
+# them blank to run the deterministic, simulated-PayPal demo judges can use
+# without keys.
+#
+# After the first deploy, if you renamed the services, update FRONTEND_URL /
+# CORS_ORIGINS on the API and NEXT_PUBLIC_API_URL on the web service.
+
+databases:
+  - name: paypilot-db
+    databaseName: paypilot
+    user: paypilot
+    plan: free
+    postgresMajorVersion: "16"
+
+envVarGroups:
+  - name: paypilot-shared
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: LOG_FORMAT
+        value: json
+      - key: JWT_SECRET
+        generateValue: true
+      - key: AGENT_PROTOCOL_SECRET
+        generateValue: true
+      - key: PAYPAL_SIMULATOR_WEBHOOK_SECRET
+        generateValue: true
+      - key: DEFAULT_CURRENCY
+        value: USD
+      - key: PAYPAL_ENVIRONMENT
+        value: sandbox
+      - key: PAYPAL_SIMULATION_ENABLED
+        value: "true"
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: PAYPAL_WEBHOOK_ID
+        sync: false
+      - key: PAYPAL_SANDBOX_PAYEE_EMAIL
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: LANGFUSE_PUBLIC_KEY
+        sync: false
+      - key: LANGFUSE_SECRET_KEY
+        sync: false
+      - key: EMBEDDING_PROVIDER
+        value: hash
+      - key: MEMORY_ENABLED
+        value: "true"
+      - key: REFRESH_COOKIE_SECURE
+        value: "true"
+      - key: REFRESH_COOKIE_SAMESITE
+        value: none
+
+services:
+  - type: web
+    name: paypilot-api
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /api/v1/health
+    # Migrate, seed the demo tenant (idempotent), then serve on Render's $PORT.
+    dockerCommand: >-
+      sh -c "alembic upgrade head && python -m app.seed.seed &&
+      uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"
+    envVars:
+      - fromGroup: paypilot-shared
+      - key: DATABASE_URL
+        fromDatabase:
+          name: paypilot-db
+          property: connectionString
+      - key: OUTBOX_RELAY_IN_PROCESS
+        value: "false"
+      - key: FRONTEND_URL
+        value: https://paypilot-web.onrender.com
+      - key: BACKEND_URL
+        value: https://paypilot-api.onrender.com
+      - key: CORS_ORIGINS
+        value: https://paypilot-web.onrender.com
+
+  - type: worker
+    name: paypilot-worker
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: starter
+    dockerCommand: python -m app.worker
+    envVars:
+      - fromGroup: paypilot-shared
+      - key: DATABASE_URL
+        fromDatabase:
+          name: paypilot-db
+          property: connectionString
+
+  - type: web
+    name: paypilot-web
+    runtime: node
+    rootDir: frontend
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npx next start -p $PORT
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+      - key: NEXT_PUBLIC_API_URL
+        value: https://paypilot-api.onrender.com/api/v1
+      - key: NEXT_PUBLIC_APP_NAME
+        value: PayPilot
+      - key: NEXT_PUBLIC_DEMO_EMAIL
+        value: owner@juniperoak.com
+      - key: NEXT_PUBLIC_DEMO_PASSWORD
+        value: Autopilot@2024

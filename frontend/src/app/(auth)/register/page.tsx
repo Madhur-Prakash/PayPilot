@@ -66,7 +66,7 @@ export default function RegisterPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Create your account</h1>
         <p className="text-sm text-muted-foreground">
           You will get an empty workspace you own. To explore the full sample dataset, sign in
-          with the Sharma Cafe accounts instead.
+          with the Juniper & Oak Coffee accounts instead.
         </p>
       </div>
 
@@ -83,7 +83,7 @@ export default function RegisterPage() {
           <Label htmlFor="merchant_name">Business name</Label>
           <Input
             id="merchant_name"
-            placeholder="e.g. Sharma Cafe"
+            placeholder="e.g. Juniper & Oak Coffee"
             {...form.register("merchant_name")}
           />
           {form.formState.errors.merchant_name && (

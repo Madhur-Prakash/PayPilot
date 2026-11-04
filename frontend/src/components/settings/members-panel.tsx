@@ -35,7 +35,7 @@ import { useAuthStore } from "@/stores/auth";
 
 /** Readable temporary password that still clears the 10-character minimum. */
 function generatePassword(): string {
-  const words = ["Chai", "Filter", "Ledger", "Orbit", "Sandbox", "Copper", "Harbor", "Quartz"];
+  const words = ["Juniper", "Filter", "Ledger", "Orbit", "Sandbox", "Copper", "Harbor", "Quartz"];
   const pick = () => words[Math.floor(Math.random() * words.length)];
   return `${pick()}-${pick()}-${Math.floor(1000 + Math.random() * 9000)}`;
 }
@@ -100,7 +100,7 @@ export function MembersPanel() {
                   id="invite-name"
                   value={fullName}
                   onChange={(event) => setFullName(event.target.value)}
-                  placeholder="Priya Sharma"
+                  placeholder="Jordan Ellis"
                   required
                 />
               </div>

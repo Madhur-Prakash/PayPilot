@@ -75,7 +75,7 @@ export function useOpportunity(id: string) {
   });
 }
 
-/** The Growth Allocation Engine's business/Paypal/hybrid comparison for one opportunity. */
+/** The Growth Allocation Engine's business/PayPal/hybrid comparison for one opportunity. */
 export function useGrowthMission(opportunityId: string | null) {
   return useQuery({
     queryKey: ["growth-mission", opportunityId],

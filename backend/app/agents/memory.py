@@ -1,8 +1,9 @@
 """Turning agent runs into memories worth recalling.
 
 The hard part of agent memory is not storage, it is deciding what is worth
-writing down and in what words. cognee builds a knowledge graph out of prose, so
-what gets written here is what a later run can find.
+writing down and in what words. Memories are embedded and recalled by meaning
+(pgvector), and linked to the entities they mention through tags, so what gets
+written here is what a later run can find.
 
 Two properties make a memory useful:
 
@@ -19,7 +20,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
-from app.integrations.cognee_memory import MemoryKind, memory
+from app.integrations.vector_memory import MemoryKind, memory
 from app.schemas.agent import GrowthRecommendation, MeasurementVerdict
 
 
@@ -28,7 +29,7 @@ def _today() -> str:
 
 
 def _money(value: float) -> str:
-    return f"₹{value:,.0f}"
+    return f"${value:,.0f}"
 
 
 def record_recommendation(
@@ -157,6 +158,6 @@ def format_for_prompt(hits: list[dict[str, Any]], limit: int = 5) -> str:
 
 
 def _slug(value: str) -> str:
-    """A short, stable tag - cognee node sets are matched literally."""
+    """A short, stable tag - memory graph links are matched literally."""
     cleaned = "".join(c.lower() if c.isalnum() else "-" for c in str(value))
     return "-".join(part for part in cleaned.split("-") if part)[:48] or "general"

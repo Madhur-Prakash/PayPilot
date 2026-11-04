@@ -1,34 +1,21 @@
-"""Agent long-term memory.
+"""Agent long-term memory (Postgres + pgvector).
 
-No cognee here: these cover the parts that decide whether memory is *safe* and
-whether it stays out of the way, both of which are pure logic. The parts that
-need a real knowledge graph are exercised separately against a live cognee.
-
-The isolation tests are the important ones. Passing ``datasets=[...]`` to cognee
-does not isolate anything on its own - with ``ENABLE_BACKEND_ACCESS_CONTROL``
-off, a search for one merchant returns another's chunks *stamped with the
-requesting merchant's dataset name*, so the leak cannot be spotted downstream.
-Only the environment flag and the per-merchant cognee user prevent it, which is
-why both are asserted here rather than trusted.
+The store is exercised for real against the suite's SQLite database, where
+recall ranks by the same cosine similarity pgvector computes in Postgres. The
+isolation tests are the important ones: one merchant's recall must never return
+another merchant's memory, whatever the query.
 """
 
 from __future__ import annotations
 
 import asyncio
-import os
 import uuid
 
 import pytest
 
 from app.agents import memory as narrative
 from app.core.config import settings
-from app.integrations.cognee_memory import (
-    CogneeMemory,
-    MemoryHit,
-    MemoryKind,
-    _flatten,
-    _harden_environment,
-)
+from app.integrations.vector_memory import MemoryHit, MemoryKind, VectorMemory, content_hash
 from app.schemas.agent import GrowthRecommendation, MeasurementVerdict
 from app.schemas.common import EvidenceItem
 
@@ -36,43 +23,19 @@ MERCHANT_A = uuid.UUID("11111111-1111-4111-8111-111111111111")
 MERCHANT_B = uuid.UUID("22222222-2222-4222-8222-222222222222")
 
 
-class TestTenantIsolation:
-    def test_each_merchant_gets_its_own_dataset(self):
-        store = CogneeMemory()
+@pytest.fixture
+def memory_on(monkeypatch):
+    monkeypatch.setattr(settings, "memory_enabled", True)
+
+
+class TestNamespaces:
+    def test_each_merchant_gets_its_own_namespace(self):
+        store = VectorMemory()
         assert store.dataset_for(MERCHANT_A) != store.dataset_for(MERCHANT_B)
-
-    def test_each_merchant_gets_its_own_cognee_identity(self):
-        """Datasets alone do not isolate; the owning user is what cognee checks."""
-        store = CogneeMemory()
-        assert store._identity_for(MERCHANT_A) != store._identity_for(MERCHANT_B)
-
-    def test_the_dataset_name_carries_the_merchant_id(self):
-        store = CogneeMemory()
         assert str(MERCHANT_A) in store.dataset_for(MERCHANT_A)
 
-    def test_access_control_is_forced_on(self, monkeypatch):
-        """The regression test for a real cross-tenant leak.
-
-        With this flag off, cognee keeps one shared vector collection and merchant
-        A's search returns merchant B's rows. It must not be possible to turn that
-        back on from the environment.
-        """
-        monkeypatch.setenv("ENABLE_BACKEND_ACCESS_CONTROL", "false")
-        _harden_environment()
-        assert os.environ["ENABLE_BACKEND_ACCESS_CONTROL"] == "true"
-
-    def test_session_cache_is_off(self, monkeypatch):
-        """It costs an LLM round trip per recall and we never pass a session."""
-        monkeypatch.setenv("CACHING", "true")
-        _harden_environment()
-        assert os.environ["CACHING"] == "false"
-
-    def test_cognee_telemetry_is_off_by_default(self, monkeypatch):
-        monkeypatch.setattr(settings, "memory_tracing_enabled", False)
-        monkeypatch.setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "https://example.invalid/v1/traces")
-        _harden_environment()
-        assert os.environ["COGNEE_TRACING_ENABLED"] == "false"
-        assert "OTEL_EXPORTER_OTLP_ENDPOINT" not in os.environ
+    def test_identical_text_hashes_differently_per_kind(self):
+        assert content_hash("note", "x") != content_hash("outcome", "x")
 
 
 class TestDegradesQuietly:
@@ -80,61 +43,84 @@ class TestDegradesQuietly:
 
     def test_recall_is_empty_when_disabled(self, monkeypatch):
         monkeypatch.setattr(settings, "memory_enabled", False)
-        store = CogneeMemory()
-        assert asyncio.run(store.recall(MERCHANT_A, "anything")) == []
+        assert asyncio.run(VectorMemory().recall(MERCHANT_A, "anything")) == []
 
     def test_remember_is_a_no_op_when_disabled(self, monkeypatch):
         monkeypatch.setattr(settings, "memory_enabled", False)
-        store = CogneeMemory()
-        assert asyncio.run(store.remember(MERCHANT_A, "something worth keeping")) is False
+        assert asyncio.run(VectorMemory().remember(MERCHANT_A, "something worth keeping")) is False
 
-    def test_an_empty_query_never_reaches_cognee(self, monkeypatch):
-        monkeypatch.setattr(settings, "memory_enabled", True)
-        store = CogneeMemory()
-        # Would raise if it tried to initialise; it must short-circuit first.
-        assert asyncio.run(store.recall(MERCHANT_A, "   ")) == []
+    def test_an_empty_query_returns_nothing(self, memory_on):
+        assert asyncio.run(VectorMemory().recall(MERCHANT_A, "   ")) == []
 
-    def test_a_broken_backend_stays_broken_without_retrying(self, monkeypatch):
-        """Retrying a failed import on every agent run would tax every request."""
-        monkeypatch.setattr(settings, "memory_enabled", True)
-        store = CogneeMemory()
+    def test_a_broken_backend_reports_disabled(self, memory_on):
+        store = VectorMemory()
         store._broken = True
         assert store.enabled is False
         assert asyncio.run(store.recall(MERCHANT_A, "anything")) == []
 
-    def test_queueing_a_write_outside_a_loop_does_not_raise(self, monkeypatch):
-        monkeypatch.setattr(settings, "memory_enabled", True)
-        store = CogneeMemory()
-        store.remember_later(MERCHANT_A, "no event loop is running here")
+    def test_queueing_a_write_outside_a_loop_does_not_raise(self, memory_on):
+        VectorMemory().remember_later(MERCHANT_A, "no event loop is running here")
 
     def test_draining_with_nothing_queued_returns(self):
-        asyncio.run(CogneeMemory().drain())
+        asyncio.run(VectorMemory().drain())
 
 
-class TestFlatten:
-    """cognee returns a discriminated union, and adds variants between releases."""
+class TestStore:
+    """Real writes and recalls against the suite database."""
 
-    class _Entry:
-        def __init__(self, **kw):
-            self.__dict__.update(kw)
+    async def test_recall_ranks_the_relevant_memory_first(self, engine, seeded, memory_on):
+        store = VectorMemory()
+        merchant = seeded["merchant_id"]
+        await store.remember(merchant, "Supplier RoastWorks delivered the coffee beans two days late.",
+                             kind=MemoryKind.SUPPLIER, tags=("supplier.roastworks",))
+        await store.remember(merchant, "Evening customers respond to food pairings, not discounts.",
+                             kind=MemoryKind.EXPERIMENT)
+        hits = await store.recall(merchant, "which supplier was late delivering beans", top_k=2)
+        assert hits, "expected at least one recalled memory"
+        assert isinstance(hits[0], MemoryHit)
+        assert "RoastWorks" in hits[0].text
+        assert hits[0].source == "pgvector"
 
-    def test_reads_the_text_field(self):
-        hits = _flatten([self._Entry(text="a conclusion", source="graph")])
-        assert hits == [MemoryHit(text="a conclusion", source="graph", kind="", score=None)]
+    async def test_recall_never_crosses_tenants(self, engine, seeded, memory_on):
+        store = VectorMemory()
+        secret = "Confidential: our floor price with the bakery is 3.10 per croissant."
+        await store.remember(seeded["other_merchant_id"], secret, kind=MemoryKind.NOTE)
+        hits = await store.recall(seeded["merchant_id"], "floor price bakery croissant", top_k=20)
+        assert all("Confidential" not in h.text for h in hits)
 
-    def test_falls_back_through_other_prose_fields(self):
-        hits = _flatten([self._Entry(answer="from the answer field", source="session")])
-        assert hits[0].text == "from the answer field"
+    async def test_the_same_memory_is_stored_once(self, engine, seeded, memory_on):
+        store = VectorMemory()
+        merchant = seeded["merchant_id"]
+        text = "Duplicate guard: weekly stock count happens on Mondays."
+        assert await store.remember(merchant, text, kind=MemoryKind.NOTE)
+        assert await store.remember(merchant, text, kind=MemoryKind.NOTE)
+        recent = await store.recent(merchant, limit=100)
+        assert sum(1 for h in recent if h.text == text) == 1
 
-    def test_skips_entries_with_no_prose(self):
-        assert _flatten([self._Entry(source="graph", score=0.5)]) == []
+    async def test_recall_can_follow_an_entity_tag(self, engine, seeded, memory_on):
+        store = VectorMemory()
+        merchant = seeded["merchant_id"]
+        await store.remember(merchant, "Harbor Beans accepted 13.40 per bag after two rounds.",
+                             kind=MemoryKind.PROCUREMENT, tags=("supplier.harbor",))
+        hits = await store.recall(merchant, "accepted price per bag", tags=("supplier.harbor",))
+        assert hits and all("supplier.harbor" in h.tags for h in hits)
 
-    def test_survives_none(self):
-        assert _flatten(None) == []
+    async def test_forget_erases_only_the_callers_memory(self, engine, seeded, memory_on):
+        store = VectorMemory()
+        await store.remember(seeded["merchant_id"], "Memory that will be erased for merchant A.")
+        await store.remember(seeded["other_merchant_id"], "Memory that must survive for merchant B.")
+        assert await store.forget(seeded["merchant_id"]) is True
+        assert await store.recent(seeded["merchant_id"]) == []
+        survivors = await store.recent(seeded["other_merchant_id"], limit=100)
+        assert any("must survive" in h.text for h in survivors)
 
-    def test_carries_the_node_set_through_as_the_kind(self):
-        hits = _flatten([self._Entry(text="x", node_set=["experiment", "bundle"])])
-        assert hits[0].kind == "experiment"
+    async def test_status_counts_this_merchants_memories(self, engine, seeded, memory_on):
+        store = VectorMemory()
+        await store.remember(seeded["merchant_id"], "Status check memory for the counting test.")
+        state = await store.status(seeded["merchant_id"])
+        assert state["available"] is True
+        assert state["memories"] >= 1
+        assert str(seeded["merchant_id"]) in state["dataset"]
 
 
 class TestNarrative:
@@ -144,11 +130,11 @@ class TestNarrative:
         return GrowthRecommendation(
             opportunity="Evening daypart bundle",
             summary="Pair coffee with a snack between 4 and 7pm.",
-            evidence=[EvidenceItem(metric="Evening ticket", value="₹142")],
+            evidence=[EvidenceItem(metric="Evening ticket", value="$9.40")],
             hypothesis="A food pairing lifts evening ticket size.",
-            recommended_action="Launch a filter coffee and vada bundle at 20% off.",
+            recommended_action="Launch a cold brew and pastry bundle at 20% off.",
             reasoning="Evening traffic is steady but ticket size trails the day.",
-            estimated_impact=18000.0,
+            estimated_impact=1800.0,
             confidence=0.72,
             risk="low",
             requires_approval=True,
@@ -163,18 +149,18 @@ class TestNarrative:
         )
         narrative.record_recommendation(
             merchant_id=MERCHANT_A,
-            merchant_name="Sharma Cafe",
+            merchant_name="Juniper & Oak Coffee",
             question="Why are evenings flat?",
             recommendation=self._recommendation(),
         )
         text = written[0]
         # Merchant, action, money and the question are all present, so the memory
         # is readable months later with no surrounding context.
-        assert "Sharma Cafe" in text
-        assert "filter coffee and vada" in text
-        assert "18,000" in text
+        assert "Juniper & Oak Coffee" in text
+        assert "cold brew and pastry" in text
+        assert "1,800" in text
         assert "Why are evenings flat?" in text
-        assert "Evening ticket: ₹142" in text
+        assert "Evening ticket: $9.40" in text
 
     def test_a_rejection_says_not_to_re_propose(self, monkeypatch):
         written: list[str] = []
@@ -185,10 +171,10 @@ class TestNarrative:
         )
         narrative.record_approval(
             merchant_id=MERCHANT_A,
-            merchant_name="Sharma Cafe",
+            merchant_name="Juniper & Oak Coffee",
             opportunity="Evening daypart bundle",
             approved=False,
-            decided_by="Priya",
+            decided_by="Jordan",
             note="Kitchen cannot handle the evening rush.",
         )
         text = written[0]
@@ -205,10 +191,10 @@ class TestNarrative:
         )
         narrative.record_approval(
             merchant_id=MERCHANT_A,
-            merchant_name="Sharma Cafe",
+            merchant_name="Juniper & Oak Coffee",
             opportunity="Evening daypart bundle",
             approved=True,
-            decided_by="Priya",
+            decided_by="Jordan",
         )
         assert "do not re-propose" not in written[0]
 
@@ -221,7 +207,7 @@ class TestNarrative:
         )
         narrative.record_measurement(
             merchant_id=MERCHANT_A,
-            merchant_name="Sharma Cafe",
+            merchant_name="Juniper & Oak Coffee",
             experiment_name="Evening Bundle",
             verdict=MeasurementVerdict(
                 decision="SCALE",
@@ -245,7 +231,7 @@ class TestNarrative:
         )
         narrative.record_recommendation(
             merchant_id=MERCHANT_A,
-            merchant_name="Sharma Cafe",
+            merchant_name="Juniper & Oak Coffee",
             question="q",
             recommendation=self._recommendation(),
         )
@@ -278,10 +264,10 @@ class TestPromptRendering:
     [
         ("Evening daypart bundle", "evening-daypart-bundle"),
         ("  Spaced   Out  ", "spaced-out"),
-        ("₹₹₹", "general"),
+        ("$$$", "general"),
         ("", "general"),
     ],
 )
 def test_tags_are_stable_and_never_empty(value, expected):
-    """cognee matches node sets literally, so a blank tag would match nothing."""
+    """Memory graph links match literally, so a blank tag would match nothing."""
     assert narrative._slug(value) == expected

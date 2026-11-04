@@ -28,7 +28,7 @@ class DaypartArgs(WindowArgs):
 
 
 def _money(value: float) -> str:
-    return f"Rs {value:,.0f}"
+    return f"${value:,.0f}"
 
 
 # --------------------------------------------------------------------------- #

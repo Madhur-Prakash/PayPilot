@@ -5,7 +5,7 @@
  *
  * `GrowthMissionCard` sits in the Campaigns page's Growth Missions rail: one
  * opportunity, the Growth Allocation Engine's recommended split, and a button
- * that opens `GrowthMissionDialog` - the business-vs-Paypal-vs-hybrid comparison,
+ * that opens `GrowthMissionDialog` - the business-vs-PayPal-vs-hybrid comparison,
  * the don't-discount call (if the data supports it), and the growth-arbitrage
  * note (if there's measured history yet). Choosing an option creates a real
  * campaign through the existing `POST /campaigns` flow - nothing here bypasses
@@ -74,7 +74,7 @@ export function GrowthMissionCard({ opportunity }: { opportunity: Opportunity })
           {mission.isLoading && (
             <div className="flex items-center gap-2 py-2 text-xs text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Comparing business vs Paypal vs hybrid…
+              Comparing business vs PayPal vs hybrid…
             </div>
           )}
 
@@ -188,7 +188,7 @@ function GrowthMissionDialog({
         await createExperiment.mutateAsync({
           name: `${opportunity.title} — growth experiment`.slice(0, 200),
           hypothesis:
-            "Business-side win-back and Paypal-side acquisition both beat doing nothing, " +
+            "Business-side win-back and PayPal-powered offers both beat doing nothing, " +
             "and one of them beats the other.",
           campaign_id: campaign.id,
           opportunity_id: opportunity.id,
@@ -207,7 +207,7 @@ function GrowthMissionDialog({
             },
             {
               key: "paypal",
-              name: "Paypal acquisition",
+              name: "PayPal-powered offers",
               description: data.paypal_option.label,
               offer_description: data.paypal_option.offer_description,
               allocation_pct: 25,
@@ -319,7 +319,7 @@ function GrowthMissionDialog({
               {chosen === "HYBRID" && (
                 <>
                   <dt className="text-muted-foreground">Experiment</dt>
-                  <dd className="text-right font-medium">Control + Business + Paypal + Hybrid</dd>
+                  <dd className="text-right font-medium">Control + Business + PayPal + Hybrid</dd>
                 </>
               )}
             </dl>

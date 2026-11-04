@@ -31,14 +31,14 @@ from app.seed.generators.dataset import (
 REVIEW_PHRASES: dict[str, dict[str, list[str]]] = {
     ReviewTopic.WAITING_TIME: {
         "negative": [
-            "Waited almost 20 minutes for one cold coffee. The queue barely moved.",
+            "Waited almost 20 minutes for one cold brew. The queue barely moved.",
             "Took forever to get our order. Evening crowd and only one person at the counter.",
             "Good coffee but the wait is getting worse every week. Nearly half an hour today.",
             "Ordered at 7pm, got it at 7:25. Ended up late for my class.",
             "The wait time here has really gone downhill. It used to be quick.",
             "Long queue, slow service. Had to cancel and leave.",
             "Service was painfully slow during the evening rush.",
-            "Great wrap, terrible wait. Twenty-five minutes is too long for a takeaway.",
+            "Great wrap, terrible wait. Twenty-five minutes is too long for a to-go order.",
             "Standing around for 18 minutes on a weekday evening is not acceptable.",
             "They need more staff in the evening. The wait keeps stretching.",
         ],
@@ -50,13 +50,13 @@ REVIEW_PHRASES: dict[str, dict[str, list[str]]] = {
     },
     ReviewTopic.TASTE: {
         "positive": [
-            "The cold coffee here is genuinely the best in the area. Perfect balance.",
-            "Masala chai tastes exactly like it should. Strong and properly spiced.",
-            "Paneer wrap was delicious, well seasoned and generously filled.",
+            "The nitro cold brew here is genuinely the best in the neighborhood. Perfect balance.",
+            "The house drip tastes exactly like it should. Bright and properly roasted.",
+            "Chicken avocado wrap was delicious, well seasoned and generously filled.",
             "That brownie is dangerously good. Warm, fudgy, not too sweet.",
-            "Cappuccino had a lovely flavour, proper espresso base.",
-            "Flavours are consistently excellent. Never had a bad cup here.",
-            "Honestly the chai alone is worth the trip.",
+            "Cappuccino had a lovely flavor, proper espresso base.",
+            "Flavors are consistently excellent. Never had a bad cup here.",
+            "Honestly the cold brew alone is worth the trip.",
         ],
         "negative": [
             "The iced tea tasted watered down today.",
@@ -70,7 +70,7 @@ REVIEW_PHRASES: dict[str, dict[str, list[str]]] = {
             "Quality has stayed high even as they got busier.",
         ],
         "negative": [
-            "Sandwich was soggy and the bread tasted stale.",
+            "Panini was soggy and the bread tasted stale.",
             "Quality seems to have slipped lately. Not what it was.",
         ],
     },
@@ -82,13 +82,13 @@ REVIEW_PHRASES: dict[str, dict[str, list[str]]] = {
         "negative": [
             "Nobody at the counter for ten minutes in the evening.",
             "Felt understaffed. The one person working was clearly overwhelmed.",
-            "Service was disorganised, they mixed up two orders ahead of me.",
+            "Service was disorganized, they mixed up two orders ahead of me.",
         ],
     },
     ReviewTopic.PRICE: {
         "positive": [
             "Reasonable prices for the portion sizes.",
-            "Good value, especially the chai.",
+            "Good value, especially the drip coffee refills.",
         ],
         "negative": [
             "Getting expensive for what it is. The wrap went up again.",
@@ -96,7 +96,7 @@ REVIEW_PHRASES: dict[str, dict[str, list[str]]] = {
         ],
     },
     ReviewTopic.PACKAGING: {
-        "positive": ["Takeaway packaging was sturdy, nothing spilled on the ride home."],
+        "positive": ["To-go packaging was sturdy, nothing spilled on the ride home."],
         "negative": [
             "Coffee leaked all over the bag on the way back.",
             "Flimsy packaging, the lid popped off in my scooter.",
@@ -119,7 +119,7 @@ REVIEW_PHRASES: dict[str, dict[str, list[str]]] = {
     ReviewTopic.AVAILABILITY: {
         "positive": ["Everything on the menu was available even late in the evening."],
         "negative": [
-            "Cold coffee was sold out by 7pm. Second time this month.",
+            "Cold brew was sold out by 7pm. Second time this month.",
             "They had run out of brownies again.",
         ],
     },
@@ -132,7 +132,7 @@ REVIEW_PHRASES: dict[str, dict[str, list[str]]] = {
 REVIEW_TITLES: dict[str, list[str]] = {
     "positive": [
         "Great as always",
-        "Solid neighbourhood cafe",
+        "Solid neighborhood cafe",
         "Love this place",
         "Consistently good",
     ],
@@ -230,7 +230,7 @@ def generate_reviews(
         reviewed_at = txn.occurred_at + timedelta(hours=rng.randint(2, 40))
         reviews.append(
             ReviewRecord(
-                author_name=customer.name if customer else "Paypal Customer",
+                author_name=customer.name if customer else "Online Customer",
                 customer_ref=txn.customer_ref,
                 rating=rating,
                 title=rng.choice(REVIEW_TITLES[tier]),

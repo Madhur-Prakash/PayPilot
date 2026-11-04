@@ -4,7 +4,7 @@ import {
   Ban,
   Check,
   Clock,
-  IndianRupee,
+  DollarSign,
   Info,
   Megaphone,
   Play,
@@ -115,7 +115,7 @@ export default function CampaignsPage() {
       {/* Top-level metrics */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <MetricTile icon={Megaphone} label="Active campaigns" value={formatNumber(activeCampaigns)} />
-        <MetricTile icon={IndianRupee} label="Campaign spend" value={formatCompactCurrency(totalSpend)} />
+        <MetricTile icon={DollarSign} label="Campaign spend" value={formatCompactCurrency(totalSpend)} />
         <MetricTile
           icon={TrendingUp}
           label="Incremental revenue"
@@ -139,7 +139,7 @@ export default function CampaignsPage() {
           <div>
             <h3 className="text-base font-semibold tracking-tight">Growth Missions</h3>
             <p className="text-xs text-muted-foreground">
-              Where the next rupee of growth budget should go, compared across business and Paypal
+              Where the next dollar of growth budget should go, compared across business-side and PayPal-powered
             </p>
           </div>
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">

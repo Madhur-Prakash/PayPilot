@@ -90,7 +90,7 @@ export function ProductPerformanceMatrix({ products, height = 320 }: ProductPerf
         <div className="flex items-center gap-3 text-2xs font-medium text-muted-foreground">
           <span className="flex items-center gap-1">
             <span className="h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-500" />
-            Revenue (₹)
+            Revenue ($)
           </span>
           <span className="flex items-center gap-1">
             <span className="h-2 w-2 rounded-full bg-amber-500" />

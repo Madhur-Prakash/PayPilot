@@ -361,9 +361,9 @@ RATE_LIMIT_WINDOW_SECONDS=60
 
 ```dotenv
 SEED_RANDOM_SEED=20240917
-DEMO_OWNER_EMAIL=owner@sharmacafe.in
+DEMO_OWNER_EMAIL=owner@juniperoak.com
 DEMO_OWNER_PASSWORD=Autopilot@2024
-DEMO_MERCHANT_NAME=Sharma Cafe
+DEMO_MERCHANT_NAME=Juniper & Oak Coffee
 ```
 
 Changing `SEED_RANDOM_SEED` produces a different but equally valid dataset. The
@@ -381,7 +381,7 @@ the root `.env`:
 ```dotenv
 NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
 NEXT_PUBLIC_APP_NAME=PayPilot
-NEXT_PUBLIC_DEMO_EMAIL=owner@sharmacafe.in
+NEXT_PUBLIC_DEMO_EMAIL=owner@juniperoak.com
 NEXT_PUBLIC_DEMO_PASSWORD=Autopilot@2024
 NEXT_PUBLIC_VAPI_PUBLIC_KEY=
 NEXT_PUBLIC_VAPI_ASSISTANT_ID=
@@ -483,9 +483,9 @@ print('cors     :', settings.cors_origins)
 | `RATE_LIMIT_REQUESTS` | `300` | | [Networking](#networking-and-rate-limiting) |
 | `RATE_LIMIT_WINDOW_SECONDS` | `60` | | [Networking](#networking-and-rate-limiting) |
 | `SEED_RANDOM_SEED` | `20240917` | | [Seed](#demo-seed) |
-| `DEMO_OWNER_EMAIL` | `owner@sharmacafe.in` | | [Seed](#demo-seed) |
+| `DEMO_OWNER_EMAIL` | `owner@juniperoak.com` | | [Seed](#demo-seed) |
 | `DEMO_OWNER_PASSWORD` | `Autopilot@2024` | | [Seed](#demo-seed) |
-| `DEMO_MERCHANT_NAME` | `Sharma Cafe` | | [Seed](#demo-seed) |
+| `DEMO_MERCHANT_NAME` | `Juniper & Oak Coffee` | | [Seed](#demo-seed) |
 
 ---
 

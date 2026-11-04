@@ -29,9 +29,9 @@ log = get_logger(__name__)
 
 
 def _fmt_money(value: float) -> str:
-    if abs(value) >= 100_000:
-        return f"Rs {value / 100_000:.2f}L"
-    return f"Rs {value:,.0f}"
+    if abs(value) >= 10_000:
+        return f"${value / 1_000:.1f}K"
+    return f"${value:,.0f}"
 
 
 def _unique_nodes(nodes: list[GraphNode]) -> list[GraphNode]:

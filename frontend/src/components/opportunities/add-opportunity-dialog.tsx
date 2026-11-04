@@ -150,7 +150,7 @@ export function AddOpportunityDialog({
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="opp-value">Worth per month (₹)</Label>
+              <Label htmlFor="opp-value">Worth per month ($)</Label>
               <Input
                 id="opp-value"
                 type="number"

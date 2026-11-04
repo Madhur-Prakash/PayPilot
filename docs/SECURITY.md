@@ -213,7 +213,7 @@ cookie. `POST /auth/logout-all` revokes every family for the user.
 | **VIEWER** | Read only | Everything else |
 
 The separation that matters is ANALYST from ADMIN. An analyst can investigate,
-propose and create — and cannot spend a rupee. That boundary is what makes the
+propose and create — and cannot spend a dollar. That boundary is what makes the
 approval gate meaningful rather than ceremonial.
 
 ### The lattice
@@ -581,7 +581,7 @@ This is a hackathon build. What it does not do:
 
 The last row is the one that matters most for how this product presents itself.
 Simulated execution is labelled "Demo Simulation" wherever it appears, and no
-screen claims access to live Paypal systems, real customer messaging, or competitor
+screen claims access to live PayPal systems, real customer messaging, or competitor
 platforms.
 
 ---

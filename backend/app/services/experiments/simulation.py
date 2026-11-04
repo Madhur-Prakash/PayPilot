@@ -98,9 +98,9 @@ async def simulate_experiment_traffic(
 
     # The combo the evening intervention actually offers.
     by_sku = {p.sku: p for p in products}
-    anchor = by_sku.get("SC-COLD-001") or products[0]
-    companion = by_sku.get("SC-PWRP-005") or (products[1] if len(products) > 1 else None)
-    dessert = by_sku.get("SC-BRWN-006")
+    anchor = by_sku.get("JO-COLD-001") or products[0]
+    companion = by_sku.get("JO-WRAP-005") or (products[1] if len(products) > 1 else None)
+    dessert = by_sku.get("JO-BRWN-006")
 
     start = experiment.start_date or date.today() - timedelta(days=13)
     end = experiment.end_date or start + timedelta(days=13)
@@ -119,7 +119,7 @@ async def simulate_experiment_traffic(
         rate = control_rate * uplift if is_test else control_rate
         # Exact counts rather than Bernoulli draws: with a few hundred customers per
         # arm, sampling noise would swamp the effect and make the result unreliable.
-        take = max(int(round(len(member_ids) * rate)), 0)
+        take = max(round(len(member_ids) * rate), 0)
         chosen = _stable_order(member_ids, salt=f"{experiment.id}:{variant.key}")[:take]
         converted[variant.key] = len(chosen)
 
@@ -153,7 +153,7 @@ async def simulate_experiment_traffic(
                 net_amount=gross,
                 cost_amount=cost,
                 item_count=sum(q for _, q in items),
-                payment_method="paypal_upi",
+                payment_method="paypal",
                 channel="paypal_app",
                 status="COMPLETED",
                 is_repeat=True,

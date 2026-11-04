@@ -35,7 +35,7 @@ from app.repositories.opportunity import OpportunityRepository
 log = get_logger(__name__)
 
 #: Simulated per-recipient delivery cost, used for ROI arithmetic.
-SIMULATED_MESSAGE_COST = 0.35
+SIMULATED_MESSAGE_COST = 0.02
 
 
 class CampaignService:

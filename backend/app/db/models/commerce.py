@@ -161,7 +161,7 @@ class Transaction(BaseModel):
     cost_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0, nullable=False)
     item_count: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
-    payment_method: Mapped[str] = mapped_column(String(32), default="paypal_upi", nullable=False)
+    payment_method: Mapped[str] = mapped_column(String(32), default="paypal", nullable=False)
     channel: Mapped[str] = mapped_column(String(32), default="in_store", nullable=False)
     status: Mapped[str] = mapped_column(
         String(24), default=TransactionStatus.COMPLETED, nullable=False

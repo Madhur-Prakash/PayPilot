@@ -39,10 +39,10 @@ interprets, it never calculates.**
 ```
 PostgreSQL / Python                    LLM
 -------------------                    ---
-revenue        = Rs 4.94L      ---->   reads structured metrics
+revenue        = $24.7K      ---->   reads structured metrics
 repeat_rate    = 38.3%                 chooses which tool to call next
 evening change = -32.3%                writes the hypothesis
-opportunity    = Rs 14,470/mo          phrases the recommendation
+opportunity    = $724/mo          phrases the recommendation
 confidence     = 0.92
 ```
 
@@ -387,10 +387,10 @@ Every prompt inherits the same base rules:
 2. Never claim that one thing caused another. Use "correlates with", "moved in
    step with", "the evidence suggests". A controlled experiment is what turns a
    hypothesis into a finding.
-3. Currency is Indian Rupees, written as "Rs 9,840".
+3. Currency is US dollars, written as "$9,840".
 4. Be concrete and specific.
 5. This is a demo environment with a seeded dataset. Never claim access to live
-   Paypal systems, real customer messaging, or competitor platforms.
+   PayPal systems, real customer messaging, or competitor platforms.
 ```
 
 Specialised prompts: `INTENT_CLASSIFIER`, `GROWTH_SCIENTIST`, `REVIEW_AGENT`,
@@ -429,7 +429,7 @@ Two validators handle what models actually get wrong:
 
 ```python
 confidence: 82        ->  0.82      # percentage instead of a fraction
-"Rs 9,840"            ->  9840.0    # currency string instead of a number
+"$9,840"            ->  9840.0    # currency string instead of a number
 ```
 
 ---

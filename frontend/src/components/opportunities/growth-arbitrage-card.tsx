@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * "Growth Arbitrage": the same incentive rupee producing a different measured
+ * "Growth Arbitrage": the same incentive dollar producing a different measured
  * return depending on which surface it runs through. Only ever renders a claim
  * once both surfaces have at least one measured campaign - see
  * `GrowthAllocationEngine.growth_arbitrage()`, which returns `null` otherwise.
@@ -32,18 +32,18 @@ export function GrowthArbitrageCard() {
       <CardContent>
         {!data ? (
           <p className="text-sm leading-relaxed text-muted-foreground">
-            Not enough measured campaigns yet on both the business and Paypal surfaces to compare
+            Not enough measured campaigns yet on both the business and PayPal surfaces to compare
             returns. Once at least one of each has been measured, this will show which surface is
-            producing more incremental revenue per rupee spent — and by how much.
+            producing more incremental revenue per dollar spent — and by how much.
           </p>
         ) : (
           <div className="space-y-3">
             <p className="text-sm leading-relaxed">
               <span className="font-medium">
-                {data.better_surface === "PAYPAL" ? "Paypal acquisition" : "Business-side reactivation"}
+                {data.better_surface === "PAYPAL" ? "PayPal-powered offers" : "Business-side reactivation"}
               </span>{" "}
-              is currently producing higher incremental revenue per rupee of incentive than{" "}
-              {data.worse_surface === "PAYPAL" ? "Paypal acquisition" : "business-side reactivation"}.
+              is currently producing higher incremental revenue per dollar of incentive than{" "}
+              {data.worse_surface === "PAYPAL" ? "PayPal-powered offers" : "business-side reactivation"}.
             </p>
             <div className="grid grid-cols-2 gap-3">
               <SurfaceStat surface={data.better_surface} roi={data.better_roi} best />

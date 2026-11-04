@@ -1185,6 +1185,9 @@ export interface MemoryHit {
   source: string;
   kind: string;
   score: number | null;
+  tags?: string[];
+  memory_id?: string;
+  created_at?: string | null;
 }
 
 export interface MemorySearchResult {
@@ -1199,8 +1202,12 @@ export interface MemoryStatus {
   available: boolean;
   broken: boolean;
   embedding_provider: string;
-  llm_model: string;
-  storage: string;
+  embedding_dimensions?: number;
+  /** "pgvector" in Postgres; an in-process cosine fallback on SQLite. */
+  backend: string;
+  memories?: number;
+  by_kind?: Record<string, number>;
+  reason?: string;
   pending_writes: number;
   dataset?: string;
 }
