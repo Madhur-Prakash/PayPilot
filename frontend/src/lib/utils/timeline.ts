@@ -17,7 +17,9 @@ export interface GanttTaskData {
   manuallyScheduled: boolean;
   expanded?: boolean;
   cls: string;
-  /** Shown in the Detail column; Bryntum encodes it, so no HTML is ever interpreted. */
+  /** The stage's state, for the status pill (the bar colour comes from `cls`). */
+  state: TimelineState;
+  /** Shown under the stage name and in the tooltip; always rendered as text, never HTML. */
   note: string;
   /** Bryntum's baselines: the planned window, drawn as a thin bar under the actual one. */
   baselines?: { startDate: Date; endDate: Date }[];
@@ -38,7 +40,15 @@ export const STATE_CLASS: Record<TimelineState, string> = {
   blocked: "pp-task-blocked",
 };
 
+export const STATE_LABEL: Record<TimelineState, string> = {
+  done: "Done",
+  active: "In progress",
+  pending: "Pending",
+  blocked: "Blocked",
+};
+
 export function toGanttTask(task: TimelineTask): GanttTaskData {
+  const state: TimelineState = task.state in STATE_CLASS ? task.state : "pending";
   const mapped: GanttTaskData = {
     id: task.id,
     name: task.name,
@@ -46,7 +56,8 @@ export function toGanttTask(task: TimelineTask): GanttTaskData {
     endDate: new Date(task.endDate),
     percentDone: task.percentDone,
     manuallyScheduled: true,
-    cls: STATE_CLASS[task.state] ?? STATE_CLASS.pending,
+    cls: STATE_CLASS[state],
+    state,
     note: task.detail,
   };
   if (task.expanded !== undefined) mapped.expanded = task.expanded;
@@ -77,6 +88,11 @@ export function visibleRange(tasks: GanttTaskData[]): { start: Date; end: Date }
     return { start: new Date(now - 2 * day), end: new Date(now + 14 * day) };
   }
   return { start: new Date(Math.min(...stamps) - day), end: new Date(Math.max(...stamps) + 3 * day) };
+}
+
+/** Rows the grid shows with every procurement expanded - sizes the chart to its content. */
+export function countRows(tasks: GanttTaskData[]): number {
+  return tasks.reduce((n, t) => n + 1 + (t.children && t.expanded !== false ? countRows(t.children) : 0), 0);
 }
 
 export function toGantt(timeline: Pick<ProcurementTimeline, "tasks" | "dependencies">) {

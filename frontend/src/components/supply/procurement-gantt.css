@@ -1,32 +1,241 @@
-/* Colour a Bryntum task bar by the real state of the stage it represents. */
+/*
+ * Bryntum Gantt, dressed in PayPilot's design tokens.
+ *
+ * stockholm.css resolves its neutrals with light-dark(), driven by
+ * --b-widget-color-scheme; the variables below map Bryntum's surfaces, text, lines
+ * and bars onto the app's HSL tokens, so the chart matches the rest of the platform
+ * in both themes.
+ */
 .pp-gantt-host {
-  /* Matched by the legend on the page: planned windows and the "today" progress line. */
-  --b-baseline-background: #a3adbb;
-  --b-progress-line-color: #d97706;
-  height: 560px;
-  min-height: 320px;
-  border-radius: 12px;
+  --b-widget-color-scheme: light;
+  --b-widget-font-size: 0.8125rem;
+  --b-primary: hsl(var(--primary));
+
+  --b-panel-background: hsl(var(--card));
+  --b-grid-background: hsl(var(--card));
+  --b-grid-cell-background: transparent;
+  --b-grid-cell-color: hsl(var(--foreground));
+  --b-grid-cell-border-color: transparent;
+  --b-grid-row-border-color: hsl(var(--border) / 0.7);
+  --b-grid-cell-hover-background: hsl(var(--muted) / 0.55);
+  --b-grid-cell-selected-background: hsl(var(--primary) / 0.07);
+  --b-grid-cell-hover-selected-background: hsl(var(--primary) / 0.1);
+  --b-grid-cell-selected-color: hsl(var(--foreground));
+  --b-grid-header-background: hsl(var(--muted) / 0.45);
+  --b-grid-header-color: hsl(var(--muted-foreground));
+  --b-grid-header-border-color: hsl(var(--border));
+  --b-grid-header-font-size: 0.6875rem;
+  --b-grid-header-font-weight: 600;
+  --b-splitter-color: hsl(var(--border));
+  --b-column-lines-tick-color: hsl(var(--border) / 0.45);
+  --b-column-lines-major-color: hsl(var(--border));
+  --b-stripe-odd-color: transparent;
+  --b-stripe-even-color: transparent;
+  --b-tree-expander-color: hsl(var(--muted-foreground));
+
+  --b-dependency-color: hsl(var(--muted-foreground) / 0.5);
+  --b-current-time-color: hsl(var(--warning));
+  --b-time-range-line-color: hsl(var(--warning));
+  --b-baseline-background: hsl(var(--muted-foreground) / 0.3);
+  --b-baseline-border-radius: 999px;
+  --b-gantt-task-border-radius: 6px;
+  --b-gantt-task-border-width: 0;
+  --b-gantt-task-box-shadow: none;
+  --b-gantt-parent-task-max-height: 8px;
+
+  position: relative;
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  /* The timeline may be wider than the card: it scrolls inside, never widens the page. */
+  contain: inline-size;
   overflow: hidden;
   border: 1px solid hsl(var(--border));
-  background: #fff;
+  border-radius: 0.75rem;
+  background: hsl(var(--card));
 }
 
-.pp-gantt-host .b-gantt-task.pp-task-done {
-  background-color: #1f9d55;
+.dark .pp-gantt-host {
+  --b-widget-color-scheme: dark;
 }
-.pp-gantt-host .b-gantt-task.pp-task-active {
-  background-color: #0b6bcb;
+
+.pp-gantt-host > .b-gantt,
+.pp-gantt-host > .b-widget {
+  flex: 1 1 auto;
+  min-width: 0;
 }
-.pp-gantt-host .b-gantt-task.pp-task-pending {
-  background-color: #8896a9;
+
+/* Header labels: quiet, uppercase, like the platform's tables. */
+.pp-gantt-host .b-grid-header-text-content {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
-.pp-gantt-host .b-gantt-task.pp-task-blocked {
-  background-color: #d64545;
+
+/* ---- grid cells ------------------------------------------------------- */
+.pp-gantt-host .b-tree-cell-value,
+.pp-gantt-host .b-grid-cell {
+  min-width: 0;
 }
-.pp-gantt-host .b-gantt-task .b-task-percent-bar {
-  background-color: rgb(0 0 0 / 0.22);
+/* The renderer's class lands on Bryntum's .b-tree-cell-value, which centres its
+ * children; a stacked name + detail must start at the left and fill the cell. */
+.pp-gantt-host .b-tree-cell-value.pp-stage {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 2px;
+  line-height: 1.25;
+  text-align: left;
 }
-.pp-gantt-host .b-milestone.pp-task-done .b-gantt-task-content,
-.pp-gantt-host .b-gantt-task.b-milestone.pp-task-done {
-  background-color: #1f9d55;
+.pp-stage-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+  color: hsl(var(--foreground));
 }
+.b-tree-parent-row .pp-stage-name {
+  font-weight: 600;
+}
+.pp-stage-detail {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.pp-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 999px;
+  padding: 0.125rem 0.55rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.pp-pill::before {
+  content: "";
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 999px;
+  background: currentColor;
+}
+.pp-pill-done { color: hsl(var(--success)); background: hsl(var(--success) / 0.12); }
+.pp-pill-active { color: hsl(var(--primary)); background: hsl(var(--primary) / 0.1); }
+.pp-pill-blocked { color: hsl(var(--destructive)); background: hsl(var(--destructive) / 0.1); }
+.pp-pill-pending { color: hsl(var(--muted-foreground)); background: hsl(var(--muted)); }
+
+.pp-progress {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.5rem;
+}
+.pp-progress-track {
+  height: 0.375rem;
+  flex: 1 1 auto;
+  overflow: hidden;
+  border-radius: 999px;
+  background: hsl(var(--muted));
+}
+.pp-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: hsl(var(--primary));
+}
+.pp-progress-done { background: hsl(var(--success)); }
+.pp-progress-blocked { background: hsl(var(--destructive)); }
+.pp-progress-pending { background: hsl(var(--muted-foreground) / 0.6); }
+.pp-progress-label {
+  min-width: 2.25rem;
+  text-align: right;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: hsl(var(--muted-foreground));
+}
+
+/* Legend dots on the page use the same palette as the bars. */
+.pp-dot-done { background: hsl(var(--success)); }
+.pp-dot-active { background: hsl(var(--primary)); }
+.pp-dot-blocked { background: hsl(var(--destructive)); }
+.pp-dot-pending { background: hsl(var(--muted-foreground)); }
+
+/* ---- bars ---------------------------------------------------------------
+ * A stage is a light track of its colour, filled to its percent done - so a half-
+ * received delivery reads as half a bar. Done stages are solid.
+ */
+.pp-gantt-host .b-gantt-task {
+  overflow: hidden;
+}
+.pp-gantt-host .b-gantt-task.pp-task-done { background-color: hsl(var(--success)); }
+.pp-gantt-host .b-gantt-task.pp-task-active { background-color: hsl(var(--primary) / 0.2); }
+.pp-gantt-host .b-gantt-task.pp-task-blocked { background-color: hsl(var(--destructive) / 0.2); }
+.pp-gantt-host .b-gantt-task.pp-task-pending { background-color: hsl(var(--muted-foreground) / 0.22); }
+
+.pp-gantt-host .b-gantt-task .b-task-percent-bar { background-color: transparent; }
+.pp-gantt-host .b-gantt-task.pp-task-active .b-task-percent-bar { background-color: hsl(var(--primary)); }
+.pp-gantt-host .b-gantt-task.pp-task-blocked .b-task-percent-bar { background-color: hsl(var(--destructive)); }
+.pp-gantt-host .b-gantt-task.pp-task-pending .b-task-percent-bar { background-color: hsl(var(--muted-foreground) / 0.6); }
+
+/* Summary bar of a procurement: a slim rounded track filled to its overall progress,
+ * without Bryntum's end brackets. */
+.pp-gantt-host .b-gantt-task-parent .b-gantt-task {
+  border-radius: 999px;
+  background-color: hsl(var(--muted-foreground) / 0.22);
+  /* Bryntum cuts summary bars into a bracket with an 8px-deep clip-path and, where the
+   * browser supports it, the same border-shape; at this bar height that leaves only the
+   * two end notches visible. Both are reset for a plain rounded track. */
+  clip-path: none;
+  border-shape: none;
+}
+.pp-gantt-host .b-gantt-task-parent .b-task-percent-bar-outer {
+  border-radius: inherit;
+}
+.pp-gantt-host .b-gantt-task-parent .b-gantt-task::before,
+.pp-gantt-host .b-gantt-task-parent .b-gantt-task::after {
+  display: none;
+}
+.pp-gantt-host .b-gantt-task-parent .b-gantt-task .b-task-percent-bar {
+  border-radius: inherit;
+  background-color: hsl(var(--foreground) / 0.55);
+}
+.pp-gantt-host .b-gantt-task-parent .b-gantt-task.pp-task-done .b-task-percent-bar { background-color: hsl(var(--success)); }
+.pp-gantt-host .b-gantt-task-parent .b-gantt-task.pp-task-blocked .b-task-percent-bar { background-color: hsl(var(--destructive)); }
+
+/* Milestones (goods receipts) are solid diamonds in their state's colour. */
+.pp-gantt-host .b-milestone.pp-task-done,
+.pp-gantt-host .b-milestone.pp-task-done .b-gantt-task-content { background-color: hsl(var(--success)); }
+.pp-gantt-host .b-milestone.pp-task-active,
+.pp-gantt-host .b-milestone.pp-task-active .b-gantt-task-content { background-color: hsl(var(--primary)); }
+.pp-gantt-host .b-milestone.pp-task-blocked,
+.pp-gantt-host .b-milestone.pp-task-blocked .b-gantt-task-content { background-color: hsl(var(--destructive)); }
+
+/* ---- tooltip (rendered in Bryntum's float root, outside the host) --------- */
+.pp-tip {
+  display: flex;
+  max-width: 320px;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+}
+.pp-tip-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.pp-tip-when {
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+}
+.pp-tip-name { font-weight: 600; }
+.pp-tip-detail { opacity: 0.85; overflow-wrap: anywhere; }
+.pp-tip-pct { font-size: 0.75rem; opacity: 0.7; }

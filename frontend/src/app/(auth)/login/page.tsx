@@ -13,6 +13,7 @@ import { Input, Label, Separator } from "@/components/ui/primitives";
 import { FadeIn } from "@/components/ui/motion";
 import { ApiError } from "@/lib/api/client";
 import { SAMPLE_CREDENTIALS } from "@/lib/constants/config";
+import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth";
 
 const schema = z.object({
@@ -27,6 +28,7 @@ const SAMPLE_ROLES = [
   { email: "owner@juniperoak.com", role: "Owner", note: "full control" },
   { email: "admin@juniperoak.com", role: "Admin", note: "approve and execute" },
   { email: "analyst@juniperoak.com", role: "Analyst", note: "propose, cannot execute" },
+  { email: "staff@juniperoak.com", role: "Staff", note: "receive goods, inventory" },
   { email: "viewer@juniperoak.com", role: "Viewer", note: "read only" },
 ];
 
@@ -39,6 +41,7 @@ export default function LoginPage() {
     resolver: zodResolver(schema),
     defaultValues: { email: SAMPLE_CREDENTIALS.email, password: SAMPLE_CREDENTIALS.password },
   });
+  const selectedEmail = form.watch("email");
 
   async function onSubmit(values: FormValues) {
     setServerError(null);
@@ -131,12 +134,18 @@ export default function LoginPage() {
             <button
               key={account.email}
               type="button"
+              aria-pressed={selectedEmail === account.email}
               onClick={() => {
-                form.setValue("email", account.email);
-                form.setValue("password", SAMPLE_CREDENTIALS.password);
+                // Fill both fields - every demo account shares the seeded password.
+                const opts = { shouldDirty: true, shouldValidate: true } as const;
+                form.setValue("email", account.email, opts);
+                form.setValue("password", SAMPLE_CREDENTIALS.password, opts);
                 setServerError(null);
               }}
-              className="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2 text-left text-sm transition-colors hover:border-primary/40 hover:bg-primary/5 focus-ring"
+              className={cn(
+                "flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-left text-sm transition-colors hover:border-primary/40 hover:bg-primary/5 focus-ring",
+                selectedEmail === account.email ? "border-primary/60 bg-primary/5" : "border-border",
+              )}
             >
               <span className="min-w-0">
                 <span className="block truncate font-medium">{account.role}</span>

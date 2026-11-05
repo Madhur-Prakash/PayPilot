@@ -19,12 +19,6 @@ const ProcurementGantt = dynamic(() => import("@/components/supply/procurement-g
   loading: () => <LoadingCard lines={8} />,
 });
 
-const LEGEND: { state: TimelineState; label: string; colour: string }[] = [
-  { state: "done", label: "Done", colour: "#1f9d55" },
-  { state: "active", label: "In progress / waiting on a person", colour: "#0b6bcb" },
-  { state: "blocked", label: "Blocked, rejected or overdue", colour: "#d64545" },
-];
-
 function flatten(tasks: TimelineTask[]): TimelineTask[] {
   return tasks.flatMap((t) => [t, ...(t.children ? flatten(t.children) : [])]);
 }
@@ -34,20 +28,22 @@ export default function ProcurementTimelinePage() {
   const all = React.useMemo(() => flatten(timeline.data?.tasks ?? []), [timeline.data]);
   const stages = all.filter((t) => !t.children);
   const count = (s: TimelineState) => stages.filter((t) => t.state === s).length;
+  const hasData = Boolean(timeline.data && timeline.data.count > 0);
 
   return (
-    <div className="space-y-5">
+    <div className="min-w-0 space-y-5">
       <PageHeader eyebrow="Supply" title="Procurement timeline"
-        description="Every procurement as a chain of the stages that really happened - negotiation, human approval, purchase order and delivery, invoice, PayPal payment - with the dates the system recorded. Goods receipts are the diamonds; a partial delivery is a half-filled bar. Read-only: nothing here reschedules anything." />
+        description="Every procurement as the chain of stages that actually happened - negotiation, approval, purchase order and delivery, invoice and PayPal payment - on the dates PayPilot recorded." />
 
       {timeline.error && <ErrorState error={timeline.error} onRetry={() => void timeline.refetch()} />}
 
-      {timeline.data && timeline.data.count > 0 && (
+      {hasData && (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricTile icon={Truck} tone="primary" label="Procurements shown" value={timeline.data.count} />
+          <MetricTile icon={Truck} tone="primary" label="Procurements" value={timeline.data!.count} />
           <MetricTile icon={CheckCircle2} tone="success" label="Stages done" value={count("done")} />
-          <MetricTile icon={CircleDot} label="Stages in progress" value={count("active")} />
-          <MetricTile icon={OctagonAlert} tone={count("blocked") ? "destructive" : "default"} label="Blocked or overdue" value={count("blocked")} />
+          <MetricTile icon={CircleDot} label="In progress" value={count("active")} />
+          <MetricTile icon={OctagonAlert} tone={count("blocked") ? "destructive" : "default"} label="Blocked or overdue"
+            value={count("blocked")} />
         </div>
       )}
 
@@ -58,27 +54,21 @@ export default function ProcurementTimelinePage() {
           description="Start one from Reorder Recommendations and its stages will appear here as they happen." />
       )}
 
-      {timeline.data && timeline.data.count > 0 && (
-        <Card>
-          <CardContent className="space-y-3 p-3">
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-1 px-1 text-xs text-muted-foreground">
-              {LEGEND.map((l) => (
-                <span key={l.state} className="inline-flex items-center gap-1.5">
-                  <span className="h-2.5 w-5 rounded-sm" style={{ background: l.colour }} />
-                  {l.label}
-                </span>
-              ))}
-              <span className="inline-flex items-center gap-1.5">
-                <span className="h-1 w-5 rounded-sm" style={{ background: "#a3adbb" }} />
-                Planned (RFQ deadline, approval expiry, expected delivery)
+      {hasData && (
+        <Card className="min-w-0 overflow-hidden">
+          <CardContent className="min-w-0 space-y-3 p-4">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <div>
+                <h2 className="text-sm font-semibold">Stages</h2>
+                <p className="text-xs text-muted-foreground">
+                  A partial delivery is a partly filled bar; goods receipts are diamonds.
+                </p>
+              </div>
+              <span className="text-2xs text-muted-foreground">
+                updated {formatRelativeTime(timeline.data!.generated_at)} · Bryntum Gantt
               </span>
-              <span className="inline-flex items-center gap-1.5">
-                <span className="h-3 w-0.5" style={{ background: "#d97706" }} />
-                Progress as of today
-              </span>
-              <span className="ml-auto">updated {formatRelativeTime(timeline.data.generated_at)} · Bryntum Gantt</span>
             </div>
-            <ProcurementGantt timeline={timeline.data} />
+            <ProcurementGantt timeline={timeline.data!} />
           </CardContent>
         </Card>
       )}

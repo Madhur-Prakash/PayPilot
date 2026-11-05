@@ -129,9 +129,22 @@ are milestones, so a partial delivery is two diamonds and a half-filled bar; a b
   `@bryntum/gantt-react-enterprise`, `@bryntum/gantt-enterprise`, `@bryntum/core-enterprise`.
   Every `@bryntum/*` package must stay at the same exact version and tier; a mismatch loads two
   copies of Bryntum Core and breaks the theme.
+* Also imported: `@bryntum/scheduler-enterprise` (side effect only), because the "today" line is
+  Scheduler's `timeRanges` feature and only registers in Gantt when that package is loaded -
+  without it Gantt throws `Invalid type name "timeRanges"`.
 * CSS (`components/supply/procurement-gantt.tsx`), in this order: Font Awesome from
-  `core-enterprise`, structural `gantt.css`, one theme (`stockholm-light.css`), then
-  `procurement-gantt.css`, which colours each bar by stage state.
+  `core-enterprise`, structural `gantt.css`, one theme (`stockholm.css`, the `light-dark()`
+  variant), then `procurement-gantt.css`, which maps Bryntum's variables onto PayPilot's design
+  tokens - so the chart follows the app's light/dark mode - and colours each bar by stage state.
+* **Layout:** the grid shows each stage with its detail underneath, a status pill and a progress
+  bar; the timeline shows only bars, dependencies and a "Today" line, so no text ever overlaps a
+  bar. Hovering a bar shows its dates and detail (escaped - names and emails are never HTML).
+  *Fit* (`zoomToFit`) puts every stage on screen and re-fits when the card resizes; *Day / Week /
+  Month* switch presets; *Today* scrolls to now. The chart is sized to its rows, and the host has
+  `contain: inline-size`, so a wide timeline scrolls inside the card and never widens the page.
+* Summary bars: Bryntum paints parent tasks as brackets with both `clip-path` and, in browsers
+  that support it, `border-shape`; at our 8px bar height that left only the end notches, so both
+  are reset for a plain rounded track filled to the procurement's progress.
 * Data sits on a `<BryntumGanttProjectModel>` passed to the Gantt by ref, so the 30-second
   refetch syncs the task store by id instead of rebuilding the chart.
 * **Licence:** set `NEXT_PUBLIC_BRYNTUM_LICENSE_KEY` (root `.env`, a Docker build arg, or a Render
@@ -143,16 +156,13 @@ are milestones, so a partial delivery is two diamonds and a half-filled bar; a b
   console confirms which applies (`Trial license ends ...` with a key, `No license key
   registered ...` without). The key is checked in the browser, so shipping it in the client
   bundle is expected. Keep it out of git anyway.
-* The first screen scrolls to the earliest stage (`visibleDate`), because the `weekAndDay`
-  preset snaps the axis back to the start of the week.
-* **Planned vs actual (`baselinesFeature`, Enterprise):** a thin grey bar under a stage shows
-  the window it was committed to: the RFQ deadline, the approval's expiry, the PO's expected
-  delivery date. The backend sends a `baseline` only where such a date was recorded up front,
-  so a stage with no plan has no grey bar; nothing is invented.
-* **Progress line (`progressLineFeature`, Business+):** an amber line through each stage's
-  progress point as of today, drawn only while today is on screen. A dip to the left means a
-  stage is behind.
-* **Labels (`labelsFeature`, Business+):** each stage's detail is printed beside its bar.
+* **Planned vs actual (`baselinesFeature`, Enterprise), behind a toggle:** a thin grey bar under
+  a stage shows the window it was committed to: the RFQ deadline, the approval's expiry, the
+  PO's expected delivery date. The backend sends a `baseline` only where such a date was
+  recorded up front, so a stage with no plan has no grey bar; nothing is invented. Off by
+  default to keep the chart calm; the toggle only appears when some stage has a plan.
+* **Today (`timeRangesFeature` with `showCurrentTimeLine`):** an amber vertical line labelled
+  "Today". (It replaced an earlier progress line and on-bar labels, which overlapped the bars.)
 
 ## Channel3 (gear shelf and market reference)
 

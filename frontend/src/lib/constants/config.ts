@@ -17,10 +17,14 @@ export const APP_TAGLINE = "An AI Growth Scientist for every merchant.";
 
 export const REQUEST_TIMEOUT_MS = 90_000;
 
-/** Prefilled on the login screen so a reviewer can get in without hunting for credentials. */
+/**
+ * Prefilled on the login screen so a reviewer can get in without hunting for credentials.
+ * `||`, not `??`: a build without the root .env (Docker) inlines these as empty strings,
+ * and an empty password must still fall back to the seeded demo one.
+ */
 export const SAMPLE_CREDENTIALS = {
-  email: process.env.NEXT_PUBLIC_DEMO_EMAIL ?? "owner@juniperoak.com",
-  password: process.env.NEXT_PUBLIC_DEMO_PASSWORD ?? "Autopilot@2024",
+  email: process.env.NEXT_PUBLIC_DEMO_EMAIL || "owner@juniperoak.com",
+  password: process.env.NEXT_PUBLIC_DEMO_PASSWORD || "Autopilot@2024",
 };
 
 export const VAPI = {
