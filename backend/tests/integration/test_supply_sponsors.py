@@ -285,6 +285,16 @@ class TestTimelineAndDatasets:
         for task in [*data["tasks"], *(c for t in data["tasks"] for c in t["children"])]:
             assert datetime.fromisoformat(task["startDate"]) <= datetime.fromisoformat(task["endDate"])
             assert task["manuallyScheduled"] is True  # a view of what happened, never a scheduler
+        # Planned windows (Gantt baselines) come only from dates recorded up front, never invented.
+        for stage in parent["children"]:
+            assert "baseline" in stage
+            if stage["baseline"] is not None:
+                b = stage["baseline"]
+                assert datetime.fromisoformat(b["startDate"]) < datetime.fromisoformat(b["endDate"])
+            if stage.get("milestone"):
+                assert stage["baseline"] is None  # a goods receipt has no plan of its own
+        negotiation = next(c for c in parent["children"] if c["name"] == "RFQ & negotiation")
+        assert negotiation["baseline"] is not None, "the RFQ deadline is the negotiation's plan"
         # The bar's colour is a function of the real approval status - never silently "done".
         detail = (await client.get(f"/procurement/{pid}", headers=analyst_headers)).json()["data"]
         approval_status = (await client.get(f"/approvals/{detail['approval']['approval_id']}",

@@ -54,8 +54,20 @@ def _span(start: datetime | None, end: datetime | None, fallback: datetime) -> t
     return start, end
 
 
+def _planned(start: datetime, due: datetime | None) -> dict[str, str] | None:
+    """The window a stage was *meant* to take, from a date the system recorded up front.
+
+    Only real commitments count: the RFQ deadline, the approval's expiry, the PO's
+    expected delivery date. With no such date there is no plan, and we never invent one.
+    """
+    if due is None:
+        return None
+    start, end = _span(start, due, start)
+    return {"startDate": start.isoformat(), "endDate": end.isoformat()}
+
+
 def _task(task_id: str, name: str, start: datetime, end: datetime, *, state: str, percent: int = 0,
-          milestone: bool = False, detail: str = "") -> dict[str, Any]:
+          milestone: bool = False, detail: str = "", planned: dict[str, str] | None = None) -> dict[str, Any]:
     return {
         "id": task_id,
         "name": name,
@@ -66,6 +78,7 @@ def _task(task_id: str, name: str, start: datetime, end: datetime, *, state: str
         "manuallyScheduled": True,
         "state": state,       # done | active | pending | blocked  (drives the colour)
         "detail": detail,
+        "baseline": planned,  # the planned window (drawn under the bar), or None
     }
 
 
@@ -132,7 +145,8 @@ async def build_timeline(session: AsyncSession, merchant_id: uuid.UUID, *, limit
         rounds = max((o.round for o in mine), default=0)
         children.append(_task(f"{pid}:nego", "RFQ & negotiation", start, end,
                               state="done" if negotiated else "active", percent=100 if negotiated else 50,
-                              detail=f"{len(mine)} offers across {rounds} rounds"))
+                              detail=f"{len(mine)} offers across {rounds} rounds",
+                              planned=_planned(start, _aware(request.rfq_deadline))))
         last_id = f"{pid}:nego"
 
         # 2. Human approval
@@ -144,7 +158,8 @@ async def build_timeline(session: AsyncSession, merchant_id: uuid.UUID, *, limit
                      "INVALIDATED": "blocked", "EXPIRED": "blocked"}.get(approval.status, "pending")
             children.append(_task(f"{pid}:approval", "Human approval", a_start, a_end, state=state,
                                   percent=100 if decided else 40,
-                                  detail=f"{approval.status.title()} - {approval.decided_by_label or 'awaiting a human'}"))
+                                  detail=f"{approval.status.title()} - {approval.decided_by_label or 'awaiting a human'}",
+                                  planned=_planned(a_start, _aware(approval.expires_at))))
             dependencies.append({"id": f"{pid}:d1", "from": last_id, "to": f"{pid}:approval", "type": FINISH_TO_START})
             last_id, end = f"{pid}:approval", a_end
 
@@ -164,7 +179,8 @@ async def build_timeline(session: AsyncSession, merchant_id: uuid.UUID, *, limit
                                   state="done" if done_pct >= 100 else ("blocked" if overdue else "active"),
                                   percent=done_pct,
                                   detail=f"{received:f} of {ordered:f} {request.unit} received"
-                                         + (" - overdue" if overdue else "")))
+                                         + (" - overdue" if overdue else ""),
+                                  planned=_planned(d_start, expected)))
             dependencies.append({"id": f"{pid}:d2", "from": last_id, "to": f"{pid}:po", "type": FINISH_TO_START})
             last_id, end = f"{pid}:po", d_end
             for index, receipt in enumerate(receipts_by_po.get(po.id, []), start=1):

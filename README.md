@@ -325,9 +325,9 @@ Full breakdown: [docs/HACKATHON.md](docs/HACKATHON.md).
 * Channel3, Kernel, Elasticsearch and Zapier were verified against **mocked HTTP only** and run
   on labelled fallbacks until their keys are set. The new migration (`0006`) was validated as
   Postgres SQL offline; Docker was unavailable to run it against a live Postgres.
-* AG Studio (evaluation) shows a watermark without its licence key; Bryntum Gantt shows a Trial
-  badge without `NEXT_PUBLIC_BRYNTUM_LICENSE_KEY`. Our Bryntum key is a trial key (valid until
-  2026-12-20); production use needs purchased licences for both.
+* AG Studio (evaluation) shows a watermark without its licence key. Bryntum Gantt runs on a
+  registered trial key (valid until 2026-12-20), which still shows Bryntum's Trial badge.
+  Production use needs purchased licences for both.
 * Supplier agents in the demo are simulated policy engines (labelled as such); external agents can
   connect through the signed inbound endpoint.
 * Analytics run on a seeded demo dataset; synced PayPal transactions are shown separately with

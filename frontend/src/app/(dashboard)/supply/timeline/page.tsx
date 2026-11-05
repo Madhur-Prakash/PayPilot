@@ -68,6 +68,14 @@ export default function ProcurementTimelinePage() {
                   {l.label}
                 </span>
               ))}
+              <span className="inline-flex items-center gap-1.5">
+                <span className="h-1 w-5 rounded-sm" style={{ background: "#a3adbb" }} />
+                Planned (RFQ deadline, approval expiry, expected delivery)
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="h-3 w-0.5" style={{ background: "#d97706" }} />
+                Progress as of today
+              </span>
               <span className="ml-auto">updated {formatRelativeTime(timeline.data.generated_at)} · Bryntum Gantt</span>
             </div>
             <ProcurementGantt timeline={timeline.data} />

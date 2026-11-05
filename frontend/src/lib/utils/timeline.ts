@@ -19,6 +19,8 @@ export interface GanttTaskData {
   cls: string;
   /** Shown in the Detail column; Bryntum encodes it, so no HTML is ever interpreted. */
   note: string;
+  /** Bryntum's baselines: the planned window, drawn as a thin bar under the actual one. */
+  baselines?: { startDate: Date; endDate: Date }[];
   children?: GanttTaskData[];
 }
 
@@ -48,6 +50,9 @@ export function toGanttTask(task: TimelineTask): GanttTaskData {
     note: task.detail,
   };
   if (task.expanded !== undefined) mapped.expanded = task.expanded;
+  if (task.baseline) {
+    mapped.baselines = [{ startDate: new Date(task.baseline.startDate), endDate: new Date(task.baseline.endDate) }];
+  }
   if (task.children?.length) mapped.children = task.children.map(toGanttTask);
   return mapped;
 }
@@ -74,7 +79,7 @@ export function visibleRange(tasks: GanttTaskData[]): { start: Date; end: Date }
   return { start: new Date(Math.min(...stamps) - day), end: new Date(Math.max(...stamps) + 3 * day) };
 }
 
-export function toGantt(timeline: ProcurementTimeline) {
+export function toGantt(timeline: Pick<ProcurementTimeline, "tasks" | "dependencies">) {
   const tasks = timeline.tasks.map(toGanttTask);
   return { tasks, dependencies: toGanttDependencies(timeline.dependencies), range: visibleRange(tasks) };
 }

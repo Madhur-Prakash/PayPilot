@@ -125,6 +125,8 @@ export interface TimelineTask {
   expanded?: boolean;
   state: TimelineState;
   detail: string;
+  /** Planned window from a date recorded up front (RFQ deadline, approval expiry, expected delivery). */
+  baseline?: { startDate: string; endDate: string } | null;
   children?: TimelineTask[];
 }
 

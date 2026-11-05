@@ -36,6 +36,15 @@ describe("toGanttTask", () => {
     expect(toGanttTask(task({ state: "weird" as never })).cls).toBe(STATE_CLASS.pending);
   });
 
+  it("turns the backend's planned window into a single Bryntum baseline", () => {
+    const planned = toGanttTask(task({ baseline: { startDate: "2026-11-02T09:00:00+00:00", endDate: "2026-11-03T17:00:00+00:00" } }));
+    expect(planned.baselines).toHaveLength(1);
+    expect(planned.baselines?.[0].endDate.toISOString()).toBe("2026-11-03T17:00:00.000Z");
+    // No recorded plan, no baseline - nothing is invented.
+    expect(toGanttTask(task({ baseline: null })).baselines).toBeUndefined();
+    expect(toGanttTask(task()).baselines).toBeUndefined();
+  });
+
   it("maps children recursively and keeps untrusted text as plain data", () => {
     const parent = task({ id: "p", children: [task({ id: "c", detail: "<img src=x onerror=alert(1)>" })] });
     const mapped = toGanttTask(parent);

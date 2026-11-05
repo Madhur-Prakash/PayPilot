@@ -164,7 +164,8 @@ services:
       # Optional AG Studio licence key (removes the trial watermark). Baked in at build.
       - key: NEXT_PUBLIC_AG_STUDIO_LICENSE_KEY
         sync: false
-      # Optional Bryntum Gantt licence key (removes the Trial badge). Baked in at build.
+      # Optional Bryntum Gantt licence key. A trial key extends the trial to its end date;
+      # a purchased key removes the Trial badge. Baked in at build.
       - key: NEXT_PUBLIC_BRYNTUM_LICENSE_KEY
         sync: false
       # Optional voice assistant (browser-safe Vapi public key + assistant id). Baked in at build.

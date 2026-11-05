@@ -31,8 +31,13 @@ os.environ["LOG_FORMAT"] = "json"
 os.environ["GROQ_API_KEY"] = ""
 os.environ["LANGFUSE_ENABLED"] = "false"
 os.environ["EMBEDDING_PROVIDER"] = "hash"
-# The suite runs against the PayPal simulator only - never real credentials from .env.
-for _key in ("PAYPAL_CLIENT_ID", "PAYPAL_CLIENT_SECRET", "PAYPAL_WEBHOOK_ID", "PAYPAL_SANDBOX_PAYEE_EMAIL"):
+# The suite runs against simulators and mocked HTTP only - never real credentials from
+# .env (they would spend real credits and make results depend on live data).
+for _key in (
+    "PAYPAL_CLIENT_ID", "PAYPAL_CLIENT_SECRET", "PAYPAL_WEBHOOK_ID", "PAYPAL_SANDBOX_PAYEE_EMAIL",
+    "CHANNEL3_API_KEY", "KERNEL_API_KEY", "ELASTIC_URL", "ELASTIC_API_KEY", "ZAPIER_WEBHOOK_URL",
+    "STUDIO_AI_API_KEY", "STUDIO_AI_BASE_URL", "TAVILY_API_KEY", "VAPI_PRIVATE_KEY",
+):
     os.environ[_key] = ""
 os.environ["PAYPAL_ENVIRONMENT"] = "sandbox"
 os.environ["PAYPAL_SIMULATION_ENABLED"] = "true"

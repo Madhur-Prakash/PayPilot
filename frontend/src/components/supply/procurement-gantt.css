@@ -1,5 +1,8 @@
 /* Colour a Bryntum task bar by the real state of the stage it represents. */
 .pp-gantt-host {
+  /* Matched by the legend on the page: planned windows and the "today" progress line. */
+  --b-baseline-background: #a3adbb;
+  --b-progress-line-color: #d97706;
   height: 560px;
   min-height: 320px;
   border-radius: 12px;

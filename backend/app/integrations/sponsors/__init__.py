@@ -117,8 +117,9 @@ def integration_status() -> list[dict[str, Any]]:
             "name": "Channel3",
             "category": "sponsor",
             "mode": get_channel3().mode,
-            "used_for": "Market price reference for the products the buyer agent sources (never sets a limit)",
-            "where": "/integrations",
+            "used_for": "Gear shelf: live complementary products with affiliate buy links for the merchant's best "
+            "seller; market price reference for purchase approvals (never sets a limit)",
+            "where": "/shelf",
         },
         {
             "key": "elastic",

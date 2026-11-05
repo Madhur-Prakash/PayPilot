@@ -1,26 +1,31 @@
-"""Channel3 product search - an external market reference for the buyer agent.
+"""Channel3 product search - live retail products for PayPilot's merchants.
 
-Channel3 normalises product data across thousands of retailers behind one API.
-PayPilot uses it for one narrow, honest purpose: **a market price reference**.
-When the buyer agent is about to source a product, the merchant can see what that
-product actually retails for elsewhere, which sanity-checks the *expected selling
-price* the deterministic margin engine starts from.
+Channel3 normalises product data across 25,000+ retailers behind one API. PayPilot
+uses it for two things:
+
+* **The gear shelf** (``services/integrations/shelf.py``): complementary products a
+  merchant can recommend next to their best seller - live prices, retailers, images
+  and affiliate-tracked buy links.
+* **A market price reference** (``services/integrations/market.py``): what a product
+  retails for elsewhere, as context for the human approving a purchase.
 
 What it is not: Channel3 never sets a limit, a budget or an offer. The limits come
 from ``services/supply/policy.py`` before any agent speaks, and nothing here can
 widen them. Retail prices are also not supplier cost prices; the UI says so.
 
-API (https://docs.trychannel3.com): ``POST {base}/v1/search`` with header
-``x-api-key`` and a JSON body ``{"query": ..., "limit": ..., "filters": {...}}``.
-The response schema was not available to verify when this was written, so the
-parser is deliberately defensive - it accepts a bare list or a ``products`` /
-``results`` / ``data`` envelope, and reads price from the shapes the docs and SDK
-describe. Anything unparseable is skipped and counted, never invented.
+API (https://docs.trychannel3.com, and the ``channel3-api`` agent skill in
+``.agents/skills``): ``POST {base}/v1/search`` with header ``x-api-key``. A product
+is ``{id, title, brands[], images[], category{slug}, offers[]}`` and each offer is
+``{url, domain, price{price, currency, compare_at_price}, availability,
+max_commission_rate}`` - retailer, link and stock live on the *offer*. Verified
+against the live API on 2026-11-05. Anything unparseable is skipped and counted,
+never invented.
 """
 
 from __future__ import annotations
 
 import hashlib
+import re
 from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation
 from typing import Any
@@ -43,9 +48,20 @@ log = get_logger(__name__)
 
 SEARCH_PATH = "/v1/search"
 
+#: Channel3 accepts letters, digits and ``. _ @ -`` in ``x-user-id`` (max 128).
+_USER_ID = re.compile(r"^[A-Za-z0-9._@-]{1,128}$")
+
+
+def attribution_id(merchant_id: Any) -> str:
+    """The ``x-user-id`` that attributes a merchant's Channel3 clicks and sales in reporting.
+    An opaque, stable tag - no name or email leaves PayPilot."""
+    return f"paypilot-{str(merchant_id).replace('-', '')[:16]}"
+
 
 @dataclass(slots=True)
 class MarketOffer:
+    """One Channel3 product, reduced to its best offer (lowest in-stock price)."""
+
     title: str
     price: Decimal
     currency: str = "USD"
@@ -53,6 +69,13 @@ class MarketOffer:
     merchant: str = ""
     url: str = ""
     in_stock: bool | None = None
+    product_id: str = ""
+    image_url: str = ""
+    category: str = ""
+    compare_at_price: Decimal | None = None
+    #: Affiliate commission on the best offer, as a fraction (0.05 = 5%).
+    commission_rate: Decimal | None = None
+    offers_count: int = 0
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -63,6 +86,12 @@ class MarketOffer:
             "merchant": self.merchant,
             "url": self.url,
             "in_stock": self.in_stock,
+            "product_id": self.product_id,
+            "image_url": self.image_url,
+            "category": self.category,
+            "compare_at_price": str(self.compare_at_price) if self.compare_at_price is not None else None,
+            "commission_rate": str(self.commission_rate) if self.commission_rate is not None else None,
+            "offers_count": self.offers_count,
         }
 
 
@@ -104,8 +133,52 @@ def _price_of(product: dict[str, Any]) -> tuple[Decimal | None, str]:
     return None, "USD"
 
 
+def _rate(value: Any) -> Decimal | None:
+    """A commission fraction (0-0.5) as Decimal, or None."""
+    if value is None or isinstance(value, bool):
+        return None
+    try:
+        rate = Decimal(str(value))
+    except (InvalidOperation, ValueError):
+        return None
+    return rate.quantize(Decimal("0.0001")) if Decimal(0) <= rate <= Decimal("0.5") else None
+
+
+def _best_offer(product: dict[str, Any]) -> dict[str, Any] | None:
+    """The offer to show: the lowest in-stock price, else the lowest price at all."""
+    parsed = []
+    for raw in product.get("offers") or []:
+        offer = as_dict(raw)
+        price_obj = as_dict(offer.get("price"))
+        amount = _money(price_obj.get("price", price_obj.get("amount", price_obj.get("value"))))
+        if amount is None:
+            continue
+        availability = str(offer.get("availability") or "")
+        parsed.append({
+            "price": amount,
+            "currency": str(price_obj.get("currency") or "USD").upper()[:3],
+            "compare_at": _money(price_obj.get("compare_at_price")),
+            "domain": str(offer.get("domain") or ""),
+            "url": str(offer.get("url") or ""),
+            "in_stock": (availability.lower() == "instock") if availability else None,
+            "commission": _rate(offer.get("max_commission_rate")),
+        })
+    if not parsed:
+        return None
+    in_stock = [o for o in parsed if o["in_stock"] is not False]
+    best = min(in_stock or parsed, key=lambda o: o["price"])
+    best["count"] = len(parsed)
+    return best
+
+
+def _image_of(product: dict[str, Any]) -> str:
+    images = [as_dict(i) for i in product.get("images") or []]
+    main = next((i for i in images if i.get("is_main_image")), images[0] if images else {})
+    return str(main.get("cleaned_url") or main.get("url") or "")[:500]
+
+
 def parse_products(body: Any) -> tuple[list[MarketOffer], int]:
-    """Normalise a search response. Returns (offers, number skipped as unparseable)."""
+    """Normalise a search response. Returns (products, number skipped as unparseable)."""
     items: Any = body
     if isinstance(body, dict):
         for key in ("products", "results", "data", "items"):
@@ -119,8 +192,12 @@ def parse_products(body: Any) -> tuple[list[MarketOffer], int]:
     skipped = 0
     for raw in items:
         product = as_dict(raw)
-        price, currency = _price_of(product)
         title = str(product.get("title") or product.get("name") or "").strip()
+        best = _best_offer(product)
+        if best is not None:
+            price, currency = best["price"], best["currency"]
+        else:  # older or partial shapes: a price on the product itself
+            price, currency = _price_of(product)
         if price is None or not title:
             skipped += 1
             continue
@@ -133,9 +210,16 @@ def parse_products(body: Any) -> tuple[list[MarketOffer], int]:
                 price=price,
                 currency=currency,
                 brand=str(product.get("brand") or brand_name or "")[:80],
-                merchant=str(product.get("merchant") or product.get("website") or product.get("domain") or "")[:80],
-                url=str(product.get("url") or "")[:500],
-                in_stock=(availability.lower() == "instock") if availability else None,
+                merchant=(best["domain"] if best else "")
+                or str(product.get("merchant") or product.get("website") or product.get("domain") or "")[:80],
+                url=((best["url"] if best else "") or str(product.get("url") or ""))[:500],
+                in_stock=best["in_stock"] if best else ((availability.lower() == "instock") if availability else None),
+                product_id=str(product.get("id") or "")[:64],
+                image_url=_image_of(product),
+                category=str(as_dict(product.get("category")).get("slug") or "")[:80],
+                compare_at_price=best["compare_at"] if best else None,
+                commission_rate=best["commission"] if best else None,
+                offers_count=best["count"] if best else 0,
             )
         )
     return offers, skipped
@@ -147,6 +231,11 @@ def parse_products(body: Any) -> tuple[list[MarketOffer], int]:
 #: Typical US retail prices for the categories the demo merchant sells. This is a
 #: *labelled stand-in* - the mode on every result says SIMULATED.
 _REFERENCE: tuple[tuple[tuple[str, ...], Decimal, str], ...] = (
+    # Specific gear first, so "coffee filters" is a filter, not a bag of coffee.
+    (("grinder",), Decimal("120.00"), "burr coffee grinder"),
+    (("kit", "pour over", "dripper"), Decimal("45.00"), "pour-over brewing kit"),
+    (("filter",), Decimal("8.50"), "paper coffee filters"),
+    (("canister", "storage", "container"), Decimal("28.00"), "airtight coffee canister"),
     (("coffee", "bean", "espresso", "roast"), Decimal("17.50"), "12 oz specialty coffee beans"),
     (("tea", "matcha", "chai"), Decimal("14.00"), "loose-leaf tea tin"),
     (("syrup", "vanilla", "caramel"), Decimal("9.50"), "flavouring syrup 750 ml"),
@@ -200,7 +289,19 @@ class Channel3Client:
     def __repr__(self) -> str:  # never leak the key
         return f"Channel3Client(mode={self.mode})"
 
-    async def search(self, query: str, *, limit: int = 10, max_price: Decimal | None = None) -> MarketSearch:
+    async def search(
+        self,
+        query: str,
+        *,
+        limit: int = 10,
+        max_price: Decimal | None = None,
+        min_price: Decimal | None = None,
+        category_ids: list[str] | None = None,
+        user_id: str | None = None,
+    ) -> MarketSearch:
+        """``POST /v1/search``. Category slugs and a price band keep results in the right
+        slice of the catalogue (filters beat query-stuffing). ``user_id`` attributes the
+        merchant's clicks and sales in Channel3's reporting."""
         query = query.strip()
         if not query:
             raise SponsorRequestError("A search query is required.")
@@ -209,10 +310,23 @@ class Channel3Client:
             return reference_search(query, limit)
 
         body: dict[str, Any] = {"query": query, "limit": limit}
+        filters: dict[str, Any] = {}
+        price: dict[str, float] = {}
+        if min_price is not None:
+            price["min_price"] = float(min_price)
         if max_price is not None:
-            body["filters"] = {"price": {"max_price": float(max_price)}}
+            price["max_price"] = float(max_price)
+        if price:
+            filters["price"] = price
+        if category_ids:
+            filters["category_ids"] = [c for c in category_ids if c][:10]
+        if filters:
+            body["filters"] = filters
+        headers = {"x-api-key": self._key}
+        if user_id and _USER_ID.match(user_id):
+            headers["x-user-id"] = user_id
         try:
-            async with build_client(self._base, {"x-api-key": self._key}, transport=self._transport) as client:
+            async with build_client(self._base, headers, transport=self._transport) as client:
                 response = await client.post(SEARCH_PATH, json=body)
         except httpx.HTTPError as exc:
             raise SponsorError(f"Channel3 is unreachable ({type(exc).__name__}).") from exc

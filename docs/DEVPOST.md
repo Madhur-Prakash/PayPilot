@@ -44,9 +44,17 @@ PayPilot runs a merchant's business loop on top of PayPal:
   cent. Inventory is revalued and the product's margin moves **35.6% -> 43.8%**.
 * **Finance:** Transaction Search sync and insights, Invoicing, approval-gated
   cashback **Payouts**, Subscriptions recovery, and verified webhooks.
+* **Gear shelf (Channel3):** the merchant's online customers buy beans - and the
+  gear to brew them, which the shop doesn't stock. PayPilot searches Channel3's
+  live catalogue by category for grinders, pour-over kits, filters, mugs and
+  canisters, shows real products with prices, retailers and affiliate buy links,
+  and estimates the commission from the shop's measured buyers (212 in the last
+  30 days) with the attach rate stated as an assumption.
 * **Dashboards:** AG Grid tables everywhere, an AG Studio dashboard that opens
   pre-built and is edited by drag-and-drop, and a Bryntum Gantt of every
-  procurement's real history.
+  procurement's real history, with each stage's planned window (RFQ deadline,
+  approval expiry, expected delivery) under its actual bar and a "today"
+  progress line, so a late delivery is visible at a glance.
 
 ## How we built it
 
@@ -62,7 +70,7 @@ PayPilot runs a merchant's business loop on top of PayPal:
   simulator so judges can run everything without keys. PayPal's Agent Toolkit is
   reachable read-only over MCP; every money-moving tool is blocked in code.
 * **Frontend:** Next.js 15 + React 19, TanStack Query, AG Grid 36.3, AG Studio
-  3.1, Bryntum Gantt. We also wired Studio's AI agent harness to our backend's LLM
+  3.1, Bryntum Gantt 8.0 (Enterprise: baselines, progress line, labels). We also wired Studio's AI agent harness to our backend's LLM
   through an `AgLlmAdapter` (the key never reaches the browser); it works, but on
   Groq's free tier Studio's agents are too slow to finish a request, so the hosted
   demo keeps it switched off.
@@ -103,8 +111,8 @@ the decision. That split also made the system far easier to test.
 ## What's next
 
 Live PayPal (beyond the sandbox), real supplier endpoints speaking the signed
-protocol, scheduled Studio reports, and deeper market data from Channel3 in the
-buyer agent's opening position.
+protocol, scheduled Studio reports, and Channel3 product subscriptions so the gear
+shelf updates itself when a retailer changes a price or runs out.
 
 ## Built with
 

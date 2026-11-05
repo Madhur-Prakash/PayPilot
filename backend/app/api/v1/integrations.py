@@ -27,8 +27,9 @@ from app.integrations.sponsors import (
     get_zapier,
     integration_status,
 )
+from app.integrations.sponsors.channel3 import attribution_id
 from app.schemas.common import APIResponse, SchemaBase
-from app.services.integrations import evidence, market, studio_ai
+from app.services.integrations import evidence, market, shelf, studio_ai
 from app.services.integrations.zapier import delivery_summary
 from app.services.intelligence.datasets import build_datasets
 
@@ -91,10 +92,22 @@ async def market_benchmark(
     principal: Principal = Depends(require_permission(Permission.PROCUREMENT_READ)),
 ) -> APIResponse[dict[str, Any]]:
     try:
-        data = await market.benchmark(body.query, expected_price=body.expected_price, limit=body.limit)
+        data = await market.benchmark(body.query, expected_price=body.expected_price, limit=body.limit,
+                                      user_id=attribution_id(principal.merchant_id))
     except SponsorError as exc:
         raise _upstream(exc) from exc
     return APIResponse(data=data)
+
+
+@router.get("/shelf", summary="Gear shelf: complementary Channel3 products for the merchant's best seller")
+async def gear_shelf(
+    session: DbSession,
+    refresh: Annotated[bool, Query(description="Bypass the 30-minute cache")] = False,
+    principal: Principal = Depends(require_permission(Permission.GROWTH_READ)),
+) -> APIResponse[dict[str, Any]]:
+    """Live products from Channel3 for each shelf slot (grinders, brewing kits, filters, mugs,
+    storage), and an estimate - with its assumptions - of what recommending them could earn."""
+    return APIResponse(data=await shelf.build_shelf(session, principal.merchant_id, refresh=refresh))
 
 
 @router.get("/market/procurement/{procurement_id}", summary="Market reference for one procurement request")

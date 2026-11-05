@@ -122,6 +122,12 @@ Command Center and the event stream.
   *AI Assistant* panel needs a model with more quota than Groq's free tier (see
   [SPONSORS.md](SPONSORS.md#ag-grid-and-ag-studio)) - on the free tier a request
   takes ~9 minutes and may not finish, so do not film it on Groq free.
+* **Gear shelf (`/shelf`, Channel3) - for the Channel3 prize:** live grinders,
+  pour-over kits, filters, mugs and canisters for the beans' 212 recent buyers,
+  each with retailer, price, commission and an affiliate buy link, plus the
+  monthly estimate and its assumptions. Click **View offer** to show a real
+  retailer page. Needs `CHANNEL3_API_KEY`; without it the page is labelled
+  *Simulated*.
 * **Procurement timeline (`/supply/timeline`, Bryntum Gantt):** after a
   procurement completes, each stage is a bar; a partial delivery shows two
   milestones.

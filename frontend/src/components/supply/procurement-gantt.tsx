@@ -32,10 +32,18 @@ const LICENSE_KEY = process.env.NEXT_PUBLIC_BRYNTUM_LICENSE_KEY;
 if (LICENSE_KEY) globalThis.bryntum.licenseKey = LICENSE_KEY;
 
 export default function ProcurementGantt({ timeline }: { timeline: ProcurementTimeline }) {
-  const data = React.useMemo(() => toGantt(timeline), [timeline]);
+  const { tasks, dependencies } = timeline;
+  // Keyed on the arrays, not the response: React Query keeps them referentially equal when a
+  // refetch brings nothing new (only `generated_at` moves), so an idle poll touches nothing.
+  const data = React.useMemo(() => toGantt({ tasks, dependencies }), [tasks, dependencies]);
   // Data lives on the project component, not inside a `project` prop object. A refetch
-  // then syncs the task store by id, keeping expanded rows and scroll position.
+  // that does change something syncs the task store by id, keeping expanded rows.
   const project = React.useRef<BryntumGanttProjectModel>(null);
+  // Initial scroll only. `weekAndDay` snaps the axis back to the start of the week, which
+  // can leave the first screen empty; a stable reference means a refetch never resets it.
+  const [visibleDate] = React.useState(() => ({ date: data.range.start, block: "start" as const }));
+  // "Now" for the progress line, fixed at mount so a refetch does not redraw it every 30s.
+  const [statusDate] = React.useState(() => new Date());
 
   return (
     <div className="pp-gantt-host" data-testid="procurement-gantt">
@@ -45,8 +53,16 @@ export default function ProcurementGantt({ timeline }: { timeline: ProcurementTi
         readOnly
         // Bryntum's default "Project start" line would mislabel a history chart.
         projectLinesFeature={false}
+        // Planned vs actual: the thin bar under a stage is the window it was committed to
+        // (RFQ deadline, approval expiry, expected delivery). Stages with no plan have none.
+        baselinesFeature
+        // Where each stage should be by today, drawn only while today is on screen.
+        progressLineFeature={{ statusDate, drawLineOnlyWhenStatusDateVisible: true }}
+        // The stage detail beside its bar, so it is readable without widening the grid.
+        labelsFeature={{ right: { field: "note" } }}
         startDate={data.range.start}
         endDate={data.range.end}
+        visibleDate={visibleDate}
         viewPreset="weekAndDay"
         rowHeight={38}
         barMargin={9}
