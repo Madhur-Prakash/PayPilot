@@ -21,7 +21,7 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -37,12 +37,13 @@ from app.db.models.agent import (
     AgentWorkflow,
 )
 from app.db.models.auth import CustomRole
-from app.db.models.automation import DomainEvent, ProcessedEvent
+from app.db.models.automation import AutomationRun, DomainEvent, ProcessedEvent
 from app.db.models.growth import GrowthOpportunity, MetricKey
 from app.db.models.inventory import InventoryItem, MovementType
 from app.db.models.merchant import Merchant
 from app.db.models.procurement import PurchaseOrder, PurchaseOrderStatus
 from app.repositories.opportunity import GrowthMetricRepository
+from app.seed.inventory_automation import is_agent_managed
 from app.services.analytics.service import AnalyticsService
 from app.services.inventory.stock import InsufficientStock, StockEngine
 
@@ -303,19 +304,32 @@ async def _drive_procurement(
     from app.services.inventory.procurement import ProcurementService
 
     counts = {"consumed": 0, "runs": 0, "orders": 0, "received": 0}
+
+    # Run once. The seed re-runs on every API start to top up tables, and this step
+    # is not idempotent: each pass sold stock down and raised new purchase orders.
+    has_history = (await session.execute(
+        select(func.count()).select_from(AutomationRun).where(AutomationRun.merchant_id == merchant.id)
+    )).scalar_one()
+    if has_history:
+        log.info("automation_history_present", runs=has_history)
+        return counts
+
     automation = InventoryAutomation(session, merchant.id)
     procurement = ProcurementService(session, merchant.id)
     engine = StockEngine(session, merchant.id)
 
-    items = list(
-        (
+    items = [
+        item for item in (
             await session.execute(
                 select(InventoryItem)
                 .where(InventoryItem.merchant_id == merchant.id)
                 .order_by(InventoryItem.sku)
             )
         ).scalars()
-    )
+        # The supplier-agent network's items (the demo's coffee beans) are sourced by
+        # negotiation, never by this automation - see app.seed.inventory_automation.
+        if not is_agent_managed(item)
+    ]
     if not items:
         log.warning("automation_history_skipped", reason="no inventory items")
         return counts

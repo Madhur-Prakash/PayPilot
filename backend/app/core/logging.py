@@ -51,6 +51,7 @@ SENSITIVE_KEYS = frozenset(
         "cookie",
         "set-cookie",
         "groq_api_key",
+        "studio_ai_api_key",
         "langfuse_secret_key",
         "vapi_private_key",
         "supabase_anon_key",

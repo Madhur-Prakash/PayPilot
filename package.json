@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@apimatic/cli": "^2.2.0"
+  }
+}

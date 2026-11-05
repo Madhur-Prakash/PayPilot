@@ -2,7 +2,7 @@
 
 /** AG Studio - merchants build their own dashboards over PayPilot's computed datasets. */
 
-import { LayoutDashboard, Pencil, RotateCcw, ScanEye } from "lucide-react";
+import { LayoutDashboard, Pencil, RotateCcw, ScanEye, Sparkles } from "lucide-react";
 import dynamic from "next/dynamic";
 import * as React from "react";
 
@@ -28,11 +28,12 @@ export default function StudioPage() {
 
   const usable = Object.fromEntries(Object.entries(datasets.data?.datasets ?? {}).filter(([, rows]) => rows.length > 0));
   const names = Object.keys(usable);
+  const ai = datasets.data?.ai;
 
   return (
     <div className="space-y-5">
       <PageHeader eyebrow="Command" title="Dashboard studio"
-        description="Build your own dashboards by dragging fields onto a canvas - revenue by day, savings by supplier, cover by product. The numbers are the ones PayPilot already computed; Studio only groups and charts them."
+        description="Start from the overview below, drag fields onto the canvas, or ask the AI assistant to build a chart for you. The numbers are the ones PayPilot already computed; Studio only groups and charts them."
         actions={
           <>
             <Button size="sm" variant={mode === "edit" ? "default" : "outline"} className="gap-1.5" onClick={() => setMode("edit")}>
@@ -65,16 +66,23 @@ export default function StudioPage() {
                 {datasets.data!.labels[n] ?? n} · {usable[n].length}
               </Badge>
             ))}
+            <Badge variant="outline" className="gap-1 text-2xs" title={ai?.note}>
+              <Sparkles className="h-3 w-3" />
+              {ai?.available ? `AI assistant · ${ai.model}` : "AI assistant off"}
+            </Badge>
             <span className="ml-auto">refreshed {formatRelativeTime(datasets.data.generated_at)} · layout saved in this browser</span>
           </div>
           <Card>
             <CardContent className="p-0">
               <div className="h-[calc(100vh-17rem)] min-h-[520px] overflow-hidden rounded-xl">
-                <StudioCanvas key={generation} datasets={usable} mode={mode} />
+                <StudioCanvas key={`${generation}-${ai?.available ? "ai" : "plain"}`} datasets={usable} mode={mode}
+                  aiAvailable={Boolean(ai?.available)} />
               </div>
             </CardContent>
           </Card>
-          <p className="text-2xs text-muted-foreground">{datasets.data.note}</p>
+          <p className="text-2xs text-muted-foreground">
+            {datasets.data.note} {ai?.note}
+          </p>
         </>
       )}
     </div>

@@ -27,6 +27,14 @@ from app.db.session import SessionLocal
 
 log = get_logger(__name__)
 
+#: Marks an inventory item the supplier-agent network sources (see ``app.seed.supply``).
+AGENT_MANAGED_SCENARIO = "signature-demo"
+
+
+def is_agent_managed(item: InventoryItem) -> bool:
+    return (item.metadata_json or {}).get("scenario") == AGENT_MANAGED_SCENARIO
+
+
 VENDORS = [
     {
         "name": "Cascade Wholesale",
@@ -87,6 +95,12 @@ async def seed(session: AsyncSession, merchant_id: uuid.UUID) -> dict[str, int]:
             )
         ).scalars().all()
     )
+    # Items sourced by the supplier-agent network (the signature demo's coffee beans)
+    # are not the automation's to manage. This seed re-runs on every API start (it tops
+    # up existing data), and without this filter it switched automatic ordering on for
+    # the beans - n8n's low-stock event then reordered them and wiped out the
+    # "3.5 days of cover" scenario the supply agents are demonstrated on.
+    items = [item for item in items if not is_agent_managed(item)]
     if not items:
         log.warning("inventory_automation_seed_skipped", reason="no inventory items")
         return created

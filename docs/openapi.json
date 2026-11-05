@@ -8675,6 +8675,75 @@
         "title": "StockAdjustRequest",
         "type": "object"
       },
+      "StudioTurnRequest": {
+        "description": "One ``AgLlmRequest`` from Studio's adapter. Item shapes are Studio's; validated loosely here\nand strictly where they are read.",
+        "properties": {
+          "input": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "maxItems": 200,
+            "title": "Input",
+            "type": "array"
+          },
+          "instructions": {
+            "anyOf": [
+              {
+                "maxLength": 120000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instructions"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "response_format": {
+            "additionalProperties": true,
+            "title": "Response Format",
+            "type": "object"
+          },
+          "tool_choice": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Choice"
+          },
+          "tools": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "maxItems": 80,
+            "title": "Tools",
+            "type": "array"
+          }
+        },
+        "title": "StudioTurnRequest",
+        "type": "object"
+      },
       "SubscriptionAction": {
         "properties": {
           "action": {
@@ -9458,18 +9527,19 @@
     "contact": {
       "name": "PayPilot"
     },
-    "description": "An AI Growth Scientist for every merchant.\n\nThe product runs one loop: **Observe -> Diagnose -> Hypothesize -> Recommend ->\nAct -> Measure -> Learn**. Every feature feeds it.\n\n### Principles enforced by this API\n* **Numbers are deterministic.** Every financial figure is computed in SQL/Python.\n  The LLM reasons over structured results; it never calculates one.\n* **Correlation is not causation.** The growth graph and agent outputs describe\n  signals, correlations and hypotheses. Only a controlled experiment resolves them.\n* **Humans approve money.** Campaign execution and experiment launch require a\n  recorded approval from a user holding the permission. An agent cannot approve\n  its own recommendation.\n* **Tenant isolation is structural.** The merchant is resolved from membership,\n  never from a client-supplied id.\n* **Honest provenance.** Every response labels where its data came from and\n  whether an action actually executed. Nothing claims live PayPal, messaging or\n  competitor-platform access it doesn't have.\n\n### Works without any API keys\nWith no `GROQ_API_KEY`, `LANGFUSE_*` or `VAPI_*` configured, the dashboard,\nanalytics, opportunity detection, experiments and the full agent workflow still\nrun - the recommendations are deterministic and only the prose is simpler.",
+    "description": "PayPilot is an AI operating system for small merchants on PayPal: a Growth Scientist that finds\nrevenue opportunities in PayPal transactions, Supply Agents that source and negotiate stock with\nindependent supplier agents, and PayPal financial operations (Orders v2 supplier settlement,\nInvoicing, Payouts, Subscriptions, verified webhooks, reconciliation).\n\n**Money never moves without a person.** Every limit is computed by a deterministic engine before\nany agent speaks; purchases and payments need a recorded human approval bound to a SHA-256 hash of\nthe exact terms; agent tools refuse to approve or pay.\n\n**Authentication.** `POST /api/v1/auth/login` returns an access token; send it as\n`Authorization: Bearer <token>`. Every resource is scoped to the caller's merchant and permissions\n(Owner, Admin, Analyst, Staff, Viewer).",
     "license": {
+      "identifier": "MIT",
       "name": "MIT"
     },
-    "title": "PayPilot",
+    "title": "PayPilot API",
     "version": "1.0.0"
   },
   "openapi": "3.1.0",
   "paths": {
     "/api/v1/agent-messages": {
       "get": {
-        "operationId": "list_agent_messages_api_v1_agent_messages_get",
+        "operationId": "list_agent_messages",
         "parameters": [
           {
             "in": "query",
@@ -9571,7 +9641,7 @@
     "/api/v1/agent-messages/inbound": {
       "post": {
         "description": "The same verification boundary the in-process agents use: tenant, identity, signature, freshness, schema and replay checks. Rejections return 401/403/409/422.",
-        "operationId": "inbound_agent_message_api_v1_agent_messages_inbound_post",
+        "operationId": "inbound_agent_message",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -9657,7 +9727,7 @@
     "/api/v1/agents/ask": {
       "post": {
         "description": "Runs the LangGraph workflow: intent analysis, deterministic metric gathering, specialist fan-out, evidence synthesis and a structured recommendation. Works without an LLM key - the figures and the recommendation are deterministic either way, only the prose is simpler.",
-        "operationId": "ask_api_v1_agents_ask_post",
+        "operationId": "ask",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -9741,7 +9811,7 @@
     "/api/v1/agents/experiments/{experiment_id}/measure": {
       "post": {
         "description": "Recomputes the results deterministically, decides SCALE/STOP/CONTINUE/WATCH, then records what the business learned.",
-        "operationId": "measure_api_v1_agents_experiments__experiment_id__measure_post",
+        "operationId": "measure",
         "parameters": [
           {
             "in": "path",
@@ -9825,7 +9895,7 @@
     "/api/v1/agents/investigate": {
       "post": {
         "description": "Forces the complete fan-out: analytics, review intelligence and market intelligence, then synthesis and the approval gate.",
-        "operationId": "investigate_api_v1_agents_investigate_post",
+        "operationId": "investigate",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -9909,7 +9979,7 @@
     "/api/v1/agents/opportunities/{opportunity_id}/approve": {
       "post": {
         "description": "The human approval gate. On approval the Action Agent builds the segment and campaign, the Experiment Agent creates the control/test split, and the campaign is launched with simulated delivery. Requires both campaign:execute and experiment:approve.",
-        "operationId": "approve_opportunity_api_v1_agents_opportunities__opportunity_id__approve_post",
+        "operationId": "approve_opportunity",
         "parameters": [
           {
             "in": "path",
@@ -10003,7 +10073,7 @@
     "/api/v1/agents/runs": {
       "get": {
         "description": "Recent agent runs with the tools each used and the decision it reached.",
-        "operationId": "list_runs_api_v1_agents_runs_get",
+        "operationId": "list_runs",
         "parameters": [
           {
             "in": "query",
@@ -10133,7 +10203,7 @@
     "/api/v1/agents/runs/{run_id}": {
       "get": {
         "description": "Human-readable trace: the actions taken, tools called, evidence gathered and decisions reached. Raw model reasoning is never recorded or exposed.",
-        "operationId": "get_run_api_v1_agents_runs__run_id__get",
+        "operationId": "get_run",
         "parameters": [
           {
             "in": "path",
@@ -10217,7 +10287,7 @@
     "/api/v1/agents/tools": {
       "get": {
         "description": "Every tool the agents can call, with the permission each requires.",
-        "operationId": "list_tools_api_v1_agents_tools_get",
+        "operationId": "list_tools",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -10290,7 +10360,7 @@
     },
     "/api/v1/approvals": {
       "get": {
-        "operationId": "list_approvals_api_v1_approvals_get",
+        "operationId": "list_approvals",
         "parameters": [
           {
             "in": "query",
@@ -10391,7 +10461,7 @@
     },
     "/api/v1/approvals/{approval_id}": {
       "get": {
-        "operationId": "get_approval_api_v1_approvals__approval_id__get",
+        "operationId": "get_approval",
         "parameters": [
           {
             "in": "path",
@@ -10474,7 +10544,7 @@
     },
     "/api/v1/approvals/{approval_id}/decide": {
       "post": {
-        "operationId": "decide_approval_api_v1_approvals__approval_id__decide_post",
+        "operationId": "decide_approval",
         "parameters": [
           {
             "in": "path",
@@ -10567,7 +10637,7 @@
     },
     "/api/v1/approvals/{approval_id}/execute": {
       "post": {
-        "operationId": "execute_approval_api_v1_approvals__approval_id__execute_post",
+        "operationId": "execute_approval",
         "parameters": [
           {
             "in": "path",
@@ -10651,7 +10721,7 @@
     "/api/v1/audit-logs": {
       "get": {
         "description": "Every consequential action, with actor, resource and metadata.",
-        "operationId": "audit_logs_api_v1_audit_logs_get",
+        "operationId": "audit_logs",
         "parameters": [
           {
             "in": "query",
@@ -10763,7 +10833,7 @@
     },
     "/api/v1/auth/change-password": {
       "post": {
-        "operationId": "change_password_api_v1_auth_change_password_post",
+        "operationId": "change_password",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -10847,7 +10917,7 @@
     "/api/v1/auth/forgot-password": {
       "post": {
         "description": "Always returns success so the response cannot be used to discover which email addresses are registered. With no mail server configured, the token is returned directly instead of being emailed.",
-        "operationId": "forgot_password_api_v1_auth_forgot_password_post",
+        "operationId": "forgot_password",
         "requestBody": {
           "content": {
             "application/json": {
@@ -10889,7 +10959,7 @@
     "/api/v1/auth/login": {
       "post": {
         "description": "Exchange credentials for a token pair.",
-        "operationId": "login_api_v1_auth_login_post",
+        "operationId": "login",
         "requestBody": {
           "content": {
             "application/json": {
@@ -10931,7 +11001,7 @@
     "/api/v1/auth/logout": {
       "post": {
         "description": "Revokes the current refresh token.",
-        "operationId": "logout_api_v1_auth_logout_post",
+        "operationId": "logout",
         "parameters": [
           {
             "in": "cookie",
@@ -11003,7 +11073,7 @@
     "/api/v1/auth/logout-all": {
       "post": {
         "description": "Revokes every refresh token for this account.",
-        "operationId": "logout_all_api_v1_auth_logout_all_post",
+        "operationId": "logout_all",
         "responses": {
           "200": {
             "content": {
@@ -11030,7 +11100,7 @@
     "/api/v1/auth/me": {
       "get": {
         "description": "The signed-in user, their active merchant, role and effective permissions. Permissions are for rendering only - the backend re-checks every request.",
-        "operationId": "me_api_v1_auth_me_get",
+        "operationId": "me",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -11101,7 +11171,7 @@
         ]
       },
       "patch": {
-        "operationId": "update_profile_api_v1_auth_me_patch",
+        "operationId": "update_profile",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -11185,7 +11255,7 @@
     "/api/v1/auth/refresh": {
       "post": {
         "description": "Issues a new access token and rotates the refresh token. Reusing an already rotated token revokes the whole token family.",
-        "operationId": "refresh_api_v1_auth_refresh_post",
+        "operationId": "refresh",
         "parameters": [
           {
             "in": "cookie",
@@ -11252,7 +11322,7 @@
     "/api/v1/auth/register": {
       "post": {
         "description": "Creates the user, a merchant workspace they own, and an initial session.",
-        "operationId": "register_api_v1_auth_register_post",
+        "operationId": "register",
         "requestBody": {
           "content": {
             "application/json": {
@@ -11293,7 +11363,7 @@
     },
     "/api/v1/auth/reset-password": {
       "post": {
-        "operationId": "reset_password_api_v1_auth_reset_password_post",
+        "operationId": "reset_password",
         "requestBody": {
           "content": {
             "application/json": {
@@ -11334,7 +11404,7 @@
     },
     "/api/v1/campaigns": {
       "get": {
-        "operationId": "list_campaigns_api_v1_campaigns_get",
+        "operationId": "list_campaigns",
         "parameters": [
           {
             "in": "query",
@@ -11445,7 +11515,7 @@
       },
       "post": {
         "description": "Creates a campaign in PENDING_APPROVAL and builds its audience. Nothing is delivered until a user with campaign:approve approves it.",
-        "operationId": "create_campaign_api_v1_campaigns_post",
+        "operationId": "create_campaign",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -11528,7 +11598,7 @@
     },
     "/api/v1/campaigns/{campaign_id}": {
       "get": {
-        "operationId": "get_campaign_api_v1_campaigns__campaign_id__get",
+        "operationId": "get_campaign",
         "parameters": [
           {
             "in": "path",
@@ -11612,7 +11682,7 @@
     "/api/v1/campaigns/{campaign_id}/approve": {
       "post": {
         "description": "Records the human decision that execution is gated on.",
-        "operationId": "approve_campaign_api_v1_campaigns__campaign_id__approve_post",
+        "operationId": "approve_campaign",
         "parameters": [
           {
             "in": "path",
@@ -11706,7 +11776,7 @@
     "/api/v1/campaigns/{campaign_id}/execute": {
       "post": {
         "description": "Launches the campaign with **simulated** delivery. Refuses with APPROVAL_REQUIRED if no approval is on record.",
-        "operationId": "execute_campaign_api_v1_campaigns__campaign_id__execute_post",
+        "operationId": "execute_campaign",
         "parameters": [
           {
             "in": "path",
@@ -11789,7 +11859,7 @@
     },
     "/api/v1/command-center": {
       "get": {
-        "operationId": "get_command_center_api_v1_command_center_get",
+        "operationId": "get_command_center",
         "parameters": [
           {
             "in": "query",
@@ -11874,7 +11944,7 @@
     },
     "/api/v1/competitors": {
       "get": {
-        "operationId": "list_competitors_api_v1_competitors_get",
+        "operationId": "list_competitors",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -11948,7 +12018,7 @@
     "/api/v1/competitors/intelligence": {
       "get": {
         "description": "Perception comparison across speed, service, quality, taste, price, packaging and ambience. Competitor data is representative baseline data - no platform is scraped.",
-        "operationId": "competitor_intelligence_api_v1_competitors_intelligence_get",
+        "operationId": "competitor_intelligence",
         "parameters": [
           {
             "description": "Look-back window in days.",
@@ -12035,7 +12105,7 @@
     },
     "/api/v1/customers": {
       "get": {
-        "operationId": "list_customers_api_v1_customers_get",
+        "operationId": "list_customers",
         "parameters": [
           {
             "in": "query",
@@ -12164,7 +12234,7 @@
     "/api/v1/customers/metrics": {
       "get": {
         "description": "Repeat rate, retention, cohorts, churn risk and per-slot behaviour.",
-        "operationId": "customer_metrics_api_v1_customers_metrics_get",
+        "operationId": "customer_metrics",
         "parameters": [
           {
             "description": "Look-back window in days.",
@@ -12252,7 +12322,7 @@
     "/api/v1/customers/segment/preview": {
       "post": {
         "description": "Materialises a segment filter and reports its size and value, without saving it.",
-        "operationId": "preview_segment_api_v1_customers_segment_preview_post",
+        "operationId": "preview_segment",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -12336,7 +12406,7 @@
     "/api/v1/dashboard/overview": {
       "get": {
         "description": "Everything the main dashboard needs in one call: KPIs with period-over-period deltas, revenue and order trends, segment breakdown, top and declining products, customer health and detected anomalies.",
-        "operationId": "dashboard_overview_api_v1_dashboard_overview_get",
+        "operationId": "dashboard_overview",
         "parameters": [
           {
             "description": "Look-back window in days.",
@@ -12423,7 +12493,7 @@
     },
     "/api/v1/events": {
       "get": {
-        "operationId": "list_events_api_v1_events_get",
+        "operationId": "list_events",
         "parameters": [
           {
             "in": "query",
@@ -12552,7 +12622,7 @@
     },
     "/api/v1/experiments": {
       "get": {
-        "operationId": "list_experiments_api_v1_experiments_get",
+        "operationId": "list_experiments",
         "parameters": [
           {
             "in": "query",
@@ -12663,7 +12733,7 @@
       },
       "post": {
         "description": "Creates a control/test pair with deterministic assignment, pending approval.",
-        "operationId": "create_experiment_api_v1_experiments_post",
+        "operationId": "create_experiment",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -12746,7 +12816,7 @@
     },
     "/api/v1/experiments/{experiment_id}": {
       "get": {
-        "operationId": "get_experiment_api_v1_experiments__experiment_id__get",
+        "operationId": "get_experiment",
         "parameters": [
           {
             "in": "path",
@@ -12829,7 +12899,7 @@
     },
     "/api/v1/experiments/{experiment_id}/approve": {
       "post": {
-        "operationId": "approve_experiment_api_v1_experiments__experiment_id__approve_post",
+        "operationId": "approve_experiment",
         "parameters": [
           {
             "in": "path",
@@ -12923,7 +12993,7 @@
     "/api/v1/experiments/{experiment_id}/measure": {
       "post": {
         "description": "Recomputes conversion, lift, incremental revenue and profit, ROI and a two-proportion z-test from the transaction ledger, then records the SCALE / STOP / CONTINUE / WATCH decision.",
-        "operationId": "measure_experiment_api_v1_experiments__experiment_id__measure_post",
+        "operationId": "measure_experiment",
         "parameters": [
           {
             "in": "path",
@@ -13017,7 +13087,7 @@
     "/api/v1/experiments/{experiment_id}/summary": {
       "get": {
         "description": "The stored control-vs-test comparison, as the results screen renders it.",
-        "operationId": "experiment_summary_api_v1_experiments__experiment_id__summary_get",
+        "operationId": "experiment_summary",
         "parameters": [
           {
             "in": "path",
@@ -13100,7 +13170,7 @@
     },
     "/api/v1/goods-receipts": {
       "get": {
-        "operationId": "list_goods_receipts_api_v1_goods_receipts_get",
+        "operationId": "list_goods_receipts",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -13174,7 +13244,7 @@
     "/api/v1/growth/allocation": {
       "get": {
         "description": "Where the growth budget has actually gone, by surface - for the Command Center.",
-        "operationId": "growth_allocation_api_v1_growth_allocation_get",
+        "operationId": "growth_allocation",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -13248,7 +13318,7 @@
     "/api/v1/growth/arbitrage": {
       "get": {
         "description": "Compares measured incremental ROI between the business and PayPal surfaces across this merchant's past campaigns. Returns null until at least one campaign of each surface has actually been measured - never a guessed ratio.",
-        "operationId": "growth_arbitrage_api_v1_growth_arbitrage_get",
+        "operationId": "growth_arbitrage",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -13322,7 +13392,7 @@
     "/api/v1/growth/graph": {
       "get": {
         "description": "Decomposition of the headline movement into metrics, segments and supporting evidence. Edges are decompositions or correlations - never causal claims.",
-        "operationId": "growth_graph_api_v1_growth_graph_get",
+        "operationId": "growth_graph",
         "parameters": [
           {
             "description": "Look-back window in days.",
@@ -13410,7 +13480,7 @@
     "/api/v1/health": {
       "get": {
         "description": "Reports database connectivity and which optional integrations are active.",
-        "operationId": "health_api_v1_health_get",
+        "operationId": "health",
         "responses": {
           "200": {
             "content": {
@@ -13431,7 +13501,7 @@
     },
     "/api/v1/integrations/kernel/sessions": {
       "post": {
-        "operationId": "open_portal_api_v1_integrations_kernel_sessions_post",
+        "operationId": "open_portal",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -13514,7 +13584,7 @@
     },
     "/api/v1/integrations/kernel/sessions/{session_id}": {
       "delete": {
-        "operationId": "close_portal_api_v1_integrations_kernel_sessions__session_id__delete",
+        "operationId": "close_portal",
         "parameters": [
           {
             "in": "path",
@@ -13596,7 +13666,7 @@
     },
     "/api/v1/integrations/market/benchmark": {
       "post": {
-        "operationId": "market_benchmark_api_v1_integrations_market_benchmark_post",
+        "operationId": "market_benchmark",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -13679,7 +13749,7 @@
     },
     "/api/v1/integrations/market/procurement/{procurement_id}": {
       "get": {
-        "operationId": "market_for_procurement_api_v1_integrations_market_procurement__procurement_id__get",
+        "operationId": "market_for_procurement",
         "parameters": [
           {
             "in": "path",
@@ -13762,7 +13832,7 @@
     },
     "/api/v1/integrations/paypal-mcp/call": {
       "post": {
-        "operationId": "mcp_call_api_v1_integrations_paypal_mcp_call_post",
+        "operationId": "mcp_call",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -13845,7 +13915,7 @@
     },
     "/api/v1/integrations/paypal-mcp/tools": {
       "get": {
-        "operationId": "mcp_tools_api_v1_integrations_paypal_mcp_tools_get",
+        "operationId": "mcp_tools",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -13918,7 +13988,7 @@
     },
     "/api/v1/integrations/search": {
       "get": {
-        "operationId": "search_evidence_api_v1_integrations_search_get",
+        "operationId": "search_evidence",
         "parameters": [
           {
             "in": "query",
@@ -14032,7 +14102,7 @@
     },
     "/api/v1/integrations/search/reindex": {
       "post": {
-        "operationId": "reindex_evidence_api_v1_integrations_search_reindex_post",
+        "operationId": "reindex_evidence",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -14105,7 +14175,7 @@
     },
     "/api/v1/integrations/status": {
       "get": {
-        "operationId": "status__api_v1_integrations_status_get",
+        "operationId": "integrations_status",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -14176,9 +14246,166 @@
         ]
       }
     },
+    "/api/v1/integrations/studio/ai": {
+      "get": {
+        "operationId": "studio_ai_status",
+        "parameters": [
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "title": "Merchant Id"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Merchant-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_dict_str__Any__"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Whether Studio's AI assistant is available, and on which model",
+        "tags": [
+          "integrations"
+        ]
+      }
+    },
+    "/api/v1/integrations/studio/ai/turn": {
+      "post": {
+        "description": "Relay one ``AgLlmAdapter.executeTurn``. Studio's tools run in the browser against the\ndashboard only; this endpoint holds the model key and returns the model's output.",
+        "operationId": "studio_ai_turn",
+        "parameters": [
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "title": "Merchant Id"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Merchant-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StudioTurnRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_dict_str__Any__"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Run one AG Studio agent turn on PayPilot's LLM",
+        "tags": [
+          "integrations"
+        ]
+      }
+    },
     "/api/v1/integrations/studio/datasets": {
       "get": {
-        "operationId": "studio_datasets_api_v1_integrations_studio_datasets_get",
+        "operationId": "studio_datasets",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -14251,7 +14478,7 @@
     },
     "/api/v1/integrations/zapier": {
       "get": {
-        "operationId": "zapier_state_api_v1_integrations_zapier_get",
+        "operationId": "zapier_state",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -14324,7 +14551,7 @@
     },
     "/api/v1/integrations/zapier/test": {
       "post": {
-        "operationId": "zapier_test_api_v1_integrations_zapier_test_post",
+        "operationId": "zapier_test",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -14397,7 +14624,7 @@
     },
     "/api/v1/intelligence/signals": {
       "get": {
-        "operationId": "get_signals_api_v1_intelligence_signals_get",
+        "operationId": "get_signals",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -14471,7 +14698,7 @@
     "/api/v1/inventory": {
       "get": {
         "description": "Stock levels with days of cover, stockout risk, revenue at risk and a recommended action. The system never purchases anything itself.",
-        "operationId": "inventory_overview_api_v1_inventory_get",
+        "operationId": "inventory_overview",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -14544,7 +14771,7 @@
     },
     "/api/v1/inventory/automation": {
       "get": {
-        "operationId": "automation_runs_api_v1_inventory_automation_get",
+        "operationId": "automation_runs",
         "parameters": [
           {
             "in": "query",
@@ -14673,7 +14900,7 @@
     "/api/v1/inventory/automation/dispatch": {
       "post": {
         "description": "Deliver pending events to n8n now, rather than waiting for the sweeper.",
-        "operationId": "dispatch_events_api_v1_inventory_automation_dispatch_post",
+        "operationId": "dispatch_events",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -14747,7 +14974,7 @@
     "/api/v1/inventory/book": {
       "get": {
         "description": "Opening, movements and closing per SKU, derived from the ledger.",
-        "operationId": "inventory_book_api_v1_inventory_book_get",
+        "operationId": "inventory_book",
         "parameters": [
           {
             "in": "query",
@@ -14853,7 +15080,7 @@
     "/api/v1/inventory/book/export": {
       "get": {
         "description": "A multi-sheet workbook.\n\nValuation columns are omitted entirely for a user without\n`inventory:value_read` - an export must not hand over what the UI withholds.",
-        "operationId": "export_book_api_v1_inventory_book_export_get",
+        "operationId": "export_book",
         "parameters": [
           {
             "in": "query",
@@ -14957,7 +15184,7 @@
     "/api/v1/inventory/import/commit": {
       "post": {
         "description": "Re-validates the file against `mapping` exactly as /preview did, then writes every row that passes: a new SKU creates its product and item (with an opening RESTOCK movement if a quantity was given); an existing SKU updates its policy fields only - never its stock count, which stays under Adjust Stock. Rows that fail validation are skipped, not partially applied, and one bad row never blocks the rest.",
-        "operationId": "import_commit_api_v1_inventory_import_commit_post",
+        "operationId": "import_commit",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -15041,7 +15268,7 @@
     "/api/v1/inventory/import/preview": {
       "post": {
         "description": "Upload a .xlsx or .csv export. With no `mapping`, columns are auto-matched to inventory fields by header text (e.g. 'Item Code' -> sku, 'Reorder Level' -> reorder_point); pass one back (edited or not) to re-validate against it before committing. Every row is validated here - nothing is written yet.",
-        "operationId": "import_preview_api_v1_inventory_import_preview_post",
+        "operationId": "import_preview",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -15124,7 +15351,7 @@
     },
     "/api/v1/inventory/items": {
       "get": {
-        "operationId": "list_items_api_v1_inventory_items_get",
+        "operationId": "list_items",
         "parameters": [
           {
             "in": "query",
@@ -15253,7 +15480,7 @@
     },
     "/api/v1/inventory/items/{item_id}": {
       "get": {
-        "operationId": "get_item_api_v1_inventory_items__item_id__get",
+        "operationId": "get_item",
         "parameters": [
           {
             "in": "path",
@@ -15337,7 +15564,7 @@
     "/api/v1/inventory/items/{item_id}/adjust": {
       "post": {
         "description": "Move stock by hand. Every adjustment is a ledger row with a named actor.",
-        "operationId": "adjust_stock_api_v1_inventory_items__item_id__adjust_post",
+        "operationId": "adjust_stock",
         "parameters": [
           {
             "in": "path",
@@ -15430,7 +15657,7 @@
     },
     "/api/v1/inventory/items/{item_id}/policy": {
       "patch": {
-        "operationId": "set_policy_api_v1_inventory_items__item_id__policy_patch",
+        "operationId": "set_policy",
         "parameters": [
           {
             "in": "path",
@@ -15524,7 +15751,7 @@
     "/api/v1/inventory/items/{item_id}/reorder": {
       "post": {
         "description": "Manual override: run the same engine the automation runs, on demand.",
-        "operationId": "force_reorder_api_v1_inventory_items__item_id__reorder_post",
+        "operationId": "force_reorder",
         "parameters": [
           {
             "in": "path",
@@ -15608,7 +15835,7 @@
     "/api/v1/inventory/ledger": {
       "get": {
         "description": "The append-only record. Nothing here is editable through any API.",
-        "operationId": "ledger_api_v1_inventory_ledger_get",
+        "operationId": "ledger",
         "parameters": [
           {
             "in": "query",
@@ -15754,7 +15981,7 @@
     "/api/v1/inventory/trace/{correlation_id}": {
       "get": {
         "description": "Every record sharing one correlation id, in order.\n\nThis is what makes an automated decision inspectable: the event that started\nit, the workflow that ran, and the ledger rows it produced, all in one place.",
-        "operationId": "trace_api_v1_inventory_trace__correlation_id__get",
+        "operationId": "trace",
         "parameters": [
           {
             "in": "path",
@@ -15837,7 +16064,7 @@
     "/api/v1/inventory/{item_id}/action": {
       "post": {
         "description": "Records a decision the merchant took (acknowledging a reorder, logging a restock, correcting a count). No purchase order is ever placed by the system.",
-        "operationId": "inventory_action_api_v1_inventory__item_id__action_post",
+        "operationId": "inventory_action",
         "parameters": [
           {
             "in": "path",
@@ -15931,7 +16158,7 @@
     "/api/v1/memory": {
       "delete": {
         "description": "Irreversible. Requires confirm=true in the body.",
-        "operationId": "forget_everything_api_v1_memory_delete",
+        "operationId": "forget_everything",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -16014,7 +16241,7 @@
     },
     "/api/v1/memory/recent": {
       "get": {
-        "operationId": "recent_memories_api_v1_memory_recent_get",
+        "operationId": "recent_memories",
         "parameters": [
           {
             "in": "query",
@@ -16111,7 +16338,7 @@
     "/api/v1/memory/remember": {
       "post": {
         "description": "Writes a note into this merchant's long-term memory. It is embedded locally and stored in Postgres (pgvector); the write completes just after the response.",
-        "operationId": "remember_api_v1_memory_remember_post",
+        "operationId": "remember",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -16195,7 +16422,7 @@
     "/api/v1/memory/search": {
       "get": {
         "description": "Natural-language search over long-term memory. Returns an empty result with available=false when memory is disabled, rather than an error - memory is an enhancement, and callers should not have to branch on it.",
-        "operationId": "search_memory_api_v1_memory_search_get",
+        "operationId": "search_memory",
         "parameters": [
           {
             "in": "query",
@@ -16315,7 +16542,7 @@
     },
     "/api/v1/memory/status": {
       "get": {
-        "operationId": "memory_status_api_v1_memory_status_get",
+        "operationId": "memory_status",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -16388,7 +16615,7 @@
     },
     "/api/v1/merchants/current": {
       "get": {
-        "operationId": "current_merchant_api_v1_merchants_current_get",
+        "operationId": "current_merchant",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -16461,7 +16688,7 @@
     },
     "/api/v1/merchants/mine": {
       "get": {
-        "operationId": "my_merchants_api_v1_merchants_mine_get",
+        "operationId": "my_merchants",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -16535,7 +16762,7 @@
     "/api/v1/opportunities": {
       "get": {
         "description": "Detected growth opportunities ranked by expected value, discounted by effort.",
-        "operationId": "list_opportunities_api_v1_opportunities_get",
+        "operationId": "list_opportunities",
         "parameters": [
           {
             "description": "Filter by status.",
@@ -16637,7 +16864,7 @@
       },
       "post": {
         "description": "For something the detector cannot see - a lease ending, a competitor closing, a supplier deal. It behaves like any detected opportunity from here on: it can be approved, turned into a campaign and measured. The nightly detection pass upserts by key and never touches a manual one.",
-        "operationId": "create_manual_opportunity_api_v1_opportunities_post",
+        "operationId": "create_manual_opportunity",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -16721,7 +16948,7 @@
     "/api/v1/opportunities/detect": {
       "post": {
         "description": "Runs the deterministic detector and upserts the results. Idempotent: re-running refreshes existing opportunities rather than duplicating them, and never rolls back an opportunity a human has already acted on.",
-        "operationId": "detect_opportunities_api_v1_opportunities_detect_post",
+        "operationId": "detect_opportunities",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -16804,7 +17031,7 @@
     },
     "/api/v1/opportunities/{opportunity_id}": {
       "get": {
-        "operationId": "get_opportunity_api_v1_opportunities__opportunity_id__get",
+        "operationId": "get_opportunity",
         "parameters": [
           {
             "in": "path",
@@ -16888,7 +17115,7 @@
     "/api/v1/opportunities/{opportunity_id}/missions": {
       "get": {
         "description": "Compares a business-side, a PayPal-side and a hybrid intervention for this opportunity's target segment - audience size, offer, budget and expected customers, each grounded in this merchant's own transaction and acquisition-channel history. Read-only: nothing is created until the merchant picks an option and calls POST /campaigns.",
-        "operationId": "opportunity_missions_api_v1_opportunities__opportunity_id__missions_get",
+        "operationId": "opportunity_missions",
         "parameters": [
           {
             "in": "path",
@@ -16971,7 +17198,7 @@
     },
     "/api/v1/opportunities/{opportunity_id}/status": {
       "patch": {
-        "operationId": "update_opportunity_status_api_v1_opportunities__opportunity_id__status_patch",
+        "operationId": "update_opportunity_status",
         "parameters": [
           {
             "in": "path",
@@ -17064,7 +17291,7 @@
     },
     "/api/v1/payments": {
       "get": {
-        "operationId": "list_payments_api_v1_payments_get",
+        "operationId": "list_payments",
         "parameters": [
           {
             "in": "query",
@@ -17153,7 +17380,7 @@
     },
     "/api/v1/payments/{execution_id}/capture": {
       "post": {
-        "operationId": "capture_payment_api_v1_payments__execution_id__capture_post",
+        "operationId": "capture_payment",
         "parameters": [
           {
             "in": "path",
@@ -17236,7 +17463,7 @@
     },
     "/api/v1/paypal/intelligence": {
       "get": {
-        "operationId": "intelligence_api_v1_paypal_intelligence_get",
+        "operationId": "intelligence",
         "parameters": [
           {
             "in": "query",
@@ -17321,7 +17548,7 @@
     },
     "/api/v1/paypal/invoices": {
       "get": {
-        "operationId": "list_invoices_api_v1_paypal_invoices_get",
+        "operationId": "list_invoices",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -17392,7 +17619,7 @@
         ]
       },
       "post": {
-        "operationId": "create_invoice_api_v1_paypal_invoices_post",
+        "operationId": "create_invoice",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -17475,7 +17702,7 @@
     },
     "/api/v1/paypal/invoices/{record_id}/action": {
       "post": {
-        "operationId": "invoice_action_api_v1_paypal_invoices__record_id__action_post",
+        "operationId": "invoice_action",
         "parameters": [
           {
             "in": "path",
@@ -17568,7 +17795,7 @@
     },
     "/api/v1/paypal/payouts": {
       "get": {
-        "operationId": "list_payouts_api_v1_paypal_payouts_get",
+        "operationId": "list_payouts",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -17641,7 +17868,7 @@
     },
     "/api/v1/paypal/payouts/cashback": {
       "post": {
-        "operationId": "request_cashback_api_v1_paypal_payouts_cashback_post",
+        "operationId": "request_cashback",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -17724,7 +17951,7 @@
     },
     "/api/v1/paypal/payouts/{execution_id}/refresh": {
       "post": {
-        "operationId": "refresh_payout_api_v1_paypal_payouts__execution_id__refresh_post",
+        "operationId": "refresh_payout",
         "parameters": [
           {
             "in": "path",
@@ -17807,7 +18034,7 @@
     },
     "/api/v1/paypal/plans": {
       "get": {
-        "operationId": "list_plans_api_v1_paypal_plans_get",
+        "operationId": "list_plans",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -17878,7 +18105,7 @@
         ]
       },
       "post": {
-        "operationId": "create_plan_api_v1_paypal_plans_post",
+        "operationId": "create_plan",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -17961,7 +18188,7 @@
     },
     "/api/v1/paypal/status": {
       "get": {
-        "operationId": "status__api_v1_paypal_status_get",
+        "operationId": "paypal_status",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -18034,7 +18261,7 @@
     },
     "/api/v1/paypal/subscriptions": {
       "get": {
-        "operationId": "list_subscriptions_api_v1_paypal_subscriptions_get",
+        "operationId": "list_subscriptions",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -18107,7 +18334,7 @@
     },
     "/api/v1/paypal/subscriptions/{record_id}/action": {
       "post": {
-        "operationId": "subscription_action_api_v1_paypal_subscriptions__record_id__action_post",
+        "operationId": "subscription_action",
         "parameters": [
           {
             "in": "path",
@@ -18200,7 +18427,7 @@
     },
     "/api/v1/paypal/sync": {
       "post": {
-        "operationId": "sync_api_v1_paypal_sync_post",
+        "operationId": "sync",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -18283,7 +18510,7 @@
     },
     "/api/v1/paypal/transactions": {
       "get": {
-        "operationId": "transactions_api_v1_paypal_transactions_get",
+        "operationId": "transactions",
         "parameters": [
           {
             "in": "query",
@@ -18395,7 +18622,7 @@
     },
     "/api/v1/paypal/webhooks": {
       "post": {
-        "operationId": "receive_webhook_api_v1_paypal_webhooks_post",
+        "operationId": "receive_webhook",
         "responses": {
           "200": {
             "content": {
@@ -18416,7 +18643,7 @@
     },
     "/api/v1/paypal/webhooks/events": {
       "get": {
-        "operationId": "webhook_events_api_v1_paypal_webhooks_events_get",
+        "operationId": "webhook_events",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -18489,7 +18716,7 @@
     },
     "/api/v1/paypal/webhooks/simulate": {
       "post": {
-        "operationId": "simulate_webhook_api_v1_paypal_webhooks_simulate_post",
+        "operationId": "simulate_webhook",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -18572,7 +18799,7 @@
     },
     "/api/v1/paypal/webhooks/{webhook_event_id}/reprocess": {
       "post": {
-        "operationId": "reprocess_webhook_api_v1_paypal_webhooks__webhook_event_id__reprocess_post",
+        "operationId": "reprocess_webhook",
         "parameters": [
           {
             "in": "path",
@@ -18655,7 +18882,7 @@
     },
     "/api/v1/permissions": {
       "get": {
-        "operationId": "list_permissions_api_v1_permissions_get",
+        "operationId": "list_permissions",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -18728,7 +18955,7 @@
     },
     "/api/v1/procurement": {
       "get": {
-        "operationId": "list_procurement_api_v1_procurement_get",
+        "operationId": "list_procurement",
         "parameters": [
           {
             "in": "query",
@@ -18838,7 +19065,7 @@
         ]
       },
       "post": {
-        "operationId": "create_procurement_api_v1_procurement_post",
+        "operationId": "create_procurement",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -18922,7 +19149,7 @@
     "/api/v1/procurement/autopilot": {
       "post": {
         "description": "Inventory Intelligence picks the item most at risk (or the one given), the Buyer Agent sources and negotiates, Procurement Evaluation recommends, and the graph stops at a human approval request. Nothing is purchased.",
-        "operationId": "procurement_autopilot_api_v1_procurement_autopilot_post",
+        "operationId": "procurement_autopilot",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -19005,7 +19232,7 @@
     },
     "/api/v1/procurement/{request_id}": {
       "get": {
-        "operationId": "get_procurement_api_v1_procurement__request_id__get",
+        "operationId": "get_procurement",
         "parameters": [
           {
             "in": "path",
@@ -19088,7 +19315,7 @@
     },
     "/api/v1/procurement/{request_id}/advance": {
       "post": {
-        "operationId": "advance_procurement_api_v1_procurement__request_id__advance_post",
+        "operationId": "advance_procurement",
         "parameters": [
           {
             "in": "path",
@@ -19171,7 +19398,7 @@
     },
     "/api/v1/procurement/{request_id}/approve": {
       "post": {
-        "operationId": "decide_procurement_api_v1_procurement__request_id__approve_post",
+        "operationId": "decide_procurement",
         "parameters": [
           {
             "in": "path",
@@ -19264,7 +19491,7 @@
     },
     "/api/v1/procurement/{request_id}/messages": {
       "get": {
-        "operationId": "procurement_messages_api_v1_procurement__request_id__messages_get",
+        "operationId": "procurement_messages",
         "parameters": [
           {
             "in": "path",
@@ -19365,7 +19592,7 @@
     },
     "/api/v1/procurement/{request_id}/negotiate": {
       "post": {
-        "operationId": "run_procurement_api_v1_procurement__request_id__negotiate_post",
+        "operationId": "run_procurement",
         "parameters": [
           {
             "in": "path",
@@ -19449,7 +19676,7 @@
     "/api/v1/products/analytics": {
       "get": {
         "description": "Per-product performance plus market-basket pairs and category mix.",
-        "operationId": "product_analytics_api_v1_products_analytics_get",
+        "operationId": "product_analytics",
         "parameters": [
           {
             "description": "Look-back window in days.",
@@ -19536,7 +19763,7 @@
     },
     "/api/v1/purchase-orders": {
       "get": {
-        "operationId": "list_orders_api_v1_purchase_orders_get",
+        "operationId": "list_orders",
         "parameters": [
           {
             "in": "query",
@@ -19649,7 +19876,7 @@
     "/api/v1/purchase-orders/{order_id}/approve": {
       "post": {
         "description": "The human gate. Approving also releases the order to the vendor.",
-        "operationId": "approve_order_api_v1_purchase_orders__order_id__approve_post",
+        "operationId": "approve_order",
         "parameters": [
           {
             "in": "path",
@@ -19742,7 +19969,7 @@
     },
     "/api/v1/purchase-orders/{order_id}/goods-receipts": {
       "post": {
-        "operationId": "create_goods_receipt_api_v1_purchase_orders__order_id__goods_receipts_post",
+        "operationId": "create_goods_receipt",
         "parameters": [
           {
             "in": "path",
@@ -19835,7 +20062,7 @@
     },
     "/api/v1/purchase-orders/{order_id}/lifecycle": {
       "get": {
-        "operationId": "purchase_order_lifecycle_api_v1_purchase_orders__order_id__lifecycle_get",
+        "operationId": "purchase_order_lifecycle",
         "parameters": [
           {
             "in": "path",
@@ -19919,7 +20146,7 @@
     "/api/v1/purchase-orders/{order_id}/receive": {
       "post": {
         "description": "Book in a delivery. Partial receipts leave the order PARTIALLY_RECEIVED.",
-        "operationId": "receive_order_api_v1_purchase_orders__order_id__receive_post",
+        "operationId": "receive_order",
         "parameters": [
           {
             "in": "path",
@@ -20012,7 +20239,7 @@
     },
     "/api/v1/purchase-orders/{order_id}/reconcile": {
       "post": {
-        "operationId": "reconcile_order_api_v1_purchase_orders__order_id__reconcile_post",
+        "operationId": "reconcile_order",
         "parameters": [
           {
             "in": "path",
@@ -20095,7 +20322,7 @@
     },
     "/api/v1/reconciliations": {
       "get": {
-        "operationId": "list_reconciliations_api_v1_reconciliations_get",
+        "operationId": "list_reconciliations",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -20169,7 +20396,7 @@
     "/api/v1/reviews": {
       "get": {
         "description": "Paginated review browser. Every filter is applied identically to the rows and to the total, so the page count always matches what is listed.",
-        "operationId": "list_reviews_api_v1_reviews_get",
+        "operationId": "list_reviews",
         "parameters": [
           {
             "in": "query",
@@ -20349,7 +20576,7 @@
     "/api/v1/reviews/intelligence": {
       "get": {
         "description": "Sentiment, topic distribution, emerging complaints and positive themes. Complaint trends are normalised per 100 orders so a shrinking segment cannot mask a worsening experience.",
-        "operationId": "review_intelligence_api_v1_reviews_intelligence_get",
+        "operationId": "review_intelligence",
         "parameters": [
           {
             "description": "Look-back window in days.",
@@ -20437,7 +20664,7 @@
     "/api/v1/reviews/search": {
       "post": {
         "description": "Vector similarity search over review embeddings (pgvector).",
-        "operationId": "search_reviews_api_v1_reviews_search_post",
+        "operationId": "search_reviews",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -20521,7 +20748,7 @@
     "/api/v1/roles": {
       "get": {
         "description": "The canonical RBAC map the backend enforces.",
-        "operationId": "list_roles_api_v1_roles_get",
+        "operationId": "list_roles",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -20593,7 +20820,7 @@
       },
       "post": {
         "description": "Defines a merchant-scoped role from an explicit permission set. Every code is validated against the permission catalogue, and a creator can never grant a permission they do not hold themselves.",
-        "operationId": "create_custom_role_api_v1_roles_post",
+        "operationId": "create_custom_role",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -20677,7 +20904,7 @@
     "/api/v1/roles/{role_id}": {
       "delete": {
         "description": "Refuses while any member still holds the role.",
-        "operationId": "delete_custom_role_api_v1_roles__role_id__delete",
+        "operationId": "delete_custom_role",
         "parameters": [
           {
             "in": "path",
@@ -20760,7 +20987,7 @@
     },
     "/api/v1/settings": {
       "get": {
-        "operationId": "get_settings_view_api_v1_settings_get",
+        "operationId": "get_settings_view",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -20834,7 +21061,7 @@
     "/api/v1/settings/email/test": {
       "post": {
         "description": "Proves the SMTP configuration end to end by mailing the signed-in user.",
-        "operationId": "send_test_email_api_v1_settings_email_test_post",
+        "operationId": "send_test_email",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -20908,7 +21135,7 @@
     "/api/v1/signals": {
       "get": {
         "description": "External signals scored against this merchant's actual revenue exposure. Deliberately not a general news feed.",
-        "operationId": "list_signals_api_v1_signals_get",
+        "operationId": "list_signals",
         "parameters": [
           {
             "description": "Look-back window in days.",
@@ -20995,7 +21222,7 @@
     },
     "/api/v1/signals/{signal_id}/dismiss": {
       "post": {
-        "operationId": "dismiss_signal_api_v1_signals__signal_id__dismiss_post",
+        "operationId": "dismiss_signal",
         "parameters": [
           {
             "in": "path",
@@ -21078,7 +21305,7 @@
     },
     "/api/v1/supplier-invoices": {
       "get": {
-        "operationId": "list_supplier_invoices_api_v1_supplier_invoices_get",
+        "operationId": "list_supplier_invoices",
         "parameters": [
           {
             "in": "query",
@@ -21167,7 +21394,7 @@
     },
     "/api/v1/supplier-invoices/{invoice_id}/approve-payment": {
       "post": {
-        "operationId": "approve_supplier_payment_api_v1_supplier_invoices__invoice_id__approve_payment_post",
+        "operationId": "approve_supplier_payment",
         "parameters": [
           {
             "in": "path",
@@ -21260,7 +21487,7 @@
     },
     "/api/v1/supplier-invoices/{invoice_id}/match": {
       "post": {
-        "operationId": "match_supplier_invoice_api_v1_supplier_invoices__invoice_id__match_post",
+        "operationId": "match_supplier_invoice",
         "parameters": [
           {
             "in": "path",
@@ -21343,7 +21570,7 @@
     },
     "/api/v1/supplier-invoices/{invoice_id}/pay": {
       "post": {
-        "operationId": "pay_supplier_invoice_api_v1_supplier_invoices__invoice_id__pay_post",
+        "operationId": "pay_supplier_invoice",
         "parameters": [
           {
             "in": "path",
@@ -21426,7 +21653,7 @@
     },
     "/api/v1/suppliers": {
       "get": {
-        "operationId": "list_suppliers_api_v1_suppliers_get",
+        "operationId": "list_suppliers",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -21499,7 +21726,7 @@
     },
     "/api/v1/suppliers/{supplier_agent_id}": {
       "get": {
-        "operationId": "get_supplier_api_v1_suppliers__supplier_agent_id__get",
+        "operationId": "get_supplier",
         "parameters": [
           {
             "in": "path",
@@ -21582,7 +21809,7 @@
     },
     "/api/v1/supply/demand": {
       "get": {
-        "operationId": "demand_scan_api_v1_supply_demand_get",
+        "operationId": "demand_scan",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -21655,7 +21882,7 @@
     },
     "/api/v1/supply/overview": {
       "get": {
-        "operationId": "supply_overview_api_v1_supply_overview_get",
+        "operationId": "supply_overview",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -21728,7 +21955,7 @@
     },
     "/api/v1/supply/timeline": {
       "get": {
-        "operationId": "procurement_timeline_api_v1_supply_timeline_get",
+        "operationId": "procurement_timeline",
         "parameters": [
           {
             "in": "query",
@@ -21813,7 +22040,7 @@
     },
     "/api/v1/users": {
       "get": {
-        "operationId": "list_users_api_v1_users_get",
+        "operationId": "list_users",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -21886,7 +22113,7 @@
     },
     "/api/v1/users/invite": {
       "post": {
-        "operationId": "invite_user_api_v1_users_invite_post",
+        "operationId": "invite_user",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -21970,7 +22197,7 @@
     "/api/v1/users/role": {
       "post": {
         "description": "Refuses to demote the last remaining owner of a merchant.",
-        "operationId": "change_role_api_v1_users_role_post",
+        "operationId": "change_role",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -22053,7 +22280,7 @@
     },
     "/api/v1/vendors": {
       "get": {
-        "operationId": "list_vendors_api_v1_vendors_get",
+        "operationId": "list_vendors",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -22124,7 +22351,7 @@
         ]
       },
       "post": {
-        "operationId": "create_vendor_api_v1_vendors_post",
+        "operationId": "create_vendor",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -22208,7 +22435,7 @@
     "/api/v1/vendors/{vendor_id}/supplies": {
       "post": {
         "description": "Record that this vendor can supply this item, and on what terms.\n\nBoth sides are re-checked against the merchant, so a vendor id from one\ntenant can never be attached to another tenant's stock.",
-        "operationId": "link_supply_api_v1_vendors__vendor_id__supplies_post",
+        "operationId": "link_supply",
         "parameters": [
           {
             "in": "path",
@@ -22302,7 +22529,7 @@
     "/api/v1/voice/assistant-config": {
       "get": {
         "description": "The tool definitions and system prompt to paste into your Vapi assistant, plus the Server URL it should call back on.",
-        "operationId": "assistant_config_api_v1_voice_assistant_config_get",
+        "operationId": "assistant_config",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -22376,7 +22603,7 @@
     "/api/v1/voice/session": {
       "get": {
         "description": "Returns the public key, assistant id and per-session overrides the browser SDK needs. Includes a short-lived session token that the assistant presents when calling back into the API, so voice tool calls are authenticated and merchant-scoped like any other request.",
-        "operationId": "voice_session_api_v1_voice_session_get",
+        "operationId": "voice_session",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -22450,7 +22677,7 @@
     "/api/v1/voice/sync": {
       "post": {
         "description": "The assistant's tools and system prompt live on Vapi's platform, not in this backend - adding a tool here (e.g. navigate_page) does nothing to the assistant Vapi actually runs until it is pushed there. This does that: it fetches the configured assistant, replaces its system message and tool list with this backend's VOICE_TOOLS and SYSTEM_PROMPT, and leaves its provider, model and voice untouched. Runs automatically at startup; call it again after editing a voice tool without restarting the server.",
-        "operationId": "sync_assistant_api_v1_voice_sync_post",
+        "operationId": "sync_assistant",
         "parameters": [
           {
             "description": "Optional merchant to act on. Must be one you are a member of.",
@@ -22524,7 +22751,7 @@
     "/api/v1/voice/tool": {
       "post": {
         "description": "Executes a single tool against the same registry the web agents use. Authenticated with the short-lived voice session token; never anonymous.",
-        "operationId": "voice_tool_api_v1_voice_tool_post",
+        "operationId": "voice_tool",
         "parameters": [
           {
             "in": "header",
@@ -22582,6 +22809,16 @@
       }
     }
   },
+  "servers": [
+    {
+      "description": "Hosted demo (Render)",
+      "url": "https://paypilot-api.onrender.com"
+    },
+    {
+      "description": "Local (docker compose up)",
+      "url": "http://localhost:8000"
+    }
+  ],
   "tags": [
     {
       "description": "Liveness and integration status.",

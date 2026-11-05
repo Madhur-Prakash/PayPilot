@@ -68,6 +68,9 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_VAPI_ASSISTANT_ID: pick("NEXT_PUBLIC_VAPI_ASSISTANT_ID"),
     NEXT_PUBLIC_DEMO_EMAIL: pick("NEXT_PUBLIC_DEMO_EMAIL"),
     NEXT_PUBLIC_DEMO_PASSWORD: pick("NEXT_PUBLIC_DEMO_PASSWORD"),
+    // Bryntum Gantt licence key. Shipped to the browser by design (Bryntum checks it
+    // client-side); blank runs the Enterprise package as Bryntum's trial.
+    NEXT_PUBLIC_BRYNTUM_LICENSE_KEY: pick("NEXT_PUBLIC_BRYNTUM_LICENSE_KEY"),
   },
 };
 

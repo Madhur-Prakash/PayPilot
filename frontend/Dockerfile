@@ -7,6 +7,12 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 ARG NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+# Optional; blank runs AG Studio in trial mode (watermark).
+ARG NEXT_PUBLIC_AG_STUDIO_LICENSE_KEY=
+ENV NEXT_PUBLIC_AG_STUDIO_LICENSE_KEY=$NEXT_PUBLIC_AG_STUDIO_LICENSE_KEY
+# Optional; blank runs Bryntum Gantt Enterprise as its trial (Trial badge).
+ARG NEXT_PUBLIC_BRYNTUM_LICENSE_KEY=
+ENV NEXT_PUBLIC_BRYNTUM_LICENSE_KEY=$NEXT_PUBLIC_BRYNTUM_LICENSE_KEY
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .

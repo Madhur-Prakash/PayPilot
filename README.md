@@ -148,10 +148,13 @@ Full, honest detail (what is live, what is a labelled fallback, what was verifie
 
 * **AG Grid Community** (v36.3) - transactions, quote comparison, invoices, receipts,
   reconciliations, payments, RFQs, evidence.
-* **AG Studio** - *Dashboard Studio*: merchants build dashboards over PayPilot's computed
-  datasets (evaluation mode without a licence key).
+* **AG Studio** - *Dashboard Studio*: opens on a pre-built overview over PayPilot's computed
+  datasets; merchants edit it by drag-and-drop or ask Studio's AI agents, which run on
+  PayPilot's LLM through an `AgLlmAdapter` (the key stays on the server). Evaluation mode
+  without a licence key; full agent runs need a paid Groq tier or `STUDIO_AI_*`.
 * **Bryntum Gantt** - *Procurement timeline*: every real stage from RFQ to payment, partial
-  deliveries and blocked invoices visible (trial build).
+  deliveries and blocked invoices visible (Bryntum 8.0 Enterprise; licence key via
+  `NEXT_PUBLIC_BRYNTUM_LICENSE_KEY`).
 * **Channel3** - market price reference next to a purchase (labelled fallback without a key).
 * **Elasticsearch** - ranked evidence search (keyword fallback without `ELASTIC_URL`).
 * **Kernel** - observe-only supplier-page verification (labelled fallback without a key).
@@ -160,7 +163,7 @@ Full, honest detail (what is live, what is a labelled fallback, what was verifie
 * **Postman** - collection + environment, 53 requests with assertions.
 * **APIMatic** - OpenAPI export only (`python scripts/export_openapi.py` -> `docs/openapi.json`).
 
-Not used, so not claimed: the APIMatic Context Plugin, Astropods, AG Studio's agent framework.
+Not used, so not claimed: the APIMatic Context Plugin, Astropods.
 None of these tools can move money or widen a limit.
 
 ## Architecture
@@ -322,7 +325,9 @@ Full breakdown: [docs/HACKATHON.md](docs/HACKATHON.md).
 * Channel3, Kernel, Elasticsearch and Zapier were verified against **mocked HTTP only** and run
   on labelled fallbacks until their keys are set. The new migration (`0006`) was validated as
   Postgres SQL offline; Docker was unavailable to run it against a live Postgres.
-* Bryntum (trial) and AG Studio (evaluation) show watermarks; production use needs their licences.
+* AG Studio (evaluation) shows a watermark without its licence key; Bryntum Gantt shows a Trial
+  badge without `NEXT_PUBLIC_BRYNTUM_LICENSE_KEY`. Our Bryntum key is a trial key (valid until
+  2026-12-20); production use needs purchased licences for both.
 * Supplier agents in the demo are simulated policy engines (labelled as such); external agents can
   connect through the signed inbound endpoint.
 * Analytics run on a seeded demo dataset; synced PayPal transactions are shown separately with

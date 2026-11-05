@@ -59,7 +59,7 @@ class TestInventoryIntelligence:
 
 class TestSignatureScenario:
     async def test_the_full_procurement_lifecycle(
-        self, client, analyst_headers, owner_headers, viewer_headers, staff_headers, network
+        self, client, analyst_headers, owner_headers, viewer_headers, staff_headers, network, seeded
     ):
         await _reset_item(network)
         # ---- an Analyst sources and negotiates (moves no money)
@@ -160,7 +160,9 @@ class TestSignatureScenario:
         assert {"business.procurement_required", "business.supplier_selected", "business.purchase_approved",
                 "business.goods_received", "business.payment_reconciled", "business.product_margin_changed"} <= kinds
         async with network["factory"]() as s:
-            cascadia = (await s.execute(select(SupplierAgent).where(SupplierAgent.agent_key == "supplier.cascadia"))).scalars().first()
+            cascadia = (await s.execute(select(SupplierAgent).where(
+                SupplierAgent.agent_key == "supplier.cascadia", SupplierAgent.merchant_id == seeded["merchant_id"],
+            ))).scalars().first()
             assert cascadia.orders_completed == 16
         center = (await client.get("/command-center", headers=owner_headers)).json()["data"]
         assert Decimal(center["procurement"]["savings"]) > 0

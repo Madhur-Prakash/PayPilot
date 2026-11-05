@@ -28,7 +28,7 @@ from app.integrations.sponsors import (
     integration_status,
 )
 from app.schemas.common import APIResponse, SchemaBase
-from app.services.integrations import evidence, market
+from app.services.integrations import evidence, market, studio_ai
 from app.services.integrations.zapier import delivery_summary
 from app.services.intelligence.datasets import build_datasets
 
@@ -235,5 +235,27 @@ async def studio_datasets(
     session: DbSession,
     principal: Principal = Depends(require_permission(Permission.DASHBOARD_READ)),
 ) -> APIResponse[dict[str, Any]]:
-    return APIResponse(data=await build_datasets(session, principal.merchant_id, principal.permissions))
+    data = await build_datasets(session, principal.merchant_id, principal.permissions)
+    data["ai"] = studio_ai.availability()
+    return APIResponse(data=data)
+
+
+# --------------------------------------------------------------------------- #
+# AG Studio - AI assistant (Studio's agent harness, run on PayPilot's LLM)
+# --------------------------------------------------------------------------- #
+@router.get("/studio/ai", summary="Whether Studio's AI assistant is available, and on which model")
+async def studio_ai_status(
+    principal: Principal = Depends(require_permission(Permission.DASHBOARD_READ)),
+) -> APIResponse[dict[str, Any]]:
+    return APIResponse(data=studio_ai.availability())
+
+
+@router.post("/studio/ai/turn", summary="Run one AG Studio agent turn on PayPilot's LLM")
+async def studio_ai_turn(
+    body: studio_ai.StudioTurnRequest,
+    principal: Principal = Depends(require_permission(Permission.DASHBOARD_READ)),
+) -> APIResponse[dict[str, Any]]:
+    """Relay one ``AgLlmAdapter.executeTurn``. Studio's tools run in the browser against the
+    dashboard only; this endpoint holds the model key and returns the model's output."""
+    return APIResponse(data=await studio_ai.run_turn(body))
 

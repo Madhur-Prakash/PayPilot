@@ -24,6 +24,13 @@ _elastic: ElasticClient | None = None
 _zapier: ZapierClient | None = None
 
 
+def _studio_ai_available() -> bool:
+    # Imported lazily: the services layer imports this package.
+    from app.services.integrations.studio_ai import availability
+
+    return bool(availability()["available"])
+
+
 def get_channel3() -> Channel3Client:
     global _channel3
     if _channel3 is None:
@@ -92,7 +99,9 @@ def integration_status() -> list[dict[str, Any]]:
             "name": "AG Studio",
             "category": "sponsor",
             "mode": LIVE,
-            "used_for": "Merchant-built dashboards over PayPilot's computed datasets (view/edit, state saved per browser)",
+            "used_for": "Pre-built and merchant-built dashboards over PayPilot's computed datasets; Studio's AI agents "
+            "run on PayPilot's LLM through the backend"
+            + ("" if _studio_ai_available() else " (AI assistant off until GROQ_API_KEY or STUDIO_AI_* is set)"),
             "where": "/studio",
         },
         {
@@ -141,7 +150,8 @@ def integration_status() -> list[dict[str, Any]]:
             "name": "Render",
             "category": "sponsor",
             "mode": "BLUEPRINT",
-            "used_for": "render.yaml deploys API, web, worker and Postgres; not deployed from this environment",
+            "used_for": "render.yaml deploys the API (with in-process event relays), web app and Postgres on the free "
+            "plan; not deployed from this environment",
             "where": "render.yaml",
         },
         {

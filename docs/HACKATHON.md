@@ -48,8 +48,8 @@ a voice assistant, and n8n automation.
 | Vapi | Optional voice assistant (now with supply/approval/PayPal read tools) |
 | n8n | Event routing from the transactional outbox (never financial logic) |
 | AG Grid Community (v36) | Data grids for transactions, quotes, invoices, receipts, reconciliations, payments |
-| AG Studio | Dashboard Studio - merchant-built dashboards over backend-computed datasets (evaluation mode) |
-| Bryntum Gantt | Procurement timeline of the real RFQ -> payment stages (trial build) |
+| AG Studio | Dashboard Studio - pre-built and merchant-built dashboards over backend-computed datasets, plus Studio's AI agent harness running on PayPilot's LLM via an `AgLlmAdapter` (evaluation mode; full agent runs need a paid Groq tier) |
+| Bryntum Gantt | Procurement timeline of the real RFQ -> payment stages (Bryntum 8.0 Enterprise, licence key via `NEXT_PUBLIC_BRYNTUM_LICENSE_KEY`) |
 | PayPal Agent Toolkit (MCP) | Read-only bridge through PayPilot's tool registry; write tools blocked in code |
 | Channel3 | Market price reference beside a purchase (labelled fallback without a key) |
 | Elasticsearch | Evidence search across audit, messages, offers, invoices, events, reviews (keyword fallback without a node) |
@@ -60,7 +60,7 @@ a voice assistant, and n8n automation.
 | APIMatic | OpenAPI export (`scripts/export_openapi.py`) ready to import; the Context Plugin was **not** used |
 | Claude Code | Coding assistant used to build the upgrade |
 
-**Not used** (so not claimed): the APIMatic Context Plugin, Astropods, AG Studio's agent framework.
+**Not used** (so not claimed): the APIMatic Context Plugin, Astropods.
 Full, per-tool detail with what was and was not verified: [SPONSORS.md](SPONSORS.md).
 
 ## For judges: testing without keys

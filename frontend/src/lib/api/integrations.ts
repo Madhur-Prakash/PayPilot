@@ -35,4 +35,7 @@ export const integrationsApi = {
     apiPost<McpResult>("/integrations/paypal-mcp/call", { tool, arguments: args }),
   timeline: (limit = 12) => apiGet<ProcurementTimeline>("/supply/timeline", { params: { limit } }),
   studioDatasets: () => apiGet<StudioDatasets>("/integrations/studio/datasets"),
+  /** One AG Studio agent turn, run on the backend's LLM (the model key never reaches the browser). */
+  studioAiTurn: (body: Record<string, unknown>, signal?: AbortSignal) =>
+    apiPost<Record<string, unknown>>("/integrations/studio/ai/turn", body, { signal, timeout: 120_000 }),
 };

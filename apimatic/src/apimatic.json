@@ -1,0 +1,36 @@
+{
+  "$schema": "https://cdn.jsdelivr.net/npm/@apimatic/cli@2/apimatic.schema.json",
+  "schemaVersion": 1,
+  "portal": {
+    "site": {
+      "name": "PayPilot API",
+      "description": "The AI operating system for PayPal merchants: growth intelligence, agent-to-agent procurement and human-approved PayPal settlement."
+    },
+    "brand": {
+      "colors": {
+        "primary": { "light": "#0070e0", "dark": "#5aa9ff" }
+      },
+      "colorMode": "both"
+    },
+    "navigation": {
+      "links": [
+        { "label": "Live demo", "url": "https://paypilot-web.onrender.com" },
+        { "label": "GitHub", "url": "https://github.com/Madhur-Prakash/PayPilot" }
+      ]
+    },
+    "ai": {
+      "pageActions": true
+    }
+  },
+  "plugin": {
+    "pluginId": "paypilot",
+    "pluginName": "PayPilot",
+    "pluginVersion": "0.1.0",
+    "author": { "name": "PayPilot team" },
+    "license": "MIT"
+  },
+  "languages": {
+    "python": {},
+    "typescript": {}
+  }
+}

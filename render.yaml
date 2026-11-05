@@ -1,10 +1,14 @@
 # PayPilot - Render Blueprint (https://render.com/docs/blueprint-spec)
 #
-# Deploys: managed Postgres 16 (pgvector is enabled by the first migration),
-# the FastAPI API (Docker), the Next.js web app (Node) and an outbox worker.
-# Secrets are `sync: false` - Render prompts for them on first deploy; leave
-# them blank to run the deterministic, simulated-PayPal demo judges can use
-# without keys.
+# Deploys, all on Render's free plan: managed Postgres 16 (pgvector is enabled by
+# the first migration), the FastAPI API (Docker, which also runs the event relays)
+# and the Next.js web app (Node). Secrets are `sync: false` - Render prompts for
+# them on first deploy; leave them blank to run the deterministic, simulated-PayPal
+# demo judges can use without keys.
+#
+# Free-plan limits: services sleep after ~15 idle minutes (first request then takes
+# about a minute - open the site before a demo), and the free database expires
+# after 30 days.
 #
 # After the first deploy, if you renamed the services, update FRONTEND_URL /
 # CORS_ORIGINS on the API and NEXT_PUBLIC_API_URL on the web service.
@@ -63,9 +67,37 @@ envVarGroups:
         generateValue: true
       - key: GROQ_API_KEY
         sync: false
+      # AG Studio's AI assistant: blank = Groq with GROQ_API_KEY. Groq's free tier is too
+      # small for Studio's agents (a run took 9+ minutes and did not finish), so it is off
+      # on the hosted demo. Set "true" once STUDIO_AI_* points at a provider with enough quota.
+      - key: STUDIO_AI_ENABLED
+        value: "false"
+      - key: STUDIO_AI_BASE_URL
+        sync: false
+      - key: STUDIO_AI_API_KEY
+        sync: false
+      - key: STUDIO_AI_MODEL
+        sync: false
       - key: LANGFUSE_PUBLIC_KEY
         sync: false
       - key: LANGFUSE_SECRET_KEY
+        sync: false
+      # Must match the region your Langfuse keys belong to (EU: https://cloud.langfuse.com).
+      - key: LANGFUSE_BASE_URL
+        value: https://us.cloud.langfuse.com
+      # Optional voice assistant (Vapi). Its server URL is derived from BACKEND_URL.
+      - key: VAPI_PUBLIC_KEY
+        sync: false
+      - key: VAPI_PRIVATE_KEY
+        sync: false
+      - key: VAPI_ASSISTANT_ID
+        sync: false
+      - key: VAPI_WEBHOOK_SECRET
+        sync: false
+      # Optional live market signals; blank key = seeded signals.
+      - key: EXTERNAL_SEARCH_PROVIDER
+        value: tavily
+      - key: TAVILY_API_KEY
         sync: false
       - key: EMBEDDING_PROVIDER
         value: hash
@@ -95,29 +127,19 @@ services:
         fromDatabase:
           name: paypilot-db
           property: connectionString
+      # The API runs the outbox and Zapier relays itself, so the whole blueprint fits
+      # Render's free plan. (n8n is local-only - see docker-compose.yml - so on Render
+      # the outbox relay idles, and the Zapier relay idles until ZAPIER_WEBHOOK_URL is set.)
+      # To run them in a separate process instead, add a paid `type: worker` service with
+      # `dockerCommand: python -m app.worker` and set this to "false".
       - key: OUTBOX_RELAY_IN_PROCESS
-        value: "false"
+        value: "true"
       - key: FRONTEND_URL
         value: https://paypilot-web.onrender.com
       - key: BACKEND_URL
         value: https://paypilot-api.onrender.com
       - key: CORS_ORIGINS
         value: https://paypilot-web.onrender.com
-
-  - type: worker
-    name: paypilot-worker
-    runtime: docker
-    rootDir: backend
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
-    plan: starter
-    dockerCommand: python -m app.worker
-    envVars:
-      - fromGroup: paypilot-shared
-      - key: DATABASE_URL
-        fromDatabase:
-          name: paypilot-db
-          property: connectionString
 
   - type: web
     name: paypilot-web
@@ -139,3 +161,14 @@ services:
         value: owner@juniperoak.com
       - key: NEXT_PUBLIC_DEMO_PASSWORD
         value: Autopilot@2024
+      # Optional AG Studio licence key (removes the trial watermark). Baked in at build.
+      - key: NEXT_PUBLIC_AG_STUDIO_LICENSE_KEY
+        sync: false
+      # Optional Bryntum Gantt licence key (removes the Trial badge). Baked in at build.
+      - key: NEXT_PUBLIC_BRYNTUM_LICENSE_KEY
+        sync: false
+      # Optional voice assistant (browser-safe Vapi public key + assistant id). Baked in at build.
+      - key: NEXT_PUBLIC_VAPI_PUBLIC_KEY
+        sync: false
+      - key: NEXT_PUBLIC_VAPI_ASSISTANT_ID
+        sync: false

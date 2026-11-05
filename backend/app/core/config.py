@@ -74,6 +74,19 @@ class Settings(BaseSettings):
     groq_max_retries: int = 2
     groq_temperature: float = 0.2
     groq_max_tokens: int = 2048
+    #: AG Studio's AI assistant. Any OpenAI-compatible chat-completions API; blank
+    #: values fall back to Groq with GROQ_API_KEY / GROQ_MODEL. Studio's agents send
+    #: ~4-9k tokens of tool schemas per turn, more than Groq's free tier allows per
+    #: minute - use a paid Groq tier or point these at another provider.
+    studio_ai_enabled: bool = True
+    studio_ai_base_url: str = ""
+    studio_ai_api_key: str = ""
+    studio_ai_model: str = ""
+    studio_ai_fallback_model: str = ""
+    #: gpt-oss models only: "low" keeps turns fast and small.
+    studio_ai_reasoning_effort: Literal["", "low", "medium", "high"] = "low"
+    studio_ai_max_tokens: int = 4096
+    studio_ai_timeout_seconds: float = 60.0
 
     # ---------------------------------------------------------------- embeddings
     embedding_provider: Literal["hash", "fastembed"] = "hash"

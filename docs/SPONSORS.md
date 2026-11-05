@@ -14,13 +14,13 @@ Nothing is claimed that the code does not do. The same facts are served live by
 | **PayPal Developer Platform** | Core | Transaction Search, Orders v2, Invoicing, Payouts, Subscriptions, verified webhooks | **Yes** - OAuth against the sandbox verified; REST paths otherwise verified with the simulator and mocked responses |
 | **PayPal Agent Toolkit (MCP)** | Yes, read-only | Reporting and read tools reached through PayPilot's tool registry | **Partly** - handshake and `tools/list` verified live; see [below](#paypal-agent-toolkit-over-mcp) |
 | **AG Grid** (Community 36.3) | Yes | Every data-heavy table | Yes (builds, renders) |
-| **AG Studio** | Yes | Merchant-built dashboards over computed datasets (`/studio`) | Renders in a real browser, in evaluation mode |
-| **Bryntum Gantt** | Yes | Procurement timeline (`/supply/timeline`) | Renders in a real browser, trial build |
+| **AG Studio** | Yes, incl. its AI agents | Pre-built + merchant-built dashboards over computed datasets, and Studio's agent harness running on PayPilot's LLM (`/studio`) | Renders in a real browser (evaluation mode); AI agents ran real turns on Groq - full runs need a paid Groq tier, see below |
+| **Bryntum Gantt** (Enterprise 8.0) | Yes | Procurement timeline (`/supply/timeline`) | Renders in a real browser; licensed with a trial key (Trial badge without one) |
 | **Channel3** | Yes | Market price reference for the buyer agent | Mocked HTTP only; labelled fallback without a key |
 | **Elasticsearch** | Yes, optional | Evidence search (`/search`) | Mocked HTTP only; keyword fallback without `ELASTIC_URL` |
 | **Kernel** | Yes, optional | Supplier-portal verification sessions | Mocked HTTP only; labelled fallback without a key |
 | **Zapier** | Yes, optional | Signed business-event notifications | Mocked HTTP only; off without a hook URL |
-| **Render** | Blueprint | `render.yaml`: API, web, worker, Postgres | YAML validated; **not deployed** |
+| **Render** | Blueprint | `render.yaml`: API (runs the event relays), web, Postgres - all free plan | YAML validated; **not deployed** |
 | **Postman** | Yes | Collection + environment | Collection structure validated; not run in Postman here |
 | **APIMatic** | Spec export only | `docs/openapi.json` ready to import | The **Context Plugin was not used**, no APIMatic account used |
 | **Astropods** | **Not used** | - | Docs reviewed; see below |
@@ -81,15 +81,37 @@ still apply - and so an agent can never use it to bypass the approval gates.
   datasets are **computed by the backend and filtered by the caller's permissions**; Studio only
   groups and charts them, it derives no financial figure. The report layout is kept in the
   browser (a per-viewer convenience).
+* **First open is never blank:** `frontend/src/lib/studio/default-report.ts` builds an overview
+  (stockout cover, revenue at risk, supplier scorecard, and - when the data exists - PayPal gross by
+  day, procurement savings and negotiation rounds) from whichever datasets the backend returned.
+  **Reset layout** returns to it.
+* **Studio's AI agents run on PayPilot's LLM.** AG Studio ships an agent harness (lead, data, page,
+  planning and widget agents) and never calls a model itself; the host supplies an `AgLlmAdapter`.
+  PayPilot's adapter (`frontend/src/lib/studio/llm-adapter.ts`) posts each turn to
+  `POST /api/v1/integrations/studio/ai/turn`, where `services/integrations/studio_ai.py` translates
+  Studio's Responses-style items to chat completions and runs them on Groq (or any
+  OpenAI-compatible provider set by `STUDIO_AI_BASE_URL` / `STUDIO_AI_API_KEY` / `STUDIO_AI_MODEL`).
+  The **key never reaches the browser**, and the agents' tools execute in the browser against the
+  dashboard only - they cannot read the database, call PayPal or change a record. Four prompt
+  starters (stockout risk, supplier scorecard, negotiation story, PayPal trend) seed the chat.
+* **Verified:** in a real browser (headless Edge) the agents completed real turns on Groq -
+  reading the report and schema, planning, and delegating to Studio's Page and Planning agents -
+  with tool calls executed by Studio. **Limit found:** Groq's *free* tier allows 8,000 tokens per
+  minute (every free model on our key), and Studio's delegate agents carry 5-9k tokens of tool
+  schemas per turn. The backend waits out 429s using `retry-after` and, on a 413, shrinks the
+  answer budget to fit and retries - but on the free tier one request ("add a bar chart of
+  reliability by supplier") still ran 16 turns over ~9 minutes and stopped at a plan without adding
+  the chart (some delegate turns stayed too large; others failed Groq's tool-argument validation).
+  **So the assistant is off on the hosted demo** (`STUDIO_AI_ENABLED=false` in `render.yaml`) until
+  `STUDIO_AI_*` points at a provider with enough quota. The pre-built dashboard and the
+  drag-and-drop editor need no LLM.
 * **Licence:** AG Studio is commercial. Without a licence key it runs in evaluation mode
-  (watermark and a console banner); all features are unlocked for trial. Request a 45-day trial
-  key from AG Grid to remove it.
+  (watermark and a console banner, "AG Studio Pro with AI" once the AI module is registered); all
+  features are unlocked for trial. Request a 45-day trial key from AG Grid and set
+  `NEXT_PUBLIC_AG_STUDIO_LICENSE_KEY` to remove it.
 * **Pin both AG Grid packages to the version AG Studio requires** (`36.3.0`). A mismatch makes
   two copies of `ag-grid-community` load and Studio renders a blank canvas with
   `theme.withPart must be a Theming API part object` in the console.
-* **Not implemented:** the *Studio Agent Framework* (letting an agent build or edit dashboards
-  from natural language) - it needs your own LLM wired into Studio's agent API, which was not
-  verified. Studio's drag-and-drop editor is what ships.
 
 ## Bryntum Gantt
 
@@ -103,9 +125,22 @@ are milestones, so a partial delivery is two diamonds and a half-filled bar; a b
   Bryntum never reschedules anything and nothing can imply a commitment the backend did not make.
 * Data comes from `GET /api/v1/supply/timeline` (`services/supply/timeline.py`), mapped by a
   unit-tested pure function.
-* Bryntum is installed as the **trial** package, aliased: `"@bryntum/gantt":
-  "npm:@bryntum/gantt-trial@^7.3.8"`. The trial draws a watermark and is for evaluation; a
-  commercial deployment needs a Bryntum licence.
+* Packages: Bryntum **8.0.0, Enterprise tier**, from public npm, pinned exactly -
+  `@bryntum/gantt-react-enterprise`, `@bryntum/gantt-enterprise`, `@bryntum/core-enterprise`.
+  Every `@bryntum/*` package must stay at the same exact version and tier; a mismatch loads two
+  copies of Bryntum Core and breaks the theme.
+* CSS (`components/supply/procurement-gantt.tsx`), in this order: Font Awesome from
+  `core-enterprise`, structural `gantt.css`, one theme (`stockholm-light.css`), then
+  `procurement-gantt.css`, which colours each bar by stage state.
+* Data sits on a `<BryntumGanttProjectModel>` passed to the Gantt by ref, so the 30-second
+  refetch syncs the task store by id instead of rebuilding the chart.
+* **Licence:** set `NEXT_PUBLIC_BRYNTUM_LICENSE_KEY` (root `.env`, a Docker build arg, or a Render
+  env var; it is baked in at build time). The component registers it with
+  `bryntum.licenseKey` before the first Gantt is created. Without it, the Enterprise package
+  runs as Bryntum's 14-day trial (Trial badge, then masked); a free trial key from
+  [bryntum.com](https://bryntum.com/download-trial/?product=gantt) gives 45 days. The key is
+  checked in the browser, so shipping it in the client bundle is expected. Keep it out of git
+  anyway.
 
 ## Channel3 (market reference)
 
@@ -159,16 +194,27 @@ trigger arbitrary third-party actions would sit outside the approval gates.)
 
 ## APIMatic
 
-`python scripts/export_openapi.py` writes `docs/openapi.json` (155 operations) from the FastAPI
+`python scripts/export_openapi.py` writes `docs/openapi.json` (157 operations) from the FastAPI
 app itself, ready to import into APIMatic to generate SDKs and a developer portal. **The APIMatic
 Context Plugin was not used to build this, and no APIMatic account was used** - only the spec
 export exists, and it is described as exactly that.
 
+To actually use APIMatic (needs an account - free trial at apimatic.io):
+
+1. `python scripts/export_openapi.py` (refreshes the spec).
+2. APIMatic dashboard -> **Import API** -> upload `docs/openapi.json`. Fix anything its validator
+   flags (it reports issues per operation).
+3. **Generate SDK** for TypeScript and Python, and **Generate API Portal**; publish the portal.
+4. Put the portal URL (and an SDK snippet) in the Devpost submission and the README, and change
+   the APIMatic row above to say what was generated. Do not claim the Context Plugin unless you
+   used it.
+
 ## Render, Postman, Astropods
 
-* **Render:** `render.yaml` defines the API, web app, worker and managed Postgres, with every
-  secret `sync: false`. It parses and passes review but **was not deployed** from this
-  environment.
+* **Render:** `render.yaml` defines the API, web app and managed Postgres, all on the free plan,
+  with every secret `sync: false`. The API runs the outbox and Zapier relays in-process
+  (`OUTBOX_RELAY_IN_PROCESS=true`), so no paid worker is needed; n8n stays local (Docker Compose).
+  It parses and passes review but **was not deployed** from this environment.
 * **Postman:** `postman/PayPilot.postman_collection.json` (53 requests, with assertions) and
   `postman/PayPilot.local.postman_environment.json`. The new *Integrations & sponsors* folder
   includes the checks that matter - a write tool returns `403`, an unsafe portal URL returns

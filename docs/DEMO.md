@@ -79,8 +79,14 @@ Invoice `CASCAD-PO-…` for $1,455.00. As **Staff** or **Owner**, **Receive good
 100** - the three-way match flags *Billed 150 but only 100 received*; payment is
 held. **Receive the remaining 50** - the match clears and a payment approval is
 requested. **Approve payment**, then **Pay with PayPal**: PayPal Orders v2, payee
-= supplier, idempotency key shown, capture `SIM-CAPTURE-…` (in the sandbox: approve
-in PayPal, then **Capture**).
+= supplier, idempotency key shown, capture `SIM-CAPTURE-…`.
+
+**With sandbox keys (record this - it is the real PayPal moment):** the status
+becomes *Payer action required*. Click **Approve in PayPal**, log in with your
+sandbox **personal** account and pay. PayPal returns you to **Payments**, where a
+*Back from PayPal* card shows the amount, the supplier payee and the order id -
+click **Capture payment**. Optionally show the $1,455.00 arriving in the sandbox
+supplier's business account at sandbox.paypal.com.
 
 ### 2:35 - 2:50 · Receiving and reconciliation
 
@@ -110,6 +116,15 @@ Command Center and the event stream.
   recommendation and try to approve - the approval is invalidated (HTTP 409).
 * **The original growth loop** (evening win-back experiment -> SCALE) is still
   there: `/dashboard`, `/growth`, `/experiments`.
+* **Dashboard Studio (`/studio`, AG Studio) - good for the AG Grid prize:** it opens
+  on a pre-built overview (days of cover, revenue at risk, supplier scorecard). In
+  the editor, drag a field onto the canvas to add a chart (no LLM needed). The
+  *AI Assistant* panel needs a model with more quota than Groq's free tier (see
+  [SPONSORS.md](SPONSORS.md#ag-grid-and-ag-studio)) - on the free tier a request
+  takes ~9 minutes and may not finish, so do not film it on Groq free.
+* **Procurement timeline (`/supply/timeline`, Bryntum Gantt):** after a
+  procurement completes, each stage is a bar; a partial delivery shows two
+  milestones.
 
 ## Growth story numbers (seeded, last 30 days vs previous 30)
 

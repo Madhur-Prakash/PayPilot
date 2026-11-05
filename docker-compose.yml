@@ -87,6 +87,8 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+        NEXT_PUBLIC_AG_STUDIO_LICENSE_KEY: ${NEXT_PUBLIC_AG_STUDIO_LICENSE_KEY:-}
+        NEXT_PUBLIC_BRYNTUM_LICENSE_KEY: ${NEXT_PUBLIC_BRYNTUM_LICENSE_KEY:-}
     container_name: pga-frontend
     restart: unless-stopped
     environment:

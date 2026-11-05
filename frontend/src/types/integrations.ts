@@ -144,9 +144,17 @@ export interface ProcurementTimeline {
 
 export type StudioRow = Record<string, string | number | boolean | null>;
 
+export interface StudioAiStatus {
+  available: boolean;
+  provider: string | null;
+  model: string | null;
+  note: string;
+}
+
 export interface StudioDatasets {
   datasets: Record<string, StudioRow[]>;
   labels: Record<string, string>;
   note: string;
   generated_at: string;
+  ai?: StudioAiStatus;
 }
