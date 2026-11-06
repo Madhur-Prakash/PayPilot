@@ -34,6 +34,10 @@ httpx==0.28.1
 tenacity==9.1.4
 orjson==3.12.0
 
+# ---- PayPal ------------------------------------------------------------------------
+# Official APIMatic-generated PayPal Server SDK: Orders v2 create / get / capture.
+paypal-server-sdk==2.4.0
+
 # ---- LLM / agents ------------------------------------------------------------------
 groq==0.37.1
 langgraph==1.2.11

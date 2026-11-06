@@ -61,6 +61,7 @@ import type {
   RoleOut,
   SignalFeed,
   VoiceSessionConfig,
+  MemoryHit,
   MemorySearchResult,
   MemoryStatus,
 } from "@/types/api";
@@ -426,6 +427,8 @@ export const memoryApi = {
 
   search: (params: { q: string; limit?: number; kind?: string }) =>
     apiGet<MemorySearchResult>("/memory/search", { params }),
+
+  recent: (params: { limit?: number; kind?: string }) => apiGet<MemoryHit[]>("/memory/recent", { params }),
 
   remember: (payload: { text: string; kind?: string; tags?: string[] }) =>
     apiPost<{ queued: boolean; kind: string }>("/memory/remember", payload),

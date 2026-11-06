@@ -344,6 +344,11 @@ class PayPalFinanceService:
             record.status = "CANCELLED"
         else:
             raise ConflictError("Unknown subscription action.")
+        # Lifecycle history for the revenue radar. A new dict, so the JSON column is
+        # seen as changed.
+        history = [e for e in (record.raw or {}).get("events", []) if isinstance(e, dict)][-19:]
+        history.append({"type": action, "at": datetime.now(tz=UTC).isoformat(), "by": self.actor_label})
+        record.raw = {**(record.raw or {}), "events": history}
         await self.session.flush()
         return record
 

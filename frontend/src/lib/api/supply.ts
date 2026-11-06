@@ -17,6 +17,7 @@ import type {
   PayPalInvoiceRow,
   PayPalStatus,
   PayPalSubscriptionRow,
+  SubscriptionRadar,
   PayPalTransactionRow,
   ProcurementDetail,
   ProcurementRequest,
@@ -113,6 +114,8 @@ export const paypalApi = {
   payouts: () => apiGet<Execution[]>("/paypal/payouts"),
   refreshPayout: (id: string) => apiPost<Execution>(`/paypal/payouts/${id}/refresh`),
   subscriptions: () => apiGetWithMeta<PayPalSubscriptionRow[]>("/paypal/subscriptions"),
+  subscriptionRadar: (daysBack = 120, daysAhead = 60) =>
+    apiGet<SubscriptionRadar>(`/paypal/subscriptions/radar?days_back=${daysBack}&days_ahead=${daysAhead}`),
   subscriptionAction: (id: string, action: "suspend" | "activate" | "cancel" | "recover", reason?: string) =>
     apiPost<PayPalSubscriptionRow>(`/paypal/subscriptions/${id}/action`, { action, reason }),
   plans: () => apiGet<{ plans: Record<string, unknown>[]; mode: string }>("/paypal/plans"),

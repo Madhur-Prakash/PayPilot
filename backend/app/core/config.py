@@ -189,6 +189,12 @@ class Settings(BaseSettings):
     paypal_api_base_url: str = ""
     paypal_timeout_seconds: float = 30.0
     paypal_max_retries: int = 2
+    #: Route Orders v2 (create / get / capture) through PayPal's official
+    #: APIMatic-generated Server SDK (``paypal-server-sdk``) instead of the
+    #: hand-written REST call. Ignored when the base URL is a proxy or mock (not
+    #: one of PayPal's own hosts) or a test transport is injected, since the SDK
+    #: can only target PayPal's environments.
+    paypal_orders_via_sdk: bool = True
     #: When credentials are missing, fall back to the simulator rather than
     #: failing. Set false to make a missing credential a hard error.
     paypal_simulation_enabled: bool = True

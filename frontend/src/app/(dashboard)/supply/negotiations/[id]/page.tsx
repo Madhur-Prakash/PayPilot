@@ -10,6 +10,7 @@
  */
 
 import {
+  ArrowDown,
   ArrowLeft,
   BadgeDollarSign,
   CheckCircle2,
@@ -91,6 +92,8 @@ export default function NegotiationWorkspacePage() {
   const advance = useAdvanceNegotiation(id);
   const [autoplay, setAutoplay] = React.useState(false);
   const [deciding, setDeciding] = React.useState(false);
+  const [tab, setTab] = React.useState<string | null>(null);
+  const tabsRef = React.useRef<HTMLDivElement>(null);
   const decide = useDecideProcurement(id);
 
   // Auto-play: advance one stage at a time so the room can watch the agents talk.
@@ -111,6 +114,14 @@ export default function NegotiationWorkspacePage() {
   const rec = data.recommendation;
   const winner = rec?.winner;
   const policy = data.policy;
+  const activeTab = tab ?? (data.purchase_order ? "lifecycle" : "conversation");
+
+  // Once the purchase is approved the work moves to the PO lifecycle below the fold
+  // (receive goods, match the invoice, pay with PayPal) - one click takes you there.
+  const goToLifecycle = () => {
+    setTab("lifecycle");
+    requestAnimationFrame(() => tabsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
 
   return (
     <div className="space-y-5">
@@ -130,6 +141,11 @@ export default function NegotiationWorkspacePage() {
         actions={
           <>
             <StatusPill status={data.status} />
+            {data.purchase_order && (
+              <Button size="sm" className="gap-1.5" onClick={goToLifecycle}>
+                <ArrowDown className="h-3.5 w-3.5" /> Next step: purchase order lifecycle
+              </Button>
+            )}
             {live && data.can.negotiate && (
               <>
                 <Button size="sm" variant="outline" className="gap-1.5" loading={advance.isPending && !autoplay}
@@ -192,7 +208,8 @@ export default function NegotiationWorkspacePage() {
         recommendedSessionId={data.recommended_session_id}
       />
 
-      <Tabs defaultValue={data.purchase_order ? "lifecycle" : "conversation"}>
+      <div ref={tabsRef} className="scroll-mt-20">
+      <Tabs value={activeTab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="conversation">Agent conversation ({messages.data?.length ?? data.message_count})</TabsTrigger>
           <TabsTrigger value="comparison">Quote comparison</TabsTrigger>
@@ -217,6 +234,7 @@ export default function NegotiationWorkspacePage() {
           <Lifecycle data={data} />
         </TabsContent>
       </Tabs>
+      </div>
 
       <DecisionDialog
         open={deciding}

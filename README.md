@@ -153,17 +153,25 @@ Full, honest detail (what is live, what is a labelled fallback, what was verifie
   PayPilot's LLM through an `AgLlmAdapter` (the key stays on the server). Evaluation mode
   without a licence key; full agent runs need a paid Groq tier or `STUDIO_AI_*`.
 * **Bryntum Gantt** - *Procurement timeline*: every real stage from RFQ to payment, partial
-  deliveries and blocked invoices visible (Bryntum 8.0 Enterprise; licence key via
+  deliveries and blocked invoices visible. When a supplier agent reports a delay (a signed
+  `DELIVERY_UPDATE`), the delivery and the PayPal payment that waits on it move and turn red,
+  with the original plan underneath.
+* **Bryntum Scheduler** - *Revenue radar* (`/finance/subscriptions/radar`): every PayPal
+  subscriber on one timeline - collected periods, failed charges and PayPal's retries,
+  renewals ahead - with one-click recovery (Bryntum 8.0 Enterprise; licence key via
   `NEXT_PUBLIC_BRYNTUM_LICENSE_KEY`).
-* **Channel3** - market price reference next to a purchase (labelled fallback without a key).
+* **Channel3** - *Gear shelf* of live complementary products with affiliate links, and a market
+  price reference next to a purchase (labelled fallback without a key).
 * **Elasticsearch** - ranked evidence search (keyword fallback without `ELASTIC_URL`).
 * **Kernel** - observe-only supplier-page verification (labelled fallback without a key).
 * **Zapier** - signed, de-duplicated business-event notifications (off without a hook URL).
 * **Render** - complete Blueprint (`render.yaml`); not deployed from this environment.
-* **Postman** - collection + environment, 53 requests with assertions.
-* **APIMatic** - OpenAPI export only (`python scripts/export_openapi.py` -> `docs/openapi.json`).
+* **Postman** - collection + environment, 59 requests with assertions.
+* **APIMatic** - supplier payments (Orders v2 create / get / capture) run on PayPal's
+  APIMatic-generated **Server SDK**, written with the **PayPal Context Plugin**; PayPilot's own
+  API is set up for APIMatic in `apimatic/` (spec, guides, SDK and Context Plugin config).
 
-Not used, so not claimed: the APIMatic Context Plugin, Astropods.
+Not used, so not claimed: Astropods.
 None of these tools can move money or widen a limit.
 
 ## Architecture

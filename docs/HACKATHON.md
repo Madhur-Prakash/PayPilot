@@ -49,18 +49,18 @@ a voice assistant, and n8n automation.
 | n8n | Event routing from the transactional outbox (never financial logic) |
 | AG Grid Community (v36) | Data grids for transactions, quotes, invoices, receipts, reconciliations, payments |
 | AG Studio | Dashboard Studio - pre-built and merchant-built dashboards over backend-computed datasets, plus Studio's AI agent harness running on PayPilot's LLM via an `AgLlmAdapter` (evaluation mode; full agent runs need a paid Groq tier) |
-| Bryntum Gantt | Procurement timeline of the real RFQ -> payment stages (Bryntum 8.0 Enterprise, licence key via `NEXT_PUBLIC_BRYNTUM_LICENSE_KEY`) |
+| Bryntum Gantt + Scheduler | Procurement timeline of the real RFQ -> payment stages, rescheduled when a supplier agent reports a delay (signed `DELIVERY_UPDATE`); subscription revenue radar on Scheduler (Bryntum 8.0 Enterprise, licence key via `NEXT_PUBLIC_BRYNTUM_LICENSE_KEY`) |
 | PayPal Agent Toolkit (MCP) | Read-only bridge through PayPilot's tool registry; write tools blocked in code |
-| Channel3 | Market price reference beside a purchase (labelled fallback without a key) |
+| Channel3 | Gear shelf of live complementary products with affiliate links, and a market price reference beside a purchase (labelled fallback without a key) |
 | Elasticsearch | Evidence search across audit, messages, offers, invoices, events, reviews (keyword fallback without a node) |
 | Kernel | Observe-only supplier-page verification sessions (labelled fallback without a key) |
 | Zapier | Signed, at-most-once business-event notifications |
 | Render | Deployment Blueprint (`render.yaml`) prepared; not deployed from this environment |
-| Postman | `postman/PayPilot.postman_collection.json` + environment (53 requests with assertions) |
-| APIMatic | OpenAPI export (`scripts/export_openapi.py`) ready to import; the Context Plugin was **not** used |
+| Postman | `postman/PayPilot.postman_collection.json` + environment (59 requests with assertions) |
+| APIMatic | Supplier payments (Orders v2) on PayPal's APIMatic-generated Server SDK, written with the PayPal Context Plugin; PayPilot's own spec, guides and portal config in `apimatic/` |
 | Claude Code | Coding assistant used to build the upgrade |
 
-**Not used** (so not claimed): the APIMatic Context Plugin, Astropods.
+**Not used** (so not claimed): Astropods.
 Full, per-tool detail with what was and was not verified: [SPONSORS.md](SPONSORS.md).
 
 ## For judges: testing without keys

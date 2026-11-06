@@ -3,7 +3,8 @@
 /** PayPal subscriptions: plans, lifecycle actions and failed-payment recovery. */
 
 import type { ColDef } from "ag-grid-community";
-import { AlertTriangle, Plus, Repeat, Wallet } from "lucide-react";
+import { AlertTriangle, CalendarClock, Plus, Repeat, Wallet } from "lucide-react";
+import Link from "next/link";
 import * as React from "react";
 
 import { ErrorState } from "@/components/common/states";
@@ -63,7 +64,12 @@ export default function SubscriptionsPage() {
   return (
     <div className="space-y-5">
       <PageHeader eyebrow="Finance" title="Subscriptions"
-        description="Recurring PayPal subscriptions. Failed payments arrive by webhook and surface here - and as a growth opportunity - for recovery." />
+        description="Recurring PayPal subscriptions. Failed payments arrive by webhook and surface here - and as a growth opportunity - for recovery."
+        actions={
+          <Button asChild size="sm" variant="outline" className="gap-1.5">
+            <Link href="/finance/subscriptions/radar"><CalendarClock className="h-3.5 w-3.5" /> Revenue radar</Link>
+          </Button>
+        } />
       <div className="grid gap-3 sm:grid-cols-3">
         <MetricTile icon={Repeat} tone="primary" label="Active subscriptions" value={meta.active ?? "--"} />
         <MetricTile icon={Wallet} tone="success" label="Monthly recurring revenue" value={formatMoney(String(meta.monthly_recurring_revenue ?? "0"))} />

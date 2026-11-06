@@ -1,0 +1,211 @@
+/*
+ * Bryntum Scheduler (subscription radar), dressed in PayPilot's design tokens.
+ * Same mapping as the procurement Gantt, so both charts read as one platform.
+ */
+.pp-radar-host {
+  --b-widget-color-scheme: light;
+  --b-widget-font-size: 0.8125rem;
+  --b-primary: hsl(var(--primary));
+
+  --b-panel-background: hsl(var(--card));
+  --b-grid-background: hsl(var(--card));
+  --b-grid-cell-background: transparent;
+  --b-grid-cell-color: hsl(var(--foreground));
+  --b-grid-cell-border-color: transparent;
+  --b-grid-row-border-color: hsl(var(--border) / 0.7);
+  --b-grid-cell-hover-background: hsl(var(--muted) / 0.55);
+  --b-grid-cell-selected-background: hsl(var(--primary) / 0.07);
+  --b-grid-cell-hover-selected-background: hsl(var(--primary) / 0.1);
+  --b-grid-cell-selected-color: hsl(var(--foreground));
+  --b-grid-header-background: hsl(var(--muted) / 0.45);
+  --b-grid-header-color: hsl(var(--muted-foreground));
+  --b-grid-header-border-color: hsl(var(--border));
+  --b-grid-header-font-size: 0.6875rem;
+  --b-grid-header-font-weight: 600;
+  --b-splitter-color: hsl(var(--border));
+  --b-stripe-odd-color: transparent;
+  --b-stripe-even-color: transparent;
+  --b-current-time-color: hsl(var(--warning));
+  --b-time-range-line-color: hsl(var(--warning));
+
+  position: relative;
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  contain: inline-size;
+  overflow: hidden;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.75rem;
+  background: hsl(var(--card));
+}
+
+.dark .pp-radar-host {
+  --b-widget-color-scheme: dark;
+}
+
+.pp-radar-host > .b-scheduler,
+.pp-radar-host > .b-widget {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pp-radar-host .b-grid-header-text-content {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ---- grid cells ------------------------------------------------------- */
+.pp-radar-host .b-grid-cell {
+  min-width: 0;
+}
+.pp-sub {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  line-height: 1.25;
+}
+.pp-sub-name,
+.pp-sub-plan {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pp-sub-name {
+  font-weight: 500;
+  color: hsl(var(--foreground));
+}
+.pp-sub-plan {
+  font-size: 0.72rem;
+  color: hsl(var(--muted-foreground));
+}
+.pp-sub-health {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.pp-sub-failed {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: hsl(var(--destructive));
+}
+.pp-sub-amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.pp-risk {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.pp-risk::before {
+  content: "";
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 999px;
+  background: currentColor;
+}
+.pp-risk-healthy { color: hsl(var(--success)); background: hsl(var(--success) / 0.12); }
+.pp-risk-at_risk { color: hsl(var(--warning)); background: hsl(var(--warning) / 0.14); }
+.pp-risk-suspended { color: hsl(var(--destructive)); background: hsl(var(--destructive) / 0.1); }
+.pp-risk-cancelled { color: hsl(var(--muted-foreground)); background: hsl(var(--muted)); }
+
+/* ---- event bars --------------------------------------------------------- */
+.pp-radar-host .b-sch-event:not(.b-milestone) {
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+/* Bars only: a milestone's diamond is the content's ::before, centred on a zero-width
+ * point, so clipping the content would hide it. */
+.pp-radar-host .b-sch-event:not(.b-milestone) .b-sch-event-content {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* A light ring keeps retry / suspension diamonds readable on top of a red failed bar. */
+.pp-radar-host .b-milestone .b-sch-event-content::before {
+  box-shadow: 0 0 0 2px hsl(var(--card));
+}
+
+/* ---- legend swatches (outside the chart) -------------------------------- */
+.pp-swatch {
+  display: inline-block;
+  width: 0.9rem;
+  height: 0.55rem;
+  border-radius: 3px;
+}
+.pp-swatch-paid { background: hsl(var(--success) / 0.35); }
+.pp-swatch-failed { background: hsl(var(--destructive)); }
+.pp-swatch-retry {
+  width: 0.55rem;
+  transform: rotate(45deg);
+  background: hsl(var(--warning));
+}
+.pp-swatch-suspended {
+  width: 0.55rem;
+  transform: rotate(45deg);
+  background: hsl(var(--foreground));
+}
+.pp-swatch-recovered {
+  width: 0.55rem;
+  transform: rotate(45deg);
+  background: hsl(var(--success));
+}
+.pp-swatch-scheduled { border: 1.5px solid hsl(var(--primary)); }
+.pp-swatch-at_risk { border: 1.5px dashed hsl(var(--warning)); }
+.pp-swatch-paused { border: 1.5px dashed hsl(var(--muted-foreground)); }
+
+/* ---- tooltip ------------------------------------------------------------ */
+.pp-kind {
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+.pp-kind-paid,
+.pp-kind-recovered { color: hsl(var(--success)); background: hsl(var(--success) / 0.12); }
+.pp-kind-failed,
+.pp-kind-retry { color: hsl(var(--destructive)); background: hsl(var(--destructive) / 0.1); }
+.pp-kind-suspended,
+.pp-kind-at_risk { color: hsl(var(--warning)); background: hsl(var(--warning) / 0.14); }
+.pp-kind-scheduled { color: hsl(var(--primary)); background: hsl(var(--primary) / 0.1); }
+.pp-kind-paused,
+.pp-kind-cancelled { color: hsl(var(--muted-foreground)); background: hsl(var(--muted)); }
+.pp-tip {
+  display: flex;
+  max-width: 320px;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+}
+.pp-tip-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.pp-tip-when {
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+}
+.pp-tip-name { font-weight: 600; }
+.pp-tip-detail { opacity: 0.85; overflow-wrap: anywhere; }
+
+/* Retry and suspension markers sit near the start of a failed period; its label goes to the end. */
+.pp-radar-host .pp-ev-failed .b-sch-event-content {
+  margin-inline-start: auto;
+}

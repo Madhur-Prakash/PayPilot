@@ -54,10 +54,12 @@ import {
   useForgetMemory,
   useMemorySearch,
   useMemoryStatus,
+  useRecentMemories,
   useRememberNote,
 } from "@/hooks/use-api";
 import { useAuthStore } from "@/stores/auth";
-import { cn } from "@/lib/utils";
+import { cn, formatRelativeTime } from "@/lib/utils";
+import type { MemoryHit } from "@/types/api";
 
 const KINDS: { value: string; label: string; icon: LucideIcon; hint: string }[] = [
   {
@@ -97,6 +99,7 @@ export default function MemoryPage() {
 
   const status = useMemoryStatus();
   const results = useMemorySearch(query, kind);
+  const recent = useRecentMemories(kind, (status.data?.enabled ?? false) && query.length < 2);
 
   // Debounced so a query does not fire on every keystroke.
   React.useEffect(() => {
@@ -242,31 +245,35 @@ export default function MemoryPage() {
               />
             )}
 
-            {hits.map((hit, index) => {
-              const meta = KINDS.find((k) => k.value === hit.kind);
-              const Icon = meta?.icon ?? Brain;
-              return (
-                <div
-                  key={`${hit.source}-${index}`}
-                  className="flex items-start gap-3 rounded-xl border border-border bg-card p-3"
-                >
-                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <Icon className="h-4 w-4" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="whitespace-pre-wrap text-xs leading-relaxed">{hit.text}</p>
-                    <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                      {meta && (
-                        <Badge variant="outline" className="text-2xs">
-                          {meta.label}
-                        </Badge>
-                      )}
-                      <span className="text-2xs text-muted-foreground">from {hit.source}</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {hits.map((hit, index) => (
+              <HitRow key={`${hit.source}-${index}`} hit={hit} />
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Recent - so the page is never blank before the first search */}
+      {query.length < 2 && enabled && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Recently learned</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              The newest things the agents concluded{kind ? " of this kind" : ""}. Search above to recall by meaning.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {recent.isLoading && <LoadingRows rows={3} />}
+            {recent.error && <ErrorState error={recent.error} onRetry={() => void recent.refetch()} />}
+            {!recent.isLoading && !recent.error && (recent.data ?? []).length === 0 && (
+              <EmptyState
+                icon={Brain}
+                title="Nothing learned yet"
+                description="Memory fills up as agent runs complete, approvals are decided and experiments finish."
+              />
+            )}
+            {(recent.data ?? []).map((hit, index) => (
+              <HitRow key={hit.memory_id ?? `${hit.source}-${index}`} hit={hit} showTime />
+            ))}
           </CardContent>
         </Card>
       )}
@@ -313,6 +320,32 @@ export default function MemoryPage() {
 
       <TeachDialog open={teaching} onClose={() => setTeaching(false)} />
       <EraseDialog open={erasing} onClose={() => setErasing(false)} />
+    </div>
+  );
+}
+
+function HitRow({ hit, showTime = false }: { hit: MemoryHit; showTime?: boolean }) {
+  const meta = KINDS.find((k) => k.value === hit.kind);
+  const Icon = meta?.icon ?? Brain;
+  return (
+    <div className="flex items-start gap-3 rounded-xl border border-border bg-card p-3">
+      <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        <Icon className="h-4 w-4" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="whitespace-pre-wrap text-xs leading-relaxed">{hit.text}</p>
+        <div className="mt-1.5 flex flex-wrap items-center gap-2">
+          {meta && (
+            <Badge variant="outline" className="text-2xs">
+              {meta.label}
+            </Badge>
+          )}
+          <span className="text-2xs text-muted-foreground">from {hit.source}</span>
+          {showTime && hit.created_at && (
+            <span className="text-2xs text-muted-foreground">· {formatRelativeTime(hit.created_at)}</span>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -30,6 +30,23 @@ export function useProcurementTimeline(limit = 12) {
   return useQuery({ queryKey: ["procurement-timeline", limit], queryFn: () => integrationsApi.timeline(limit), refetchInterval: 30_000 });
 }
 
+/** The supplier's agent reports a delivery delay; the Gantt redraws delivery and payment. */
+export function useReportDeliveryDelay() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ orderId, days, reason }: { orderId: string; days: number; reason?: string }) =>
+      integrationsApi.reportDeliveryDelay(orderId, days, reason),
+    onSuccess: (result) => {
+      void qc.invalidateQueries({ queryKey: ["procurement-timeline"] });
+      void qc.invalidateQueries({ queryKey: ["supply"] });
+      toast.success(
+        `${result.supplier} pushed ${result.purchase_order_reference} to ${result.expected_at} (+${result.days}d) - delivery and payment rescheduled`,
+      );
+    },
+    onError: (e) => toast.error(describe(e, "The supplier delay could not be recorded.")),
+  });
+}
+
 export function useStudioDatasets() {
   return useQuery({ queryKey: ["studio-datasets"], queryFn: integrationsApi.studioDatasets, staleTime: 60_000 });
 }

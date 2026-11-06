@@ -83,6 +83,11 @@ class ReceiveRequest(SchemaBase):
     notes: str = Field(default="", max_length=1000)
 
 
+class DeliveryDelayRequest(SchemaBase):
+    days: int = Field(default=3, ge=1, le=30)
+    reason: str = Field(default="", max_length=240)
+
+
 def _ctx(principal: Principal, request: Request | None = None) -> dict[str, Any]:
     return {
         "actor_id": principal.user_id,
@@ -412,6 +417,21 @@ async def create_goods_receipt(
     lifecycle = ProcurementLifecycle(session, principal.merchant_id, **_ctx(principal))
     receipt = await lifecycle.receive(order_id, lines=[line.model_dump() for line in payload.lines], notes=payload.notes)
     return APIResponse(data=receipt_out(receipt))
+
+
+@router.post("/purchase-orders/{order_id}/delivery-delay",
+             summary="Supplier agent reports a delivery delay (signed DELIVERY_UPDATE; reschedules the timeline)")
+async def report_delivery_delay(
+    order_id: uuid.UUID,
+    payload: DeliveryDelayRequest,
+    session: DbSession,
+    principal: Principal = Depends(require_permission(Permission.PROCUREMENT_NEGOTIATE)),
+) -> APIResponse[dict[str, Any]]:
+    """Plays the supplier's side of the protocol: its agent sends a signed DELIVERY_UPDATE
+    (status DELAYED), the PO's expected date moves, and the Gantt redraws the delivery and
+    the PayPal payment that waits on it - in red, with the original plan underneath."""
+    lifecycle = ProcurementLifecycle(session, principal.merchant_id, **_ctx(principal))
+    return APIResponse(data=await lifecycle.report_delivery_delay(order_id, days=payload.days, reason=payload.reason))
 
 
 @router.get("/goods-receipts", summary="Goods receipts")

@@ -595,6 +595,55 @@ export interface PayPalSubscriptionRow {
   needs_recovery: boolean;
 }
 
+/** Subscription revenue radar - one Bryntum Scheduler row per PayPal subscriber. */
+export type RadarRisk = "healthy" | "at_risk" | "suspended" | "cancelled";
+export type RadarEventKind =
+  | "paid" | "failed" | "retry" | "suspended" | "recovered" | "cancelled" | "scheduled" | "at_risk" | "paused";
+
+export interface RadarResource {
+  id: string;
+  name: string;
+  plan: string;
+  status: string;
+  risk: RadarRisk;
+  amount: Money;
+  currency: string;
+  interval: string;
+  failed_payments: number;
+  next_billing_at: string;
+  paypal_subscription_id: string;
+  mode: PayPalMode;
+}
+
+export interface RadarEvent {
+  id: string;
+  resourceId: string;
+  startDate: string;
+  endDate: string;
+  name: string;
+  kind: RadarEventKind;
+  amount: Money;
+}
+
+export interface SubscriptionRadar {
+  window: { start: string; end: string; now: string };
+  resources: RadarResource[];
+  events: RadarEvent[];
+  summary: {
+    subscribers: number;
+    active: number;
+    monthly_recurring_revenue: Money;
+    at_risk_revenue: Money;
+    at_risk: number;
+    collected_in_window: Money;
+    projected_next_30_days: Money;
+    at_risk_next_30_days: Money;
+    renewals_next_7_days: number;
+    recovered: number;
+    currency: string;
+  };
+}
+
 export interface WebhookEventRow {
   webhook_event_id: string;
   event_id: string;

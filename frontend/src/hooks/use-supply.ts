@@ -144,6 +144,14 @@ export function usePayPalSubscriptions() {
   return useQuery({ queryKey: ["paypal", "subscriptions"], queryFn: paypalApi.subscriptions });
 }
 
+/** Keyed under ["paypal", "subscriptions"], so a lifecycle action refreshes the radar too. */
+export function useSubscriptionRadar(daysBack = 120, daysAhead = 60) {
+  return useQuery({
+    queryKey: ["paypal", "subscriptions", "radar", daysBack, daysAhead],
+    queryFn: () => paypalApi.subscriptionRadar(daysBack, daysAhead),
+  });
+}
+
 export function usePayPalPlans() {
   return useQuery({ queryKey: ["paypal", "plans"], queryFn: paypalApi.plans });
 }

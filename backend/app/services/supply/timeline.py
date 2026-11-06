@@ -46,6 +46,15 @@ def _from_date(value: date | None) -> datetime | None:
     return datetime.combine(value, time(17, 0), tzinfo=UTC) if value else None
 
 
+def _parse_date(value: Any) -> date | None:
+    if not value:
+        return None
+    try:
+        return date.fromisoformat(str(value)[:10])
+    except ValueError:
+        return None
+
+
 def _span(start: datetime | None, end: datetime | None, fallback: datetime) -> tuple[datetime, datetime]:
     start = start or fallback
     end = end or start + MIN_SPAN
@@ -165,24 +174,46 @@ async def build_timeline(session: AsyncSession, merchant_id: uuid.UUID, *, limit
 
         # 3. Purchase order and delivery
         po = pos.get(request.purchase_order_id) if request.purchase_order_id else None
+        delivery: dict[str, Any] | None = None
+        delayed = False
         if po is not None:
             received = sum((D(r.total_quantity) for r in receipts_by_po.get(po.id, [])), ZERO)
             ordered = D(request.quantity)
             done_pct = int(min(Decimal(100), (received / ordered * 100) if ordered else ZERO))
             d_start = _aware(po.sent_at) or _aware(po.approved_at) or _aware(po.created_at) or end
             expected = _from_date(po.expected_at)
+            # A supplier-reported delay moves expected_at; the first committed date stays the plan.
+            meta = po.metadata_json or {}
+            delays = [d for d in (meta.get("delivery_delays") or []) if isinstance(d, dict)]
+            delay_days = sum(int(d.get("days") or 0) for d in delays)
+            original = _from_date(_parse_date(meta.get("original_expected_at"))) or expected
             last_receipt = max((t for r in receipts_by_po.get(po.id, []) if (t := _aware(r.received_at))), default=None)
             d_end = (last_receipt if done_pct >= 100 else expected) or last_receipt or expected
             d_start, d_end = _span(d_start, d_end, end)
             overdue = done_pct < 100 and expected is not None and expected < now
+            delayed = done_pct < 100 and delay_days > 0
+            detail = f"{received:f} of {ordered:f} {request.unit} received"
+            if delayed:
+                last = delays[-1]
+                detail += f" - delayed +{delay_days}d by {last.get('reported_by') or 'supplier'}: {last.get('reason', '')}"
+            elif overdue:
+                detail += " - overdue"
             children.append(_task(f"{pid}:po", f"PO {po.reference} & delivery", d_start, d_end,
-                                  state="done" if done_pct >= 100 else ("blocked" if overdue else "active"),
-                                  percent=done_pct,
-                                  detail=f"{received:f} of {ordered:f} {request.unit} received"
-                                         + (" - overdue" if overdue else ""),
-                                  planned=_planned(d_start, expected)))
+                                  state="done" if done_pct >= 100 else ("blocked" if (overdue or delayed) else "active"),
+                                  percent=done_pct, detail=detail,
+                                  planned=_planned(d_start, original)))
             dependencies.append({"id": f"{pid}:d2", "from": last_id, "to": f"{pid}:po", "type": FINISH_TO_START})
+            delivery_id, delivery_end, planned_delivery = f"{pid}:po", d_end, original
             last_id, end = f"{pid}:po", d_end
+            delivery = {
+                "purchase_order_id": str(po.id),
+                "reference": po.reference,
+                "expected_at": po.expected_at.isoformat() if po.expected_at else None,
+                "original_expected_at": original.date().isoformat() if original else None,
+                "delay_days": delay_days,
+                "received_percent": done_pct,
+                "open": po.status not in ("RECEIVED", "CANCELLED", "REJECTED", "FAILED"),
+            }
             for index, receipt in enumerate(receipts_by_po.get(po.id, []), start=1):
                 at = _aware(receipt.received_at) or d_end
                 children.append(_task(f"{pid}:rcpt{index}", f"Receipt {receipt.reference}", at, at, state="done",
@@ -215,6 +246,25 @@ async def build_timeline(session: AsyncSession, merchant_id: uuid.UUID, *, limit
                                           state="done" if complete else "active", percent=100 if complete else 50,
                                           detail=f"{execution.status.replace('_', ' ').title()} - {execution.amount} {execution.currency}"))
                     dependencies.append({"id": f"{pid}:d4", "from": last_id, "to": f"{pid}:pay", "type": FINISH_TO_START})
+                elif invoice.status != "PAID":
+                    # Not paid yet: the PayPal payment is released after the goods arrive
+                    # (three-way match), so it is drawn after the delivery and moves with it.
+                    p_start = max(delivery_end, i_start)
+                    p_end = p_start + timedelta(days=1)
+                    plan = None
+                    if planned_delivery is not None and delayed:
+                        plan_start = max(planned_delivery, i_start)
+                        plan = {"startDate": plan_start.isoformat(),
+                                "endDate": (plan_start + timedelta(days=1)).isoformat()}
+                    children.append(_task(
+                        f"{pid}:pay", "PayPal payment (scheduled)", p_start, p_end,
+                        state="blocked" if delayed else "pending", percent=0,
+                        detail=(f"Waits for delivery - pushed {delivery['delay_days']}d by the supplier's delay"
+                                if delayed and delivery else
+                                f"Released after goods receipt and three-way match - {invoice.total} {invoice.currency}"),
+                        planned=plan))
+                    dependencies.append({"id": f"{pid}:d4", "from": delivery_id, "to": f"{pid}:pay",
+                                         "type": FINISH_TO_START})
 
         supplier = suppliers.get(request.selected_supplier_agent_id) if request.selected_supplier_agent_id else None
         starts = [c["startDate"] for c in children]
@@ -228,8 +278,9 @@ async def build_timeline(session: AsyncSession, merchant_id: uuid.UUID, *, limit
             "percentDone": int(sum(weights) / len(weights)) if weights else 0,
             "manuallyScheduled": True,
             "expanded": True,
-            "state": "blocked" if request.status in ("REJECTED", "CANCELLED", "NO_ELIGIBLE_OFFER")
+            "state": "blocked" if request.status in ("REJECTED", "CANCELLED", "NO_ELIGIBLE_OFFER") or delayed
             else ("done" if request.status in ("PAID", "RECONCILED") else "active"),
+            "delivery": delivery,
             "detail": f"{request.status.replace('_', ' ').title()}"
                       + (f" - {supplier.display_name}" if supplier else "")
                       + f" - {D(request.quantity):f} {request.unit}",

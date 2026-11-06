@@ -170,7 +170,14 @@ function tooltip({ taskRecord }: { taskRecord: RecordLike }): string {
 
 // --------------------------------------------------------------------------- //
 
-export default function ProcurementGantt({ timeline }: { timeline: ProcurementTimeline }) {
+export default function ProcurementGantt({
+  timeline,
+  autoPlan = false,
+}: {
+  timeline: ProcurementTimeline;
+  /** Turn "Plan vs actual" on by itself - set when a supplier delay moved a stage off its plan. */
+  autoPlan?: boolean;
+}) {
   const { tasks, dependencies } = timeline;
   // Keyed on the arrays, not the response: React Query keeps them referentially equal when a
   // refetch brings nothing new (only `generated_at` moves), so an idle poll touches nothing.
@@ -213,6 +220,10 @@ export default function ProcurementGantt({ timeline }: { timeline: ProcurementTi
       observer.disconnect();
     };
   }, [zoom, fit]);
+
+  React.useEffect(() => {
+    if (autoPlan) setShowPlan(true);
+  }, [autoPlan]);
 
   React.useEffect(() => {
     const baselines = gantt.current?.instance?.features?.baselines;

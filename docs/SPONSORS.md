@@ -11,18 +11,18 @@ Nothing is claimed that the code does not do. The same facts are served live by
 
 | Tool | Used? | What for | Real service in this repo's verification? |
 | --- | --- | --- | --- |
-| **PayPal Developer Platform** | Core | Transaction Search, Orders v2, Invoicing, Payouts, Subscriptions, verified webhooks | **Yes** - OAuth against the sandbox verified; REST paths otherwise verified with the simulator and mocked responses |
+| **PayPal Developer Platform** | Core | Transaction Search, Orders v2 (on PayPal's official Server SDK), Invoicing, Payouts, Subscriptions, verified webhooks | **Yes** - a real sandbox supplier payment was created, approved by the buyer and captured; other paths verified with the simulator and mocked responses |
 | **PayPal Agent Toolkit (MCP)** | Yes, read-only | Reporting and read tools reached through PayPilot's tool registry | **Partly** - handshake and `tools/list` verified live; see [below](#paypal-agent-toolkit-over-mcp) |
 | **AG Grid** (Community 36.3) | Yes | Every data-heavy table | Yes (builds, renders) |
 | **AG Studio** | Yes, incl. its AI agents | Pre-built + merchant-built dashboards over computed datasets, and Studio's agent harness running on PayPilot's LLM (`/studio`) | Renders in a real browser (evaluation mode); AI agents ran real turns on Groq - full runs need a paid Groq tier, see below |
-| **Bryntum Gantt** (Enterprise 8.0) | Yes | Procurement timeline (`/supply/timeline`) | Renders in a real browser (production build); trial key registered and accepted, so it shows Bryntum's Trial badge until 2026-12-20 |
+| **Bryntum Gantt + Scheduler** (Enterprise 8.0) | Yes | Procurement timeline with agent-driven rescheduling (`/supply/timeline`); subscription revenue radar (`/finance/subscriptions/radar`) | Renders in a real browser (production build); trial key registered and accepted, so it shows Bryntum's Trial badge until 2026-12-20 |
 | **Channel3** | Yes | **Gear shelf** - live complementary products with affiliate buy links for the merchant's best seller; market price reference for purchase approvals | **Yes** - live API with a real key; built with Channel3's agent skill |
 | **Elasticsearch** | Yes, optional | Evidence search (`/search`) | Mocked HTTP only; keyword fallback without `ELASTIC_URL` |
 | **Kernel** | Yes, optional | Supplier-portal verification sessions | Mocked HTTP only; labelled fallback without a key |
 | **Zapier** | Yes, optional | Signed business-event notifications | Mocked HTTP only; off without a hook URL |
 | **Render** | Blueprint | `render.yaml`: API (runs the event relays), web, Postgres - all free plan | YAML validated; **not deployed** |
-| **Postman** | Yes | Collection + environment | Collection structure validated; not run in Postman here |
-| **APIMatic** | Spec export only | `docs/openapi.json` ready to import | The **Context Plugin was not used**, no APIMatic account used |
+| **Postman** | Yes | Collection (59 requests) + environment | Collection structure validated; not run in Postman here |
+| **APIMatic** | Yes | Supplier payments run on PayPal's **APIMatic-generated Server SDK**, written with the **PayPal Context Plugin**; PayPilot's own spec, guides and portal config in `apimatic/` | SDK path verified against the sandbox and with stub-session tests; portal/SDK generation for PayPilot's own API needs an APIMatic account (not run here) |
 | **Astropods** | **Not used** | - | Docs reviewed; see below |
 
 > The Devpost page lists sponsor prizes for **AG Grid, APIMatic, Bryntum, Channel3 and
@@ -163,6 +163,44 @@ are milestones, so a partial delivery is two diamonds and a half-filled bar; a b
   default to keep the chart calm; the toggle only appears when some stage has a plan.
 * **Today (`timeRangesFeature` with `showCurrentTimeLine`):** an amber vertical line labelled
   "Today". (It replaced an earlier progress line and on-bar labels, which overlapped the bars.)
+* **Agent-driven rescheduling.** *Deliveries in flight* (above the chart) has a **Supplier
+  reports delay** button per open PO. It plays the supplier's side of the protocol: the
+  supplier's agent sends a **signed `DELIVERY_UPDATE` (status `DELAYED`)** over the same verified
+  bus as every other agent message (`POST /purchase-orders/{id}/delivery-delay`,
+  `ProcurementLifecycle.report_delivery_delay`). Only then does the PO's `expected_at` move. The
+  first committed date is kept as `original_expected_at`, so on the next refetch:
+  * the **delivery bar** extends to the new date and turns **red**, with the reason in its detail;
+  * the **PayPal payment** - drawn as *scheduled* after the delivery, because the money is only
+    released after goods receipt and three-way match - **moves with it** and turns red too;
+  * **Plan vs actual switches on by itself**, so the original plan sits under both bars and the
+    slip is visible at a glance. The delay is also in the agent conversation, the run trace and
+    the audit log (`DELIVERY_DELAYED`).
+
+  The chart is still read-only: the date moved because an agent reported it over the protocol,
+  never because someone dragged a bar.
+
+## Bryntum Scheduler (subscription revenue radar)
+
+`/finance/subscriptions/radar` puts every PayPal subscriber on one timeline with
+`@bryntum/scheduler-react-enterprise` (8.0.0, same tier and version as the Gantt):
+
+* **One row per subscriber, one bar per billing period.** Left of the "Today" line: periods
+  PayPal collected (green), the period whose charge **failed** (red), PayPal's automatic
+  **retries** and a **suspension** as milestones. Right of it: projected **renewals**
+  (outlined), the next renewal of a subscriber with failed payments **at risk** (dashed amber),
+  and a suspended subscriber's renewals **paused** (dashed grey).
+* Rows are sorted by risk, and the locked grid shows subscriber, plan, health (with the failed
+  count) and MRR. Tiles above: MRR, revenue renewing in 30 days, revenue at risk, recoveries.
+* **Click a subscriber -> Recover payment** runs the real subscription action (PayPal
+  Subscriptions `activate`; seeded demo records stay on the simulator). The row redraws with a
+  green **Recovered** marker, because every lifecycle action is stamped into the record's history.
+* Data: `GET /api/v1/paypal/subscriptions/radar` (`services/paypal/radar.py`), derived only from
+  the subscription records (billing anchor `next_billing_at`, stepped back to `started_at`) and
+  that history - it never invents a payment the record does not imply.
+* Read-only: drag, resize, the event editor and context menus are off.
+* CSS: Bryntum's rule is one structural sheet and one theme from the highest product in use, so
+  the radar loads the same `gantt.css` + `stockholm.css` as the timeline (Gantt's sheet holds
+  Scheduler's rules) plus `subscription-radar.css`, which maps the variables onto PayPilot's tokens.
 
 ## Channel3 (gear shelf and market reference)
 
@@ -239,20 +277,48 @@ trigger arbitrary third-party actions would sit outside the approval gates.)
 
 ## APIMatic
 
-`python scripts/export_openapi.py` writes `docs/openapi.json` (157 operations) from the FastAPI
-app itself, ready to import into APIMatic to generate SDKs and a developer portal. **The APIMatic
-Context Plugin was not used to build this, and no APIMatic account was used** - only the spec
-export exists, and it is described as exactly that.
+PayPilot uses APIMatic in two directions.
 
-To actually use APIMatic (needs an account - free trial at apimatic.io):
+### 1. Consuming: supplier payments on PayPal's APIMatic-generated Server SDK
 
-1. `python scripts/export_openapi.py` (refreshes the spec).
-2. APIMatic dashboard -> **Import API** -> upload `docs/openapi.json`. Fix anything its validator
-   flags (it reports issues per operation).
-3. **Generate SDK** for TypeScript and Python, and **Generate API Portal**; publish the portal.
-4. Put the portal URL (and an SDK snippet) in the Devpost submission and the README, and change
-   the APIMatic row above to say what was generated. Do not claim the Context Plugin unless you
-   used it.
+The step that moves money - create the supplier's PayPal order (supplier as payee), read it
+back, capture it after the buyer approves - runs on **`paypal-server-sdk` 2.4.0**, PayPal's
+official SDK generated by APIMatic (`backend/app/integrations/paypal/server_sdk.py`).
+`PayPalClient.create_order / get_order / capture_order` delegate to it when
+`PAYPAL_ORDERS_VIA_SDK=true` (the default). The hand-written REST client keeps the other PayPal
+APIs, and tests that inject a mock transport stay on it.
+
+It was written with the **APIMatic PayPal Context Plugin** installed in Claude Code. Its
+skills - getting-started, client-initialization, authentication, calling-endpoints, models,
+error-handling, configuration-resilience, testing - grounded the integration in the installed
+SDK's real source instead of guesses, and caught traps that would otherwise have shipped:
+
+| Plugin guidance | What it changed in PayPilot |
+| --- | --- |
+| The client is long-lived; build once, reuse | One `PaypalServersdkClient` per process, so the OAuth token and connection pool survive between calls |
+| `environment` has a default - map it explicitly | `Environment.SANDBOX` / `PRODUCTION` chosen from `PAYPAL_ENVIRONMENT`, never left to the default |
+| Auth is `ClientCredentialsAuthCredentials` passed as `client_credentials_auth_credentials=`; the automatic token fetch hides the real 401 behind "token is undefined or expired" | An `o_auth_token_provider` calls `fetch_token()` itself, so a rejected credential surfaces as `OAuthProviderException` with its real status |
+| Orders operations take a single options dict (shape 2) and return an `ApiResponse` envelope | `create_order({"body": OrderRequest, "paypal_request_id": ..., "prefer": ...})`, payload read from the envelope |
+| Optional model fields are *absent*, not `None`; `PaypalWalletExperienceContext` defaults to `GET_FROM_FILE` / `CONTINUE` | Typed `OrderRequest` / `PurchaseUnitRequest` / `AmountBreakdown` / `PayeeBase` models; `NO_SHIPPING` and `PAY_NOW` set explicitly for a B2B payment |
+| Typed `ErrorException` fields are unassigned when a gateway returns HTML; `AuthValidationException` is *not* an `ApiException`; a `ConnectionError` on a write means "outcome unknown" | `getattr` for every typed field; separate branches for auth and transport; a transport failure is reported as retry-safe with the same `PayPal-Request-Id` |
+| Generated retry defaults cover GET/PUT only | POST added for create/capture - safe because every write carries a `PayPal-Request-Id`, so a retry can never pay twice |
+| The test seam is your own `requests.Session` via `http_client_instance`; route the stub by URL because the token POST comes first | `tests/unit/test_paypal_server_sdk.py` drives the real SDK serialization and error mapping with no network |
+
+The SDK uses the synchronous `requests` transport, so each call runs in a worker thread
+(`asyncio.to_thread`) to keep FastAPI's event loop free. `GET /integrations/status` reports the
+APIMatic row as `SDK` when this path is active.
+
+### 2. Publishing: PayPilot's own API on APIMatic
+
+`python scripts/export_openapi.py` writes the spec (157 operations, readable operation ids,
+servers, description, licence) to `docs/openapi.json` and `apimatic/src/spec/openapi.json`.
+`apimatic/` is a ready APIMatic project: portal branding and navigation, four guides
+(authentication, procure-to-pay, the supplier-agent protocol, money controls), Python and
+TypeScript SDKs, and a **PayPilot Context Plugin** definition - so an external supplier agent
+can integrate with PayPilot the same way PayPilot integrated with PayPal. Building and hosting
+the portal needs an APIMatic account (`apimatic portal serve`, `apimatic sdk generate`,
+`apimatic plugin generate`); see [apimatic/README.md](../apimatic/README.md). That build was not
+run from this environment.
 
 ## Render, Postman, Astropods
 
@@ -260,7 +326,7 @@ To actually use APIMatic (needs an account - free trial at apimatic.io):
   with every secret `sync: false`. The API runs the outbox and Zapier relays in-process
   (`OUTBOX_RELAY_IN_PROCESS=true`), so no paid worker is needed; n8n stays local (Docker Compose).
   It parses and passes review but **was not deployed** from this environment.
-* **Postman:** `postman/PayPilot.postman_collection.json` (53 requests, with assertions) and
+* **Postman:** `postman/PayPilot.postman_collection.json` (59 requests, with assertions) and
   `postman/PayPilot.local.postman_environment.json`. The new *Integrations & sponsors* folder
   includes the checks that matter - a write tool returns `403`, an unsafe portal URL returns
   `400`, responses contain no secrets.

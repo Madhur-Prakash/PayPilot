@@ -39,11 +39,15 @@ PayPilot runs a merchant's business loop on top of PayPal:
 * **Financial control:** an Analyst who tries to approve gets **HTTP 403**; the
   Owner approves terms bound to a hash, so any change invalidates the approval.
   Receiving 100 of 150 bags holds payment (three-way match); the last 50 release it.
-* **PayPal settlement:** the supplier is paid with **PayPal Orders v2** (payee =
-  supplier, idempotency key, sandbox approve -> capture), then reconciled to the
-  cent. Inventory is revalued and the product's margin moves **35.6% -> 43.8%**.
+* **PayPal settlement:** the supplier is paid with **PayPal Orders v2** on PayPal's
+  official, APIMatic-generated Server SDK (payee = supplier, idempotency key,
+  sandbox approve -> capture), then reconciled to the cent. Inventory is revalued
+  and the product's margin moves **35.6% -> 43.8%**.
 * **Finance:** Transaction Search sync and insights, Invoicing, approval-gated
-  cashback **Payouts**, Subscriptions recovery, and verified webhooks.
+  cashback **Payouts**, verified webhooks, and a **subscription revenue radar**
+  (Bryntum Scheduler): every PayPal subscriber on one timeline - charges collected,
+  the one that failed and PayPal's retries, renewals coming up - with one-click
+  recovery that redraws the row.
 * **Gear shelf (Channel3):** the merchant's online customers buy beans - and the
   gear to brew them, which the shop doesn't stock. PayPilot searches Channel3's
   live catalogue by category for grinders, pour-over kits, filters, mugs and
@@ -52,9 +56,10 @@ PayPilot runs a merchant's business loop on top of PayPal:
   30 days) with the attach rate stated as an assumption.
 * **Dashboards:** AG Grid tables everywhere, an AG Studio dashboard that opens
   pre-built and is edited by drag-and-drop, and a Bryntum Gantt of every
-  procurement's real history, with each stage's planned window (RFQ deadline,
-  approval expiry, expected delivery) under its actual bar and a "today"
-  progress line, so a late delivery is visible at a glance.
+  procurement's real history. When a supplier's agent reports a delay - a signed
+  `DELIVERY_UPDATE` over the protocol - the delivery bar and the PayPal payment
+  that waits on it move right and turn red, with the original plan drawn
+  underneath.
 
 ## How we built it
 
@@ -64,18 +69,23 @@ PayPilot runs a merchant's business loop on top of PayPal:
 * **Agents:** LangGraph workflows for growth and procurement (both stop at a human
   approval gate); Groq `gpt-oss-120b` for narration, intent routing and a buyer
   strategist whose proposals are bounds-checked before use; pgvector memory.
-* **PayPal:** our own REST client (OAuth caching and refresh, retries,
-  `PayPal-Request-Id` idempotency, debug ids) for Transaction Search, Orders v2,
-  Invoicing, Payouts, Subscriptions and webhook verification, plus a labelled
-  simulator so judges can run everything without keys. PayPal's Agent Toolkit is
-  reachable read-only over MCP; every money-moving tool is blocked in code.
+* **PayPal:** the money-moving step (Orders v2 create / get / capture) runs on
+  PayPal's **APIMatic-generated Server SDK**, written with the **APIMatic PayPal
+  Context Plugin** in Claude Code - it caught real traps (a disguised 401, absent
+  optional fields, retry defaults that skip POST). Our own REST client (OAuth
+  caching, retries, `PayPal-Request-Id` idempotency, debug ids) covers Transaction
+  Search, Invoicing, Payouts, Subscriptions and webhook verification, plus a
+  labelled simulator so judges can run everything without keys. PayPal's Agent
+  Toolkit is reachable read-only over MCP; every money-moving tool is blocked in
+  code.
 * **Frontend:** Next.js 15 + React 19, TanStack Query, AG Grid 36.3, AG Studio
-  3.1, Bryntum Gantt 8.0 (Enterprise: baselines, progress line, labels). We also wired Studio's AI agent harness to our backend's LLM
+  3.1, Bryntum Gantt and Scheduler 8.0 (Enterprise: baselines, time ranges). We also wired Studio's AI agent harness to our backend's LLM
   through an `AgLlmAdapter` (the key never reaches the browser); it works, but on
   Groq's free tier Studio's agents are too slow to finish a request, so the hosted
   demo keeps it switched off.
 * **Ops:** Docker Compose for the whole stack including n8n, a Render Blueprint
-  that fits the free plan, a Postman collection, an OpenAPI export.
+  that fits the free plan, a Postman collection, and an APIMatic project for
+  PayPilot's own API (spec, guides, SDK and Context Plugin config).
 
 ## Challenges we ran into
 
@@ -118,8 +128,9 @@ shelf updates itself when a retailer changes a price or runs out.
 
 `python` `fastapi` `postgresql` `pgvector` `sqlalchemy` `langgraph` `groq`
 `paypal` `paypal-orders-v2` `paypal-payouts` `paypal-invoicing` `paypal-subscriptions`
-`paypal-agent-toolkit` `mcp` `next.js` `react` `typescript` `ag-grid` `ag-studio`
-`bryntum` `channel3` `n8n` `docker` `render` `postman` `langfuse` `vapi`
+`paypal-agent-toolkit` `paypal-server-sdk` `apimatic` `mcp` `next.js` `react`
+`typescript` `ag-grid` `ag-studio` `bryntum` `channel3` `n8n` `docker` `render`
+`postman` `langfuse` `vapi`
 
 ## Links
 
@@ -133,3 +144,25 @@ shelf updates itself when a retailer changes a price or runs out.
 No keys needed: `docker compose up -d --build`, open <http://localhost:3000>, and
 follow [DEMO.md](DEMO.md) (three minutes). PayPal runs in a labelled simulator and
 agents in deterministic mode unless keys are configured.
+
+## APIMatic: Description of Context Plugin usage
+
+(Short summary for the reviewer - paste into the APIMatic form field.)
+
+> We installed the APIMatic PayPal Context Plugin in Claude Code and used it to move
+> PayPilot's supplier payments - Orders v2 create, get and capture, the step that
+> actually pays a supplier - from a hand-written REST call onto PayPal's official
+> APIMatic-generated Server SDK (`paypal-server-sdk` 2.4.0). The plugin's skills
+> (client initialization, authentication, calling endpoints, models, error handling,
+> configuration and resilience, testing) kept the code grounded in the installed
+> SDK's real source and caught traps we would otherwise have shipped: the automatic
+> token fetch hides a rejected credential behind "token is undefined or expired", so
+> we added a token provider that surfaces the real 401; optional model fields are
+> absent rather than None and the wallet context defaults to GET_FROM_FILE /
+> CONTINUE, so we set NO_SHIPPING and PAY_NOW explicitly; typed error fields can be
+> unassigned when a gateway returns HTML, and AuthValidationException is not an
+> ApiException, so each gets its own branch; the generated retry policy skips POST,
+> so we enabled it for create and capture, safe because every write carries a
+> PayPal-Request-Id. Our tests use the plugin's stub-session pattern, routed by URL
+> because the OAuth token request comes first. Code:
+> `backend/app/integrations/paypal/server_sdk.py`; write-up: `docs/SPONSORS.md#apimatic`.

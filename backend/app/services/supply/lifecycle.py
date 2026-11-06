@@ -421,6 +421,78 @@ class ProcurementLifecycle(SupplyContext):
             await self.match_invoice(invoice.id)
         return receipt
 
+    async def report_delivery_delay(
+        self, purchase_order_id: uuid.UUID, *, days: int, reason: str = ""
+    ) -> dict[str, Any]:
+        """The supplier's agent reports a slip, and the plan moves with it.
+
+        The supplier agent sends a signed ``DELIVERY_UPDATE`` (status ``DELAYED``) over
+        the same verified bus as every other protocol message. Only then does the PO's
+        expected date move. The first committed date is kept in
+        ``metadata_json["original_expected_at"]`` so the timeline can draw plan vs
+        actual, and the PayPal payment, which waits for the goods (three-way match),
+        moves with the delivery.
+        """
+        if not 1 <= days <= 30:
+            raise BadRequestError("A delay must be between 1 and 30 days.")
+        order = await self.purchase_order(purchase_order_id)
+        closed = (PurchaseOrderStatus.RECEIVED, PurchaseOrderStatus.CANCELLED,
+                  PurchaseOrderStatus.REJECTED, PurchaseOrderStatus.FAILED)
+        if order.status in closed:
+            raise ConflictError(f"{order.reference} is {order.status.lower()}; there is no delivery left to delay.")
+        request = await self._request_for_order(order)
+        agent = await self.agent_for_vendor(order.vendor_id)
+        if request is None or agent is None:
+            raise BadRequestError("Only agent-negotiated purchase orders have a supplier agent to report a delay.")
+
+        now = datetime.now(tz=UTC)
+        previous = order.expected_at or now.date()
+        new_date = previous + timedelta(days=days)
+        reason = (reason or "").strip()[:240] or "Carrier capacity shortfall at the dispatch hub."
+        meta = dict(order.metadata_json or {})
+        meta.setdefault("original_expected_at", previous.isoformat())
+        delays = [d for d in (meta.get("delivery_delays") or []) if isinstance(d, dict)]
+        delays.append({"days": days, "from": previous.isoformat(), "to": new_date.isoformat(), "reason": reason,
+                       "at": now.isoformat(), "reported_by": agent.display_name})
+        meta["delivery_delays"] = delays[-10:]
+        order.metadata_json = meta  # a new dict, so the JSON column is marked dirty
+        order.expected_at = new_date
+
+        message = await self.send(
+            sender=self.supplier(agent), recipient=self.buyer,
+            message_type=AgentMessageType.DELIVERY_UPDATE,
+            payload={"purchase_order_reference": order.reference, "status": "DELAYED",
+                     "expected_delivery": new_date, "tracking_reference": f"TRK-{order.reference}",
+                     "note": reason},
+            request=request, key=f"delivery:delayed:{len(delays)}",
+            summary=f"{agent.display_name} pushed {order.reference} by {days} day{'s' if days != 1 else ''} "
+            f"to {new_date:%b %d}: {reason}",
+        )
+        await self.step(request, node="delivery", agent_name=AgentName.SUPPLIER_NETWORK,
+                        action="Supplier reported a delivery delay",
+                        result=f"{order.reference}: {previous} -> {new_date} (+{days}d). {reason}",
+                        decision="RESCHEDULED")
+        await self.audit.record(
+            action=AuditAction.DELIVERY_DELAYED, merchant_id=self.merchant_id, actor_id=self.actor_id,
+            actor_type=ActorType.AGENT, actor_label=agent.display_name,
+            resource="purchase_order", resource_id=str(order.id),
+            description=f"{order.reference} delivery moved {previous} -> {new_date} by {agent.display_name}: {reason}",
+            request_id=self.request_id, metadata={"days": days, "message_id": str(message.id)},
+        )
+        await self.session.flush()
+        return {
+            "purchase_order_id": str(order.id),
+            "purchase_order_reference": order.reference,
+            "previous_expected_at": previous.isoformat(),
+            "expected_at": new_date.isoformat(),
+            "original_expected_at": meta["original_expected_at"],
+            "days": days,
+            "total_delay_days": sum(int(d.get("days") or 0) for d in delays),
+            "reason": reason,
+            "supplier": agent.display_name,
+            "message_id": str(message.id),
+        }
+
     async def _request_for_order(self, order: PurchaseOrder) -> ProcurementRequest | None:
         if order.procurement_request_id is None:
             return None

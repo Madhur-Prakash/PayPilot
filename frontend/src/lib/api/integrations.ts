@@ -5,6 +5,7 @@
 
 import { apiDelete, apiGet, apiPost } from "@/lib/api/client";
 import type {
+  DeliveryDelayResult,
   EvidenceSearch,
   IntegrationStatus,
   MarketBenchmark,
@@ -34,6 +35,8 @@ export const integrationsApi = {
   mcpCall: (tool: string, args: Record<string, unknown> = {}) =>
     apiPost<McpResult>("/integrations/paypal-mcp/call", { tool, arguments: args }),
   timeline: (limit = 12) => apiGet<ProcurementTimeline>("/supply/timeline", { params: { limit } }),
+  reportDeliveryDelay: (orderId: string, days: number, reason?: string) =>
+    apiPost<DeliveryDelayResult>(`/purchase-orders/${orderId}/delivery-delay`, { days, reason: reason ?? "" }),
   studioDatasets: () => apiGet<StudioDatasets>("/integrations/studio/datasets"),
   /** One AG Studio agent turn, run on the backend's LLM (the model key never reaches the browser). */
   studioAiTurn: (body: Record<string, unknown>, signal?: AbortSignal) =>

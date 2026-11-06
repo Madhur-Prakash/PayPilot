@@ -49,6 +49,10 @@
     {
       "key": "kernelSession",
       "value": ""
+    },
+    {
+      "key": "subscriptionId",
+      "value": ""
     }
   ],
   "item": [
@@ -846,6 +850,62 @@
       "name": "Receiving, matching, payment",
       "item": [
         {
+          "name": "Supplier agent reports a delivery delay (reschedules the Gantt)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/purchase-orders/{{orderId}}/delivery-delay",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "purchase-orders",
+                "{{orderId}}",
+                "delivery-delay"
+              ]
+            },
+            "description": "The supplier's agent sends a signed DELIVERY_UPDATE (status DELAYED). The PO's expected date moves, and GET /supply/timeline shows the delivery and the dependent PayPal payment pushed right, in red, with the original plan as the baseline.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"days\": 3,\n  \"reason\": \"Carrier capacity shortfall at the dispatch hub.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('delay recorded', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "pm.test('expected date moved', () => pm.expect(d.expected_at).to.not.eql(d.previous_expected_at));"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Receive 100 (partial)",
           "request": {
             "method": "POST",
@@ -1381,6 +1441,109 @@
                   "type": "string"
                 }
               ]
+            }
+          }
+        },
+        {
+          "name": "Subscription revenue radar (Bryntum Scheduler data)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/paypal/subscriptions/radar?days_back=120&days_ahead=60",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "paypal",
+                "subscriptions",
+                "radar"
+              ],
+              "query": [
+                {
+                  "key": "days_back",
+                  "value": "120"
+                },
+                {
+                  "key": "days_ahead",
+                  "value": "60"
+                }
+              ]
+            },
+            "description": "One row per PayPal subscriber, one bar per billing period: paid, failed, retries, suspension, recovery and projected renewals. Saves the first at-risk subscriber as {{subscriptionId}}.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('radar ok', () => pm.response.to.have.status(200));",
+                  "const r = pm.response.json().data;",
+                  "pm.test('one resource per subscriber', () => pm.expect(r.resources.length).to.eql(r.summary.subscribers));",
+                  "const risky = r.resources.find(x => x.risk === 'at_risk' || x.risk === 'suspended');",
+                  "if (risky) pm.collectionVariables.set('subscriptionId', risky.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Recover a failed subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/paypal/subscriptions/{{subscriptionId}}/action",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "paypal",
+                "subscriptions",
+                "{{subscriptionId}}",
+                "action"
+              ]
+            },
+            "description": "Reactivates the subscription through PayPal Subscriptions; the radar then shows a Recovered marker.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"recover\",\n  \"reason\": \"Payment method updated\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
           }
         },
@@ -2255,6 +2418,123 @@
               }
             }
           ]
+        },
+        {
+          "name": "Gear shelf (Channel3 live catalog)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/integrations/shelf?refresh=false",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "integrations",
+                "shelf"
+              ],
+              "query": [
+                {
+                  "key": "refresh",
+                  "value": "false"
+                }
+              ]
+            },
+            "description": "Coffee gear the merchant could stock, from Channel3's catalog: cheapest in-stock offer, commission rate and projected attach revenue. Cached 30 minutes; ?refresh=true re-queries.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "AG Studio assistant availability",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/integrations/studio/ai",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "integrations",
+                "studio",
+                "ai"
+              ]
+            },
+            "description": "Whether the AG Studio AI assistant has a model behind it (provider and model, never the key).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "AG Studio assistant turn",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/integrations/studio/ai/turn",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "integrations",
+                "studio",
+                "ai",
+                "turn"
+              ]
+            },
+            "description": "Relays one AgLlmAdapter.executeTurn to the configured OpenAI-compatible model. The browser never sees the key.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"instructions\": \"You are a dashboard assistant.\",\n  \"input\": [\n    {\n      \"type\": \"message\",\n      \"role\": \"user\",\n      \"content\": \"Which grid shows supplier spend?\"\n    }\n  ],\n  \"tools\": [],\n  \"response_format\": {\n    \"type\": \"text\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
         }
       ]
     }

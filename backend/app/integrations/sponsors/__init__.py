@@ -167,9 +167,11 @@ def integration_status() -> list[dict[str, Any]]:
             "key": "apimatic",
             "name": "APIMatic",
             "category": "sponsor",
-            "mode": "SPEC_EXPORT",
-            "used_for": "OpenAPI spec export (scripts/export_openapi.py) ready to import into APIMatic; the Context Plugin was not used",
-            "where": "docs/SPONSORS.md",
+            "mode": "SDK" if settings.paypal_orders_via_sdk else "SPEC_EXPORT",
+            "used_for": "Supplier payments (Orders v2 create / get / capture) run on PayPal's APIMatic-generated "
+            "Server SDK, written with the PayPal Context Plugin; PayPilot's own OpenAPI spec and docs portal "
+            "build in apimatic/",
+            "where": "backend/app/integrations/paypal/server_sdk.py, apimatic/",
         },
         {
             "key": "astropods",

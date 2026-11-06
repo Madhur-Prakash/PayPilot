@@ -17,6 +17,7 @@
     "@bryntum/gantt-enterprise": "8.0.0",
     "@bryntum/gantt-react-enterprise": "8.0.0",
     "@bryntum/scheduler-enterprise": "8.0.0",
+    "@bryntum/scheduler-react-enterprise": "8.0.0",
     "@hookform/resolvers": "3.9.1",
     "@radix-ui/react-avatar": "1.1.2",
     "@radix-ui/react-dialog": "1.1.4",

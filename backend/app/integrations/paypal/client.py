@@ -61,6 +61,12 @@ log = get_logger(__name__)
 MAX_SEARCH_WINDOW = timedelta(days=31)
 #: Re-fetch a token this long before PayPal says it expires.
 TOKEN_SAFETY_MARGIN = 60
+#: PayPal's own REST hosts. A base URL outside these (a proxy, a mock) keeps Orders on
+#: the REST client, because the Server SDK can only target PayPal's environments.
+PAYPAL_HOSTS: dict[str, tuple[str, ...]] = {
+    "sandbox": ("https://api-m.sandbox.paypal.com", "https://api.sandbox.paypal.com"),
+    "live": ("https://api-m.paypal.com", "https://api.paypal.com"),
+}
 
 WEBHOOK_HEADERS = (
     "paypal-transmission-id",
@@ -153,9 +159,43 @@ class PayPalClient:
         self._token: str | None = None
         self._token_expires_at: float = 0.0
         self._token_lock = asyncio.Lock()
+        self._orders_sdk = self._build_orders_sdk(
+            env=env,
+            custom_base=self.base_url not in PAYPAL_HOSTS.get(env, ()),
+            custom_transport=transport is not None,
+            timeout=timeout,
+        )
+
+    def _build_orders_sdk(
+        self, *, env: str, custom_base: bool, custom_transport: bool, timeout: float | None
+    ) -> Any:
+        """Orders v2 on the official PayPal Server SDK, when it can reach the target.
+
+        A custom base URL or an injected transport means a test or a proxy the SDK
+        cannot be pointed at, so those keep the REST path.
+        """
+        if not settings.paypal_orders_via_sdk or custom_base or custom_transport:
+            return None
+        try:
+            from app.integrations.paypal.server_sdk import PayPalServerSDKOrders
+        except ImportError:  # pragma: no cover - package missing from an old image
+            log.warning("paypal_server_sdk_unavailable")
+            return None
+        return PayPalServerSDKOrders(
+            client_id=self._client_id,
+            client_secret=self._client_secret,
+            environment=env,
+            timeout=timeout,
+            max_retries=self._max_retries,
+        )
+
+    @property
+    def orders_transport(self) -> str:
+        """Which code path moves money: the official SDK or the REST client."""
+        return "paypal-server-sdk" if self._orders_sdk is not None else "rest"
 
     def __repr__(self) -> str:
-        return f"PayPalClient(mode={self.mode}, base_url={self.base_url!r})"
+        return f"PayPalClient(mode={self.mode}, base_url={self.base_url!r}, orders={self.orders_transport})"
 
     async def aclose(self) -> None:
         await self._http.aclose()
@@ -340,6 +380,21 @@ class PayPalClient:
         return_url: str | None = None,
         cancel_url: str | None = None,
     ) -> PayPalOrder:
+        if self._orders_sdk is not None:
+            return await self._orders_sdk.create_order(
+                intent=intent,
+                amount=amount,
+                currency=currency,
+                reference_id=reference_id,
+                description=description,
+                request_id=request_id,
+                invoice_id=invoice_id,
+                custom_id=custom_id,
+                payee_email=payee_email,
+                items=items,
+                return_url=return_url,
+                cancel_url=cancel_url,
+            )
         unit: dict[str, Any] = {
             "reference_id": reference_id[:256],
             "description": description[:127],
@@ -400,12 +455,16 @@ class PayPalClient:
         return PayPalOrder.from_api(data, debug_id=debug_id)
 
     async def get_order(self, order_id: str) -> PayPalOrder:
+        if self._orders_sdk is not None:
+            return await self._orders_sdk.get_order(order_id)
         data, debug_id = await self._request(
             "GET", f"/v2/checkout/orders/{order_id}", prefer_representation=False
         )
         return PayPalOrder.from_api(data, debug_id=debug_id)
 
     async def capture_order(self, order_id: str, *, request_id: str) -> PayPalOrder:
+        if self._orders_sdk is not None:
+            return await self._orders_sdk.capture_order(order_id, request_id=request_id)
         data, debug_id = await self._request(
             "POST", f"/v2/checkout/orders/{order_id}/capture", json_body={}, request_id=request_id
         )

@@ -41,6 +41,8 @@ for _key in (
     os.environ[_key] = ""
 os.environ["PAYPAL_ENVIRONMENT"] = "sandbox"
 os.environ["PAYPAL_SIMULATION_ENABLED"] = "true"
+# Mocked httpx transports drive the REST path; SDK tests opt in explicitly.
+os.environ["PAYPAL_ORDERS_VIA_SDK"] = "false"
 
 import httpx  # noqa: E402
 from sqlalchemy.ext.asyncio import (  # noqa: E402

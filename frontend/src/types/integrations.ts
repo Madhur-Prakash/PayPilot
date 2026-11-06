@@ -127,7 +127,32 @@ export interface TimelineTask {
   detail: string;
   /** Planned window from a date recorded up front (RFQ deadline, approval expiry, expected delivery). */
   baseline?: { startDate: string; endDate: string } | null;
+  /** On a procurement (parent) row: its purchase order's delivery, for supplier-delay controls. */
+  delivery?: TimelineDelivery | null;
   children?: TimelineTask[];
+}
+
+export interface TimelineDelivery {
+  purchase_order_id: string;
+  reference: string;
+  expected_at: string | null;
+  original_expected_at: string | null;
+  delay_days: number;
+  received_percent: number;
+  open: boolean;
+}
+
+export interface DeliveryDelayResult {
+  purchase_order_id: string;
+  purchase_order_reference: string;
+  previous_expected_at: string;
+  expected_at: string;
+  original_expected_at: string;
+  days: number;
+  total_delay_days: number;
+  reason: string;
+  supplier: string;
+  message_id: string;
 }
 
 export interface TimelineDependency {

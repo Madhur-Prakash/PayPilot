@@ -727,6 +727,15 @@ export function useMemorySearch(query: string, kind: string) {
   });
 }
 
+/** What the agents learned most recently - shown while the search box is empty. */
+export function useRecentMemories(kind: string, enabled: boolean) {
+  return useQuery({
+    enabled,
+    queryKey: ["memory", "recent", kind],
+    queryFn: () => memoryApi.recent({ limit: 12, kind: kind || undefined }),
+  });
+}
+
 export function useRememberNote() {
   const qc = useQueryClient();
   return useMutation({

@@ -31,6 +31,7 @@ from app.db.models.paypal import (
 from app.integrations.paypal import get_paypal_gateway, paypal_status, sign_simulated_webhook
 from app.schemas.common import APIResponse, PageMeta, Paginated, SchemaBase
 from app.services.paypal.finance import PayPalFinanceService, invoice_record_out, subscription_out
+from app.services.paypal.radar import build_radar
 from app.services.paypal.sync import TransactionSyncService, transaction_intelligence
 from app.services.paypal.webhooks import WebhookService, describe_webhook
 from app.services.supply.approvals import describe_approval
@@ -400,6 +401,20 @@ async def list_subscriptions(
         "at_risk": sum(1 for r in rows if r.failed_payments > 0 or r.status == "SUSPENDED"),
         "at_risk_revenue": format(sum((r.amount for r in rows if r.failed_payments > 0), Decimal("0")), "f"),
     })
+
+
+@router.get("/subscriptions/radar", summary="Subscription revenue radar (billing periods, retries, recovery)")
+async def subscription_radar(
+    session: DbSession,
+    principal: Principal = Depends(require_permission(Permission.PAYPAL_READ)),
+    days_back: Annotated[int, Query(ge=14, le=365)] = 120,
+    days_ahead: Annotated[int, Query(ge=7, le=180)] = 60,
+) -> APIResponse[dict[str, Any]]:
+    """One row per PayPal subscriber, one bar per billing period - drawn with Bryntum Scheduler."""
+    rows = (await session.execute(
+        select(PayPalSubscriptionRecord).where(PayPalSubscriptionRecord.merchant_id == principal.merchant_id)
+    )).scalars().all()
+    return APIResponse(data=build_radar(rows, days_back=days_back, days_ahead=days_ahead))
 
 
 @router.get("/plans", summary="Subscription plans")

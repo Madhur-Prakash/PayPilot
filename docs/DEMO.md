@@ -71,7 +71,15 @@ Still as the **Analyst**, click **Review & approve purchase** -> **Approve**:
 **403 - your role cannot perform this action** (and it is logged in the audit
 trail). Switch to the **Owner**, open **Approvals** (`/approvals`): the exact
 terms, the policy version and the terms hash. **Approve**. The purchase order is
-issued and the supplier agent confirms delivery and issues its invoice.
+issued and the supplier agent confirms delivery and issues its invoice. Back on the
+negotiation page, **Next step: purchase order lifecycle** (top right) jumps to the
+lifecycle tab.
+
+*Optional, 15 seconds - for the Bryntum prize:* open **Procurement Timeline**
+(`/supply/timeline`) and click **Supplier reports delay** on the new PO. The
+supplier's agent sends a signed `DELIVERY_UPDATE`; the delivery bar and the PayPal
+payment that waits on it slide right and turn red, and *Plan vs actual* shows the
+original plan underneath.
 
 ### 2:10 - 2:35 · PayPal workflow (`Purchase order lifecycle` tab)
 
@@ -130,7 +138,19 @@ Command Center and the event stream.
   *Simulated*.
 * **Procurement timeline (`/supply/timeline`, Bryntum Gantt):** after a
   procurement completes, each stage is a bar; a partial delivery shows two
-  milestones.
+  milestones. While a PO is open, **Supplier reports delay** (+2 / +3 / +5 days)
+  makes the supplier's agent send a signed `DELIVERY_UPDATE`: the delivery and the
+  scheduled PayPal payment move and turn red, with the original plan underneath.
+* **Revenue radar (`/finance/subscriptions/radar`, Bryntum Scheduler):** the 18
+  Bean Club subscribers on one timeline - paid periods, the failed charge and
+  PayPal's retries, a suspension, and renewals ahead. Click an at-risk subscriber,
+  then **Recover payment**: the row redraws with a green *Recovered* marker and
+  the revenue-at-risk tile drops.
+* **APIMatic:** supplier payments run on PayPal's APIMatic-generated Server SDK -
+  `GET /api/v1/integrations/status` shows the APIMatic row as `SDK`; the backend
+  logs each Orders call with `via=paypal-server-sdk`.
+* **Agent memory (`/memory`):** opens on *Recently learned* - the newest things
+  the agents concluded - before you search.
 
 ## Growth story numbers (seeded, last 30 days vs previous 30)
 
