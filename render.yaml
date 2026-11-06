@@ -128,12 +128,23 @@ services:
           name: paypilot-db
           property: connectionString
       # The API runs the outbox and Zapier relays itself, so the whole blueprint fits
-      # Render's free plan. (n8n is local-only - see docker-compose.yml - so on Render
-      # the outbox relay idles, and the Zapier relay idles until ZAPIER_WEBHOOK_URL is set.)
+      # Render's free plan. The outbox relay idles until N8N_INVENTORY_WEBHOOK_URL is set,
+      # the Zapier relay until ZAPIER_WEBHOOK_URL is set.
       # To run them in a separate process instead, add a paid `type: worker` service with
       # `dockerCommand: python -m app.worker` and set this to "false".
       - key: OUTBOX_RELAY_IN_PROCESS
         value: "true"
+      # Optional hosted n8n (n8n Cloud or your own HTTPS instance) - see n8n/README.md.
+      # Blank URL = inventory events are recorded but not delivered (marked SKIPPED).
+      # https://<your-n8n>/webhook/pga-inventory-event
+      - key: N8N_INVENTORY_WEBHOOK_URL
+        sync: false
+      # The same secret the workflows were built with (both directions are signed).
+      - key: N8N_WEBHOOK_SECRET
+        sync: false
+      # https://<your-n8n> - only used for "open in n8n" links.
+      - key: N8N_BASE_URL
+        sync: false
       - key: FRONTEND_URL
         value: https://paypilot-web.onrender.com
       - key: BACKEND_URL
