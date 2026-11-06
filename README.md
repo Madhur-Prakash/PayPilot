@@ -144,7 +144,7 @@ labelled *Deterministic mode*.
 
 Full, honest detail (what is live, what is a labelled fallback, what was verified and how):
 **[docs/SPONSORS.md](docs/SPONSORS.md)**. The same facts are served by
-`GET /api/v1/integrations/status` and shown on the **Integrations** screen.
+`GET /api/v1/integrations/status`.
 
 * **AG Grid Community** (v36.3) - transactions, quote comparison, invoices, receipts,
   reconciliations, payments, RFQs, evidence.

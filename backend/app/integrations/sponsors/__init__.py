@@ -1,6 +1,6 @@
 """Sponsor-tool adapters and a single honest status report.
 
-``integration_status()`` is what the Integrations screen and ``/health`` show. It
+``integration_status()`` is what ``GET /integrations/status`` and ``/health`` show. It
 states, for every sponsor tool, *what PayPilot actually uses it for*, whether that
 path is running against the real service (``LIVE``) or a labelled fallback
 (``SIMULATED``), and which tools are **not** used. Nothing is claimed that the
@@ -84,7 +84,7 @@ def integration_status() -> list[dict[str, Any]]:
             "category": "core",
             "mode": settings.paypal_mode if settings.paypal_mcp_enabled else "DISABLED",
             "used_for": "Reporting and read tools reached through PayPilot's own tool registry; money-moving tools are blocked",
-            "where": "/integrations",
+            "where": "GET /api/v1/integrations/paypal-mcp/tools",
         },
         {
             "key": "ag_grid",
@@ -136,7 +136,7 @@ def integration_status() -> list[dict[str, Any]]:
             "category": "sponsor",
             "mode": get_kernel().mode,
             "used_for": "Cloud browser sessions to verify a supplier's public catalogue page; observes only",
-            "where": "/integrations",
+            "where": "POST /api/v1/integrations/kernel/sessions",
         },
         {
             "key": "zapier",
@@ -144,7 +144,7 @@ def integration_status() -> list[dict[str, Any]]:
             "category": "sponsor",
             "mode": get_zapier().mode if get_zapier().configured else SIMULATED,
             "used_for": "Signed business-event notifications to a Catch Hook (Slack, Sheets, email ...); never approves or pays",
-            "where": "/integrations",
+            "where": "GET /api/v1/integrations/zapier",
         },
         {
             "key": "render",

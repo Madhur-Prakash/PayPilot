@@ -5,7 +5,7 @@
 This page says, for every tool the hackathon lists, **what PayPilot actually does with
 it, whether that path is running against the real service, and how it was verified.**
 Nothing is claimed that the code does not do. The same facts are served live by
-`GET /api/v1/integrations/status` and shown on the **Integrations** screen.
+`GET /api/v1/integrations/status`.
 
 ## Summary
 
