@@ -8,7 +8,7 @@
 
 PayPal AI Hackathon 2026 · Idea 4 (Growth Autopilot) + Idea 5 (Supply Agents) · Team PayFlux
 
-[![Tests](https://img.shields.io/badge/backend_tests-389_passing-16a34a?style=flat-square&logo=pytest&logoColor=white)](docs/TESTING.md)
+[![Tests](https://img.shields.io/badge/backend_tests-489_passing-16a34a?style=flat-square&logo=pytest&logoColor=white)](docs/TESTING.md)
 [![Lint](https://img.shields.io/badge/ruff-clean-16a34a?style=flat-square&logo=ruff&logoColor=white)](docs/CONTRIBUTING.md)
 [![Types](https://img.shields.io/badge/typecheck-clean-16a34a?style=flat-square&logo=typescript&logoColor=white)](docs/CONTRIBUTING.md)
 [![PayPal](https://img.shields.io/badge/PayPal-Orders_v2_·_Invoicing_·_Payouts_·_Subscriptions_·_Webhooks-003087?style=flat-square&logo=paypal&logoColor=white)](docs/PAYPAL.md)
@@ -26,6 +26,7 @@ PayPal AI Hackathon 2026 · Idea 4 (Growth Autopilot) + Idea 5 (Supply Agents) �
 **[PayPal](docs/PAYPAL.md)** ·
 **[Sponsor tools](docs/SPONSORS.md)** ·
 **[Supply Agents](docs/SUPPLY_AGENTS.md)** ·
+**[Supply Intelligence](docs/SUPPLY_INTELLIGENCE.md)** ·
 **[Architecture](docs/ARCHITECTURE.md)** ·
 **[All docs](docs/README.md)**
 
@@ -55,10 +56,37 @@ One product connects three layers:
 | **Growth Intelligence** | Observe -> diagnose -> hypothesize -> recommend -> **approve** -> act -> measure (controlled experiment) -> learn |
 | **Procurement Intelligence** | Detect demand -> stock need -> discover suppliers -> RFQ -> **agent-to-agent negotiation** -> evaluate -> **approve** -> PO -> invoice -> receive -> match -> **approve payment** -> PayPal -> reconcile -> learn |
 | **Unified intelligence** | Shared events, memory and financial data: demand drives procurement, procurement cost drives margin, inventory shapes campaigns, supplier outcomes shape future sourcing |
+| **Supply Intelligence** | Sales + inventory -> expansion opportunity -> live Channel3 products -> compare -> explainable recommendation -> **approve** -> catalog / PayPal test-stock order -> **measure** |
 
 **Who it's for:** independent merchants who sell in person and online through
 PayPal - the demo is *Juniper & Oak Coffee*, a Portland coffee shop with an online
 bean store - and the staff roles around them (Owner, Admin, Analyst, Staff, Viewer).
+
+## Supply Intelligence and the Merchant OS
+
+PayPilot also works as a **product scientist** for the merchant, on live data from
+[Channel3](https://trychannel3.com)'s catalog of products from thousands of retailers:
+
+* **AI Product Discovery** - *"wireless earbuds under ₹5,000"*, *"premium office chairs
+  under ₹15,000"*, *"products for a college student"*: budget, currency, brands, use case
+  and features are extracted, turned into a real Channel3 search with filters, and the
+  results are ranked with the reasons shown. Comparison, similar products, URL enrichment
+  and a multi-turn **shopping assistant** (Channel3 Conversations) are built in.
+* **Supply Intelligence** - assortment analysis from the merchant's own sales and
+  inventory, complementary-product expansion, alternatives to existing products, and
+  market price intelligence (retail listings, clearly separated from wholesale cost).
+* **AI Recommendations** with a visible lifecycle - Detected -> Analyzed -> Recommended ->
+  Approved -> Executed -> Measured - each with evidence, an impact *estimate* and its
+  assumptions, and a confidence with reasons.
+* **Seven agents on one LangGraph** (Orchestrator, Business Intelligence, Product Discovery,
+  Supply Intelligence, Pricing Intelligence, Growth Strategy / Growth Autopilot, PayPal
+  Transaction) - every tool call permission-checked, traced and shown in Agent Activity.
+* **PayPal for approved purchases** - an AI-proposed test-stock purchase becomes a
+  hash-bound approval; a person approves, creates the PayPal order, the payer approves it in
+  PayPal, a person captures; a verified webhook can settle it too. **No agent can pay.**
+
+Details: **[docs/SUPPLY_INTELLIGENCE.md](docs/SUPPLY_INTELLIGENCE.md)** · demo path:
+[docs/DEMO.md](docs/DEMO.md#supply-intelligence-and-merchant-os-four-minutes).
 
 ## The signature scenario
 
@@ -117,6 +145,7 @@ Details: [docs/SECURITY.md](docs/SECURITY.md) · [docs/SUPPLY_AGENTS.md](docs/SU
 | OAuth 2.0 client credentials | Cached, auto-refreshed tokens (server-side only) |
 | Transaction Search | Incremental sync in <=31-day windows -> transaction intelligence (gross/net, fees, refunds, failures, repeat payers) |
 | Orders v2 (+ Payments v2 authorizations) | Supplier invoice settlement, payee = supplier |
+| Orders v2 create / get / capture | Approved, AI-proposed test-stock purchases (Payment Management); idempotent per approval |
 | Invoicing v2 | Merchant -> customer invoices with reminders and cancellation |
 | Payouts | Cashback rewards - approval-gated; never used for supplier settlement |
 | Catalog / Plans / Subscriptions | Plans, lifecycle actions, failed-payment recovery |
@@ -160,7 +189,9 @@ Full, honest detail (what is live, what is a labelled fallback, what was verifie
   subscriber on one timeline - collected periods, failed charges and PayPal's retries,
   renewals ahead - with one-click recovery (Bryntum 8.0 Enterprise; licence key via
   `NEXT_PUBLIC_BRYNTUM_LICENSE_KEY`).
-* **Channel3** - *Gear shelf* of live complementary products with affiliate links, and a market
+* **Channel3** - *Product Discovery* (search, compare, similar, lookup, conversational shopping agent) and
+  *Supply Intelligence* (assortment expansion, alternatives, market prices) on the live catalog; no key =
+  setup steps, never fake products. Also the *Gear shelf* of live complementary products with affiliate links, and a market
   price reference next to a purchase (labelled fallback without a key).
 * **Elasticsearch** - ranked evidence search (keyword fallback without `ELASTIC_URL`).
 * **Kernel** - observe-only supplier-page verification (labelled fallback without a key).
@@ -193,7 +224,7 @@ FastAPI (Pydantic v2) ── auth → merchant scope → require_permission
 PostgreSQL 16 + pgvector (57 tables) · SQLAlchemy 2 · Alembic
 ```
 
-155 API operations · 57 tables · 39 agent tools · 51 permissions · 48 dashboard screens.
+197 API operations · 62 tables · 49 agent tools · 51 permissions · 57 dashboard screens.
 
 ## Getting started
 
@@ -242,7 +273,8 @@ Password for all: `Autopilot@2024`.
 
 ```bash
 make help        # every target
-make check       # tools, versions, .env, PayPal/LLM mode
+make check       # tools, versions, .env, PayPal/LLM/Channel3 mode
+make integrations  # verify Channel3 + PayPal sandbox credentials live (no secrets printed)
 make test        # backend pytest (SQLite, no Docker) + frontend vitest
 make lint        # ruff + next lint
 make typecheck   # tsc (+ advisory mypy)
@@ -265,6 +297,8 @@ the copy works as-is). Key settings:
 | `PAYPAL_WEBHOOK_ID` | Required to accept real webhooks |
 | `PAYPAL_SANDBOX_PAYEE_EMAIL` | Sandbox business account used as supplier payee |
 | `GROQ_API_KEY` | Optional LLM; blank = deterministic mode |
+| `CHANNEL3_API_KEY` | Live product catalog for Product Discovery and Supply Intelligence; blank = those screens show setup steps |
+| `DISCOVERY_FX_PER_USD` | Labelled reference rates for budgets in currencies Channel3 does not price in (e.g. INR) |
 | `PROCUREMENT_*` | Negotiation rounds, quote TTL, default margin, matching tolerances |
 | `MEMORY_ENABLED` | pgvector agent memory (on by default) |
 
@@ -273,7 +307,7 @@ Full reference: [docs/CONFIGURATION.md](docs/CONFIGURATION.md).
 ## Testing
 
 ```bash
-make test-backend    # 389 tests: unit, integration, API - SQLite, no Docker, no keys
+make test-backend    # 489 tests: unit, integration, API - SQLite, no Docker, no keys
 make test-frontend   # vitest
 ```
 

@@ -29,7 +29,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
 from app.db.models.audit import ActorType, AuditAction
-from app.db.models.governance import ExecutionStatus, FinancialExecution
+from app.db.models.governance import ExecutionKind, ExecutionStatus, FinancialExecution
 from app.db.models.paypal import (
     PayPalInvoiceRecord,
     PayPalSubscriptionRecord,
@@ -213,6 +213,13 @@ class WebhookService:
             return "No matching payment execution - recorded only."
         if execution.status in ExecutionStatus.SETTLED:
             return "Already settled - no change."
+        if execution.kind == ExecutionKind.MERCHANT_PURCHASE:
+            from app.services.paypal.orders import MerchantPaymentService
+
+            await MerchantPaymentService(self.session, execution.merchant_id, actor_id=None,
+                                         actor_label=f"PayPal webhook ({row.mode})").settle(
+                execution, str(resource.get("id") or ""), raw=resource, source="webhook")
+            return "Test-stock purchase settled from webhook."
         from app.services.supply.lifecycle import ProcurementLifecycle
 
         lifecycle = ProcurementLifecycle(self.session, execution.merchant_id, actor_label="PayPal webhook")

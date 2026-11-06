@@ -9,6 +9,7 @@ from __future__ import annotations
 from app.tools import (  # noqa: F401  (registration side effect)
     actions,
     analytics,
+    discovery,
     intelligence,
     sponsors,
     supply,
@@ -88,6 +89,47 @@ MERCHANT_AGENT_TOOLS: list[str] = [
     "search_memory",
 ]
 
+#: Merchant operating-system agents (see agents/merchant_os.py). None of them can move money:
+#: the PayPal Transaction Agent can only *request* an approval.
+BUSINESS_INTELLIGENCE_TOOLS: list[str] = [
+    "get_sales_summary",
+    "get_product_performance",
+    "analyze_assortment",
+    "get_inventory_status",
+]
+
+PRODUCT_DISCOVERY_TOOLS: list[str] = [
+    "discover_products",
+    "get_product_details",
+    "find_similar_products",
+    "compare_products",
+]
+
+SUPPLY_INTELLIGENCE_TOOLS: list[str] = [
+    "analyze_assortment",
+    "discover_products",
+    "find_similar_products",
+    "list_supply_recommendations",
+]
+
+PRICING_INTELLIGENCE_TOOLS: list[str] = [
+    "get_market_price_intelligence",
+    "get_market_benchmark",
+]
+
+GROWTH_STRATEGY_TOOLS: list[str] = [
+    "analyze_assortment",
+    "generate_supply_recommendations",
+    "list_supply_recommendations",
+    "get_top_opportunity",
+]
+
+PAYPAL_TRANSACTION_TOOLS: list[str] = [
+    "get_payment_history",
+    "get_paypal_transaction_insights",
+    "request_purchase_payment",
+]
+
 #: Everything the voice assistant may reach, via the same backend agents.
 VOICE_TOOLS: list[str] = [
     "get_sales_summary",
@@ -99,14 +141,20 @@ VOICE_TOOLS: list[str] = [
 
 __all__ = [
     "ACTION_AGENT_TOOLS",
+    "BUSINESS_INTELLIGENCE_TOOLS",
     "BUYER_AGENT_TOOLS",
     "EXPERIMENT_AGENT_TOOLS",
     "GROWTH_SCIENTIST_TOOLS",
+    "GROWTH_STRATEGY_TOOLS",
     "INVENTORY_AGENT_TOOLS",
     "MARKET_AGENT_TOOLS",
     "MEASUREMENT_AGENT_TOOLS",
     "MERCHANT_AGENT_TOOLS",
+    "PAYPAL_TRANSACTION_TOOLS",
+    "PRICING_INTELLIGENCE_TOOLS",
     "PROCUREMENT_AGENT_TOOLS",
+    "PRODUCT_DISCOVERY_TOOLS",
+    "SUPPLY_INTELLIGENCE_TOOLS",
     "REVIEW_AGENT_TOOLS",
     "VOICE_TOOLS",
     "ToolContext",

@@ -61,6 +61,7 @@ New to the project? Read in this order.
 | [Agents](AGENTS.md) | The seven agents, LangGraph wiring, the tool registry |
 | [Agent memory](MEMORY.md) | Long-term memory on pgvector, tenant isolation |
 | [Supply Agents](SUPPLY_AGENTS.md) | Inventory intelligence, supplier agents, signed protocol, negotiation, lifecycle |
+| [Supply Intelligence](SUPPLY_INTELLIGENCE.md) | Channel3 product discovery, recommendations lifecycle, the seven Merchant OS agents, PayPal orders for approved purchases |
 | [PayPal](PAYPAL.md) | Client, simulator, sync, webhooks, approval gates, Agent Toolkit evaluation |
 | [Inventory automation](../n8n/README.md) | The outbox relay, the n8n workflows, and what triggers them |
 | [Security](SECURITY.md) | Auth, RBAC, tenant isolation, approval gates, auditing |

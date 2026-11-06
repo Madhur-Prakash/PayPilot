@@ -40,6 +40,9 @@ install: ## Install backend + frontend dependencies
 check: ## Check tools, versions and .env configuration
 	@$(TASKS) check
 
+integrations: ## Verify Channel3 + PayPal sandbox credentials against the live APIs
+	@$(TASKS) integrations
+
 env: ## Create .env from .env.example (never overwrites an existing .env)
 	@$(TASKS) env
 
@@ -123,7 +126,7 @@ n8n-build: ## Render the n8n workflows from .env into n8n/deploy
 n8n-import: ## Build, import and activate the workflows in the n8n container
 	bash n8n/import.sh
 
-.PHONY: help init setup install check env dev dev-backend dev-frontend backend frontend \
+.PHONY: help init setup install check integrations env dev dev-backend dev-frontend backend frontend \
         docker-up docker-down docker-logs db migrate migration seed seed-reset reset-db \
         calibrate demo test test-backend test-frontend lint format typecheck build verify clean \
         n8n-build n8n-import

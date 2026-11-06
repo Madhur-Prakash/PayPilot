@@ -207,6 +207,11 @@ def task_check(args: argparse.Namespace) -> None:
         mode = "SANDBOX/LIVE" if env.get("PAYPAL_CLIENT_ID") and env.get("PAYPAL_CLIENT_SECRET") else "SIMULATED (no PayPal credentials)"
         ok(f"PayPal mode: {mode}")
         ok("Groq LLM: " + ("configured" if env.get("GROQ_API_KEY") else "not set - agents run in deterministic mode"))
+        if env.get("CHANNEL3_API_KEY"):
+            ok("Channel3: configured - Product Discovery and Supply Intelligence use the live catalog")
+        else:
+            warn("Channel3: CHANNEL3_API_KEY not set - Product Discovery and Supply Intelligence stay off "
+                 "(no simulated products). Free key: https://trychannel3.com/developers")
     for label, path in (("backend venv", venv_python()), ("frontend node_modules", FRONTEND / "node_modules")):
         if path and Path(path).exists():
             ok(f"{label} installed")
@@ -524,8 +529,18 @@ def task_reset_db(args: argparse.Namespace) -> None:
     ok("database rebuilt and re-seeded")
 
 
+def task_integrations(args: argparse.Namespace) -> None:
+    """Verify Channel3 and PayPal credentials against the live APIs (one lightweight call each)."""
+    info("Verifying live integrations (no secrets are printed)")
+    result = run([backend_python(), "-m", "app.integrations.verify"], cwd=BACKEND, check=False)
+    if result.returncode != 0:
+        raise TaskError("An integration check failed - see above.")
+    ok("Integrations verified")
+
+
 TASKS = {
     "check": (task_check, "Check tools, versions and .env configuration"),
+    "integrations": (task_integrations, "Verify Channel3 + PayPal credentials against the live APIs"),
     "env": (task_env, "Create .env from .env.example (never overwrites)"),
     "init": (task_init, "Full first-time setup: check, env, deps, database, migrations, seed"),
     "install": (task_install, "Install backend + frontend dependencies"),

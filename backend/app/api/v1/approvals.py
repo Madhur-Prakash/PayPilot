@@ -111,6 +111,17 @@ async def decide_approval(
             permissions=principal.permissions, live_details=approval.details, note=payload.note,
             request_id=principal.request_id,
         )
+    elif approval.action == ApprovalAction.MERCHANT_PURCHASE:
+        from app.services.supply_intel.recommendations import live_purchase_details, open_purchase_approval
+
+        # Re-derive the terms from the live recommendation: if its product changed since the
+        # request, the hash no longer matches and the approval is invalidated, not granted.
+        live = live_purchase_details(await open_purchase_approval(session, approval), approval) if payload.approve else None
+        await service.decide(
+            approval.id, approve=payload.approve, user_id=principal.user_id, user_label=principal.label,
+            permissions=principal.permissions, live_details=live, note=payload.note,
+            request_id=principal.request_id,
+        )
     else:
         raise BadRequestError(f"Unsupported approval action {approval.action}.")
     refreshed = await service.get(approval_id)

@@ -26,6 +26,7 @@ import {
 import Link from "next/link";
 
 import { ErrorState, LoadingKpis, LoadingRows } from "@/components/common/states";
+import { SupplyOpportunityBanner } from "@/components/discovery/opportunity-banner";
 import { LifecycleStepper, MetricTile, ModeBadge, PageHeader, StatusPill } from "@/components/supply/shared";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/primitives";
@@ -50,6 +51,7 @@ export default function CommandCenterPage() {
         description="One operating picture: what the business earned, what the agents are doing about it, and what is waiting for you."
         actions={data && <ModeBadge mode={data.paypal.mode} />}
       />
+      <SupplyOpportunityBanner />
       {error && <ErrorState error={error} onRetry={() => void refetch()} />}
       {isLoading && <LoadingKpis count={8} />}
       {data && (

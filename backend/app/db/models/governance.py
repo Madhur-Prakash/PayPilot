@@ -145,12 +145,15 @@ class ApprovalAction:
     SUPPLIER_PAYMENT = "SUPPLIER_PAYMENT"
     CASHBACK_PAYOUT = "CASHBACK_PAYOUT"
     CUSTOMER_INVOICE = "CUSTOMER_INVOICE"
+    #: Pay for test stock of a product an AI recommendation proposed (PayPal Orders v2).
+    MERCHANT_PURCHASE = "MERCHANT_PURCHASE"
 
     LABELS = {
         PROCUREMENT_PURCHASE: "Purchase from supplier",
         SUPPLIER_PAYMENT: "Pay supplier invoice",
         CASHBACK_PAYOUT: "Send cashback payouts",
         CUSTOMER_INVOICE: "Send customer invoice",
+        MERCHANT_PURCHASE: "Buy test stock (AI recommendation)",
     }
 
 
@@ -224,6 +227,7 @@ class ExecutionKind:
     SUPPLIER_SETTLEMENT = "SUPPLIER_SETTLEMENT"
     CASHBACK_PAYOUT = "CASHBACK_PAYOUT"
     CUSTOMER_INVOICE = "CUSTOMER_INVOICE"
+    MERCHANT_PURCHASE = "MERCHANT_PURCHASE"
 
 
 class ExecutionMethod:

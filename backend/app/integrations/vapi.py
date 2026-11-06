@@ -276,6 +276,41 @@ PAGE_DIRECTORY: list[dict[str, Any]] = [
         "permission": "paypal:read",
         "description": "Synced PayPal transactions and transaction intelligence",
     },
+    {
+        "key": "supply_intelligence",
+        "label": "Supply Intelligence",
+        "path": "/supply/intelligence",
+        "permission": "products:read",
+        "description": "Assortment opportunities from your sales and Channel3's live catalog",
+    },
+    {
+        "key": "discovery",
+        "label": "Product Discovery",
+        "path": "/discovery",
+        "permission": "products:read",
+        "description": "Find, compare and explore products in natural language (Channel3)",
+    },
+    {
+        "key": "recommendations",
+        "label": "AI Recommendations",
+        "path": "/recommendations",
+        "permission": "growth:read",
+        "description": "Explainable recommendations, from detected to measured",
+    },
+    {
+        "key": "agents_console",
+        "label": "Agent Console",
+        "path": "/agents/console",
+        "permission": "agents:view",
+        "description": "Ask the Merchant OS - seven agents, every tool call traced",
+    },
+    {
+        "key": "finance_payment-management",
+        "label": "Payment Management",
+        "path": "/finance/payment-management",
+        "permission": "paypal:read",
+        "description": "PayPal orders, captures and the approval workflow behind them",
+    },
 ]
 
 

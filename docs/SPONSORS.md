@@ -16,7 +16,7 @@ Nothing is claimed that the code does not do. The same facts are served live by
 | **AG Grid** (Community 36.3) | Yes | Every data-heavy table | Yes (builds, renders) |
 | **AG Studio** | Yes, incl. its AI agents | Pre-built + merchant-built dashboards over computed datasets, and Studio's agent harness running on PayPilot's LLM (`/studio`) | Renders in a real browser (evaluation mode); AI agents ran real turns on Groq - full runs need a paid Groq tier, see below |
 | **Bryntum Gantt + Scheduler** (Enterprise 8.0) | Yes | Procurement timeline with agent-driven rescheduling (`/supply/timeline`); subscription revenue radar (`/finance/subscriptions/radar`) | Renders in a real browser (production build); trial key registered and accepted, so it shows Bryntum's Trial badge until 2026-12-20 |
-| **Channel3** | Yes | **Gear shelf** - live complementary products with affiliate buy links for the merchant's best seller; market price reference for purchase approvals | **Yes** - live API with a real key; built with Channel3's agent skill |
+| **Channel3** | Yes | **Product Discovery** (natural-language search, comparison, similar products, URL lookup, conversational shopping agent) and **Supply Intelligence** (assortment expansion, alternatives, market prices, recommendations); **gear shelf**; market price reference for purchase approvals | **Yes** - live API with a real key (search, details, similar, categories, conversations verified 2026-11-06); built with Channel3's agent skill |
 | **Elasticsearch** | Yes, optional | Evidence search (`/search`) | Mocked HTTP only; keyword fallback without `ELASTIC_URL` |
 | **Kernel** | Yes, optional | Supplier-portal verification sessions | Mocked HTTP only; labelled fallback without a key |
 | **Zapier** | Yes, optional | Signed business-event notifications | Mocked HTTP only; off without a hook URL |
@@ -202,7 +202,17 @@ are milestones, so a partial delivery is two diamonds and a half-filled bar; a b
   the radar loads the same `gantt.css` + `stockholm.css` as the timeline (Gantt's sheet holds
   Scheduler's rules) plus `subscription-radar.css`, which maps the variables onto PayPilot's tokens.
 
-## Channel3 (gear shelf and market reference)
+## Channel3 (Product Discovery, Supply Intelligence, gear shelf, market reference)
+
+**Product Discovery and Supply Intelligence** are the main Channel3 experience: natural-language
+search (`/v1/search` with brand / category / price / retailer filters), product details
+(`/v1/products/{id}`), similar products (`/v1/similar`, with the documented title-search fallback on
+`404`), URL enrichment (`/v1/lookup`), brand and category resolution (`/v1/brands/search`,
+`/v1/categories/search`) and the conversational shopping agent (`/v1/conversations`, buffered).
+Those routes **never fall back**: without a key they answer `503 CHANNEL3_NOT_CONFIGURED` with
+setup steps. Verified live on 2026-11-06 (search, details, similar, categories, conversations).
+Full description: [SUPPLY_INTELLIGENCE.md](SUPPLY_INTELLIGENCE.md).
+
 
 Built with Channel3's official agent skill (`npx skills add channel3-ai/skills --skill
 channel3-api`, installed in `.agents/skills/channel3-api`) and verified against the **live API**

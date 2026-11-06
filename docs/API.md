@@ -216,6 +216,15 @@ two-proportion z-test from the transaction ledger every time.
 
 ---
 
+## Supply Intelligence, Product Discovery, Merchant OS and payments
+
+`/supply/search`, `/supply/compare`, `/supply/similar`, `/supply/enrich`, `/supply/products/{id}`,
+`/supply/assistant`, `/supply/intelligence`, `/supply/recommendations/*`, `/growth/autopilot/*`,
+`/agents/execute`, `/agents/activity`, `/agents/catalogue`, `/payments/orders`, `/payments/capture`,
+`/payments/history`, `/payments/webhooks/paypal` - the full table with permissions is in
+[SUPPLY_INTELLIGENCE.md](SUPPLY_INTELLIGENCE.md#api). Channel3-backed routes return
+`503 CHANNEL3_NOT_CONFIGURED` (with `details.setup`) when no key is configured.
+
 ## Agents
 
 | Method | Path | Permission |

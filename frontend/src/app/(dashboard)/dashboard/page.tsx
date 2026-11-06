@@ -31,6 +31,7 @@ import { ProductPerformanceMatrix } from "@/components/charts/product-performanc
 import { RevenueBreakdownDonut } from "@/components/charts/revenue-donut";
 import { ErrorState, LoadingChart, LoadingKpis } from "@/components/common/states";
 import { AiRecommendationSection } from "@/components/dashboard/ai-recommendations";
+import { SupplyOpportunityBanner } from "@/components/discovery/opportunity-banner";
 import { FinxMiniCard } from "@/components/dashboard/finx-mini-card";
 import { FinxStatCard } from "@/components/dashboard/finx-stat-card";
 import { GrowthAllocationWidget } from "@/components/dashboard/growth-allocation-widget";
@@ -103,6 +104,8 @@ export default function DashboardPage() {
           <RangePicker days={days} onChange={setDays} period={dashboard.data?.period} />
         </div>
       </div>
+
+      <SupplyOpportunityBanner />
 
       {/* Top 4 FinxFlow Style Overview Cards with Progress Bars */}
       {dashboard.isLoading ? (

@@ -224,6 +224,21 @@ class Settings(BaseSettings):
     #: Blank key = a clearly labelled deterministic reference catalogue.
     channel3_api_key: str = ""
     channel3_base_url: str = "https://api.trychannel3.com"
+    #: Per-request timeout and bounded retries (429 / 5xx / network) for the catalog client.
+    channel3_timeout_seconds: float = 30.0
+    channel3_max_retries: int = 2
+    #: Locale Channel3 prices are requested in. Channel3 supports USD, CAD, AUD, GBP, EUR,
+    #: SEK, CZK and RON (not INR) - see DISCOVERY_FX_PER_USD for other budget currencies.
+    channel3_currency: str = "USD"
+    channel3_country: str = "US"
+    #: Product Discovery: reference rates used ONLY to translate a budget stated in a
+    #: currency Channel3 does not list (e.g. "under ₹5,000") into a price filter.
+    #: "units of currency per 1 USD"; labelled as a configurable reference rate in every
+    #: response, never presented as a live FX quote.
+    discovery_fx_per_usd: str = "INR:88,JPY:150,CNY:7.2,SGD:1.35,AED:3.67"
+    #: How long a merchant's product-detail lookups are reused (Channel3 asks callers not
+    #: to hold prices or offer links for long).
+    discovery_detail_cache_seconds: int = 600
     #: Kernel cloud browsers - supplier-portal verification sessions.
     kernel_api_key: str = ""
     kernel_base_url: str = "https://api.onkernel.com"
@@ -340,6 +355,24 @@ class Settings(BaseSettings):
     @property
     def vapi_active(self) -> bool:
         return bool(self.vapi_private_key and self.vapi_assistant_id)
+
+    @property
+    def channel3_configured(self) -> bool:
+        return bool(self.channel3_api_key)
+
+    @property
+    def discovery_fx_rates(self) -> dict[str, float]:
+        """``{"INR": 88.0, ...}`` - units per USD, from DISCOVERY_FX_PER_USD. Bad entries are skipped."""
+        rates: dict[str, float] = {}
+        for part in (self.discovery_fx_per_usd or "").split(","):
+            code, _, value = part.partition(":")
+            try:
+                rate = float(value)
+            except ValueError:
+                continue
+            if code.strip() and rate > 0:
+                rates[code.strip().upper()[:3]] = rate
+        return rates
 
     @property
     def paypal_configured(self) -> bool:

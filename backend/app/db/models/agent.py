@@ -45,7 +45,23 @@ class AgentName:
     PROCUREMENT_ORCHESTRATOR = "procurement_orchestrator"
     RECONCILIATION = "reconciliation_agent"
 
+    # merchant operating system (agents/merchant_os.py)
+    MERCHANT_ORCHESTRATOR = "merchant_orchestrator"
+    BUSINESS_INTELLIGENCE = "business_intelligence_agent"
+    PRODUCT_DISCOVERY = "product_discovery_agent"
+    SUPPLY_INTELLIGENCE = "supply_intelligence_agent"
+    PRICING_INTELLIGENCE = "pricing_intelligence_agent"
+    GROWTH_STRATEGY = "growth_strategy_agent"
+    PAYPAL_TRANSACTION = "paypal_transaction_agent"
+
     LABELS = {
+        MERCHANT_ORCHESTRATOR: "Orchestrator Agent",
+        BUSINESS_INTELLIGENCE: "Business Intelligence Agent",
+        PRODUCT_DISCOVERY: "Product Discovery Agent",
+        SUPPLY_INTELLIGENCE: "Supply Intelligence Agent",
+        PRICING_INTELLIGENCE: "Pricing Intelligence Agent",
+        GROWTH_STRATEGY: "Growth Strategy Agent",
+        PAYPAL_TRANSACTION: "PayPal Transaction Agent",
         INVENTORY_INTELLIGENCE: "Inventory Intelligence",
         BUYER: "Buyer Agent",
         NEGOTIATION: "Negotiation Agent",
@@ -81,6 +97,8 @@ class AgentWorkflow:
     MEASURE = "measure"
     VOICE = "voice"
     PROCUREMENT = "procurement"
+    MERCHANT_OS = "merchant_os"
+    AUTOPILOT = "growth_autopilot"
 
 
 class AgentRun(BaseModel):

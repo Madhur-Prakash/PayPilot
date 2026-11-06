@@ -16,8 +16,10 @@ from app.api.v1 import (
     intelligence,
     inventory,
     memory,
+    payments,
     paypal,
     supply,
+    supply_intel,
     voice,
 )
 
@@ -33,8 +35,10 @@ api_router.include_router(agents.router)
 api_router.include_router(voice.router)
 api_router.include_router(inventory.router)
 api_router.include_router(supply.router)
+api_router.include_router(supply_intel.router)
 api_router.include_router(approvals.router)
 api_router.include_router(paypal.router)
+api_router.include_router(payments.router)
 api_router.include_router(memory.router)
 api_router.include_router(integrations.router)
 api_router.include_router(admin.router)

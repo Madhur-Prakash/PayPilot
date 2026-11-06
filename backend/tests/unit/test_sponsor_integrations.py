@@ -534,7 +534,9 @@ class TestStatusReport:
     def test_unused_tools_are_not_claimed(self):
         by_key = {row["key"]: row for row in integration_status()}
         assert by_key["astropods"]["mode"] == "NOT_USED"
-        assert "Context Plugin was not used" in by_key["apimatic"]["used_for"]
+        # The APIMatic row now reports the Server SDK path (commit 68b7fb2), so assert what it claims.
+        assert "Server SDK" in by_key["apimatic"]["used_for"]
+        assert by_key["apimatic"]["mode"] in ("SDK", "SPEC_EXPORT")
         assert by_key["render"]["mode"] == "BLUEPRINT"  # prepared, not claimed as deployed
 
     def test_fallbacks_say_simulated_and_no_secret_leaks(self):

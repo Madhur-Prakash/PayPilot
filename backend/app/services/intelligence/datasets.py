@@ -20,15 +20,17 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.db.models.commerce import Product, Transaction, TransactionItem, TransactionStatus
 from app.db.models.paypal import PayPalTransactionRecord
 from app.db.models.supply import NegotiationOffer, ProcurementRequest, SupplierAgent
 from app.services.supply.demand import InventoryIntelligence
 from app.services.supply.policy import money
 
 DATASET_PERMISSION: dict[str, str] = {
+    "sales": "dashboard:read",
     "paypal_transactions": "paypal:read",
     "procurements": "procurement:read",
     "negotiation_offers": "procurement:read",
@@ -36,6 +38,7 @@ DATASET_PERMISSION: dict[str, str] = {
     "inventory_cover": "inventory:read",
 }
 DATASET_LABEL: dict[str, str] = {
+    "sales": "Store sales (last 120 days)",
     "paypal_transactions": "PayPal transactions (last 120 days)",
     "procurements": "Procurements",
     "negotiation_offers": "Negotiation offers",
@@ -66,6 +69,36 @@ async def build_datasets(session: AsyncSession, merchant_id: uuid.UUID, permissi
     requests = {r.id: r for r in (await session.execute(
         select(ProcurementRequest).where(ProcurementRequest.merchant_id == merchant_id)
     )).scalars().all()} if {"procurements", "negotiation_offers"} & set(allowed) else {}
+
+    if "sales" in allowed:
+        # The shop's completed sales, aggregated in SQL to one row per day, day part and
+        # product - a few thousand rows rather than every line item.
+        day = Transaction.business_date
+        rows = (await session.execute(
+            select(
+                day, Transaction.daypart, Product.category, TransactionItem.product_name,
+                func.sum(TransactionItem.quantity), func.sum(TransactionItem.line_total),
+                func.sum(TransactionItem.unit_cost * TransactionItem.quantity),
+                func.count(func.distinct(Transaction.id)),
+            )
+            .join(Transaction, TransactionItem.transaction_id == Transaction.id)
+            .join(Product, TransactionItem.product_id == Product.id)
+            .where(Transaction.merchant_id == merchant_id, Transaction.occurred_at >= since,
+                   Transaction.status == TransactionStatus.COMPLETED)
+            .group_by(day, Transaction.daypart, Product.category, TransactionItem.product_name)
+            .order_by(day)
+        )).all()
+        out["sales"] = [{
+            "date": d.isoformat() if d else None,
+            "weekday": d.strftime("%a") if d else None,
+            "day_part": (part or "").title(),
+            "category": (category or "general").replace("_", " ").title(),
+            "product": product,
+            "units": int(units or 0),
+            "revenue": _num(revenue),
+            "gross_profit": _num(Decimal(revenue or 0) - Decimal(cost or 0)),
+            "orders": int(orders or 0),
+        } for d, part, category, product, units, revenue, cost, orders in rows]
 
     if "paypal_transactions" in allowed:
         rows = (await session.execute(

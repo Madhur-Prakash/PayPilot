@@ -14,11 +14,13 @@ from typing import Any
 from app.core.config import settings
 from app.integrations.sponsors.base import LIVE, SIMULATED, SponsorError, SponsorRequestError
 from app.integrations.sponsors.channel3 import Channel3Client
+from app.integrations.sponsors.channel3_catalog import Channel3Catalog, Channel3NotConfiguredError
 from app.integrations.sponsors.elastic import ElasticClient
 from app.integrations.sponsors.kernel import KernelClient
 from app.integrations.sponsors.zapier import ZapierClient
 
 _channel3: Channel3Client | None = None
+_catalog: Channel3Catalog | None = None
 _kernel: KernelClient | None = None
 _elastic: ElasticClient | None = None
 _zapier: ZapierClient | None = None
@@ -36,6 +38,14 @@ def get_channel3() -> Channel3Client:
     if _channel3 is None:
         _channel3 = Channel3Client()
     return _channel3
+
+
+def get_channel3_catalog() -> Channel3Catalog:
+    """The full Channel3 catalog client (Product Discovery, Supply Intelligence). Never simulates."""
+    global _catalog
+    if _catalog is None:
+        _catalog = Channel3Catalog()
+    return _catalog
 
 
 def get_kernel() -> KernelClient:
@@ -60,10 +70,11 @@ def get_zapier() -> ZapierClient:
 
 
 def set_adapters(*, channel3: Channel3Client | None = None, kernel: KernelClient | None = None,
-                 elastic: ElasticClient | None = None, zapier: ZapierClient | None = None) -> None:
+                 elastic: ElasticClient | None = None, zapier: ZapierClient | None = None,
+                 catalog: Channel3Catalog | None = None) -> None:
     """Inject adapters (tests). Passing nothing resets every adapter to its settings."""
-    global _channel3, _kernel, _elastic, _zapier
-    _channel3, _kernel, _elastic, _zapier = channel3, kernel, elastic, zapier
+    global _channel3, _kernel, _elastic, _zapier, _catalog
+    _channel3, _kernel, _elastic, _zapier, _catalog = channel3, kernel, elastic, zapier, catalog
 
 
 def integration_status() -> list[dict[str, Any]]:
@@ -117,9 +128,12 @@ def integration_status() -> list[dict[str, Any]]:
             "name": "Channel3",
             "category": "sponsor",
             "mode": get_channel3().mode,
-            "used_for": "Gear shelf: live complementary products with affiliate buy links for the merchant's best "
-            "seller; market price reference for purchase approvals (never sets a limit)",
-            "where": "/shelf",
+            "used_for": "Product Discovery (natural-language search, comparison, similar products, URL enrichment, "
+            "conversational shopping agent), Supply Intelligence (assortment expansion, alternatives, market "
+            "price intelligence), gear shelf, and a market price reference for purchase approvals (never sets a "
+            "limit)" + ("" if get_channel3_catalog().configured else
+                        " - Product Discovery is OFF until CHANNEL3_API_KEY is set (no simulated products)"),
+            "where": "/supply/intelligence",
         },
         {
             "key": "elastic",
@@ -187,13 +201,16 @@ def integration_status() -> list[dict[str, Any]]:
 __all__ = [
     "LIVE",
     "SIMULATED",
+    "Channel3Catalog",
     "Channel3Client",
+    "Channel3NotConfiguredError",
     "ElasticClient",
     "KernelClient",
     "SponsorError",
     "SponsorRequestError",
     "ZapierClient",
     "get_channel3",
+    "get_channel3_catalog",
     "get_elastic",
     "get_kernel",
     "get_zapier",

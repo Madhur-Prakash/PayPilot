@@ -114,6 +114,63 @@ Command Center and the event stream.
 
 ---
 
+## Supply Intelligence and Merchant OS (four minutes)
+
+The Channel3 + agents + PayPal path. **Needs `CHANNEL3_API_KEY`** (without it the
+discovery screens show setup steps - they never show invented products) and, for a real
+sandbox payment, `PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET` / `PAYPAL_ENVIRONMENT=sandbox`
+plus `PAYPAL_SANDBOX_PAYEE_EMAIL`. Run `make integrations` first: it confirms both with one
+lightweight call each. The demo merchant's sales and inventory are the seeded *Juniper &
+Oak Coffee* dataset - realistic, and labelled demo data.
+
+Log in as the **Owner**. Keep a PayPal **sandbox personal (buyer)** account handy
+(developer.paypal.com -> Testing Tools -> Sandbox Accounts).
+
+1. **Command Center (`/command`)** - the banner at the top: *212 customers bought Premium
+   Coffee Beans (demand +42%) - they also need grinders, which you don't stock.* This was
+   detected from the merchant's own transactions; no Channel3 call has happened yet.
+2. **Open Supply Intelligence (`/supply/intelligence`)** - the opportunity card with its
+   "why now" evidence (buyers, units, growth, 100% online share), category performance,
+   inventory turnover, assortment opportunities.
+3. **AI explains it** - click **Run autopilot**. The Growth Strategy Agent analyses
+   performance, identifies the opportunity, searches Channel3, generates recommendations and
+   stops at the approval gate (stages 1-7 light up; the trace lists each tool call).
+4. **Request relevant products** - click **Find grinders on Channel3** (or type
+   *"burr coffee grinder under $250 for home baristas"* in Product Discovery). Show the
+   *What I understood* panel and the live product cards: real images, prices, retailers,
+   stock, and the reasons behind each score.
+5. Try the INR example **"Wireless earbuds under ₹5,000"** - the budget is converted with
+   the labelled reference rate (not a live FX quote) and applied as a Channel3 price filter.
+6. **Compare** - tick *Compare* on three grinders -> **Compare 3/4**. Four verdicts with
+   evidence (better value, better specifications, fits your customers' spend, best
+   alternative) and the matrix with honest *Not listed* cells. Open one product for offers
+   per retailer, variants, specs and **Similar products** with price differences.
+7. **Shopping assistant (`/discovery/assistant`)** - *"Find me a laptop under $900"* ->
+   it asks what it is for -> *"Machine learning and development"*. *What I'm keeping in mind*
+   shows the budget and use carried across turns; products come from Channel3's agent.
+8. **AI Recommendations (`/recommendations`)** - open *Add grinders next to Premium Coffee
+   Beans*: lifecycle Detected -> Analyzed -> Recommended, evidence (your sales + Channel3),
+   estimated impact with its assumptions, confidence with reasons. Click **Approve** (note).
+9. **Add to catalog** (execute, no money) - the product joins the catalog so its sales can
+   be measured. Then **Buy test stock via PayPal**: quantity (suggested 13), the supplier's
+   unit cost (not the retail price) and the supplier's PayPal email (your sandbox business
+   account) -> a `MERCHANT_PURCHASE` approval bound to those exact terms.
+10. **Payment Management (`/finance/payment-management`)** - **Review** -> approve the
+    payment -> **Create PayPal order** (mode badge: *PayPal sandbox*) -> **Approve in PayPal**
+    opens the sandbox checkout; log in as the sandbox buyer and pay -> PayPal returns you to
+    this page -> **Capture payment**. The order details dialog reads the order live from PayPal.
+11. **Agent Console (`/agents/console`)** - the run from step 3 (and any question you ask,
+    e.g. *"Are my retail prices competitive?"*) with agent, trigger, tools, status, result.
+    Ask *"Show my PayPal payments"* - the PayPal Transaction Agent reports the capture.
+12. Back on **AI Recommendations**, **Measure results** - units and revenue since execution,
+    and the PayPal payment status, recorded as the *Measured* stage.
+
+Talking points: every number is computed (SQL or Channel3), the LLM only routes and words
+answers; money moves only after three human actions (approve, create order, capture) and a
+verified webhook can settle the same payment idempotently.
+
+---
+
 ## Shortcuts
 
 * **One click:** Supply Command Center -> **Run procurement autopilot** runs the

@@ -27,9 +27,13 @@ import * as React from "react";
 import { integrationsApi } from "@/lib/api/integrations";
 import { buildDefaultReport } from "@/lib/studio/default-report";
 import { createPayPilotLlmAdapter } from "@/lib/studio/llm-adapter";
+import { inferFields } from "@/lib/studio/fields";
+import { buildStudioTheme, readTokens } from "@/lib/studio/theme";
 import type { StudioRow } from "@/types/integrations";
 
-const STORAGE_KEY = "paypilot.studio.report.v1";
+// v5: the redesigned default dashboard (sales first, AI panel closed). Bumping the key lets
+// browsers that saved the old layout open on the new one.
+const STORAGE_KEY = "paypilot.studio.report.v5";
 const LICENSE_KEY = process.env.NEXT_PUBLIC_AG_STUDIO_LICENSE_KEY;
 
 if (LICENSE_KEY) AgStudioLicenseManager.setLicenseKey(LICENSE_KEY);
@@ -69,6 +73,20 @@ export function resetStudioReport(): void {
   }
 }
 
+/** Studio theme from the app's live tokens; rebuilt when the app toggles light/dark. */
+function useStudioTheme() {
+  const [dark, setDark] = React.useState(() => document.documentElement.classList.contains("dark"));
+  React.useEffect(() => {
+    const root = document.documentElement;
+    const observer = new MutationObserver(() => setDark(root.classList.contains("dark")));
+    observer.observe(root, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const theme = React.useMemo(() => buildStudioTheme(readTokens()), [dark]);
+  return { theme, dark };
+}
+
 export default function StudioCanvas({
   datasets,
   mode,
@@ -78,19 +96,22 @@ export default function StudioCanvas({
   mode: "edit" | "view";
   aiAvailable: boolean;
 }) {
+  const { theme, dark } = useStudioTheme();
   const data = React.useMemo(
     () => ({
       sources: Object.entries(datasets)
         .filter(([, rows]) => rows.length > 0)
-        .map(([id, rows]) => ({ id, data: rows })),
+        .map(([id, rows]) => ({ id, data: rows, fields: inferFields(rows) })),
     }),
     [datasets],
   );
-  // Read once: `initialState` and `ai` only seed the first render (remount to change them).
-  const initialState = React.useRef<unknown>(undefined);
-  if (initialState.current === undefined) {
-    initialState.current = loadState() ?? buildDefaultReport(data.sources.map((s) => s.id), { aiAvailable }) ?? null;
-  }
+  // `initialState` only seeds a mount. Studio remounts when the app switches light/dark, so
+  // read the latest saved layout each time rather than the one from the first mount.
+  const initialState = React.useMemo(() => {
+    const counts = Object.fromEntries(data.sources.map((s) => [s.id, s.data.length]));
+    return loadState() ?? buildDefaultReport(counts) ?? undefined;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dark]);
   const ai = React.useMemo<AgAiHarnessSetup | undefined>(() => {
     if (!aiAvailable) return undefined;
     const adapter = createPayPilotLlmAdapter(integrationsApi.studioAiTurn);
@@ -102,12 +123,16 @@ export default function StudioCanvas({
   return (
     <div style={{ height: "100%", width: "100%" }} data-testid="ag-studio">
       <AgStudio
+        key={dark ? "dark" : "light"}
+        // Without an explicit size Studio falls back to its 600px minimum height.
+        style={{ height: "100%", width: "100%" }}
+        theme={theme}
         data={data}
         mode={mode}
         modules={aiAvailable ? AI_MODULES : NO_MODULES}
         ai={ai}
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        initialState={(initialState.current ?? undefined) as any}
+        initialState={initialState as any}
         onStateUpdated={(event) => {
           if (event.durable) saveState(event.state);
         }}

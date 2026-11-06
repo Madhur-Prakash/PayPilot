@@ -23,6 +23,13 @@ from app.db.models.automation import AutomationRun, DomainEvent, ProcessedEvent
 from app.db.models.campaign import Campaign, CampaignAction, CampaignAudience
 from app.db.models.commerce import Customer, Product, Transaction, TransactionItem
 from app.db.models.competitor import Competitor, CompetitorReview
+from app.db.models.discovery import (
+    DiscoveredProduct,
+    MerchantRecommendation,
+    ProductComparison,
+    ProductSearch,
+    ShoppingConversation,
+)
 from app.db.models.experiment import Experiment, ExperimentResult, ExperimentVariant
 from app.db.models.governance import AgentMessage, ApprovalRequest, FinancialExecution
 from app.db.models.growth import GrowthMetric, GrowthOpportunity
@@ -74,6 +81,7 @@ __all__ = [
     "CompetitorReview",
     "CustomRole",
     "Customer",
+    "DiscoveredProduct",
     "DomainEvent",
     "Experiment",
     "ExperimentResult",
@@ -90,6 +98,7 @@ __all__ = [
     "InvoiceMatch",
     "Merchant",
     "MerchantMembership",
+    "MerchantRecommendation",
     "NegotiationOffer",
     "NegotiationSession",
     "PayPalInvoiceRecord",
@@ -102,11 +111,14 @@ __all__ = [
     "ProcurementReconciliation",
     "ProcurementRequest",
     "Product",
+    "ProductComparison",
+    "ProductSearch",
     "PurchaseOrder",
     "PurchaseOrderLine",
     "RefreshToken",
     "Review",
     "Role",
+    "ShoppingConversation",
     "SupplierAgent",
     "SupplierInvoice",
     "TimestampMixin",

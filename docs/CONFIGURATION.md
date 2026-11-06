@@ -441,7 +441,11 @@ status for each: [SPONSORS.md](SPONSORS.md).
 | --- | --- | --- |
 | `PAYPAL_MCP_ENABLED` | `true` | Read-only bridge to PayPal's MCP server. Set `false` to disable it entirely |
 | `PAYPAL_MCP_URL` | derived | Blank derives `https://mcp.sandbox.paypal.com/sse` (or `mcp.paypal.com` when `PAYPAL_ENVIRONMENT=live`). A URL not ending in `/sse` is treated as Streamable HTTP |
-| `CHANNEL3_API_KEY` / `CHANNEL3_BASE_URL` | blank / `https://api.trychannel3.com` | Market price reference. Blank = reference catalogue, labelled `SIMULATED` |
+| `CHANNEL3_API_KEY` / `CHANNEL3_BASE_URL` | blank / `https://api.trychannel3.com` | Product Discovery, Supply Intelligence, the shopping assistant (blank = those routes answer 503 with setup steps, never fake products); also the gear shelf and market price reference (blank = labelled `SIMULATED` reference catalogue) |
+| `CHANNEL3_TIMEOUT_SECONDS` / `CHANNEL3_MAX_RETRIES` | `30` / `2` | Catalog client timeout and bounded retries (429 / 5xx / network; 4xx never retried) |
+| `CHANNEL3_CURRENCY` / `CHANNEL3_COUNTRY` | `USD` / `US` | Locale offers are priced in (Channel3: USD, CAD, AUD, GBP, EUR, SEK, CZK, RON) |
+| `DISCOVERY_FX_PER_USD` | `INR:88,JPY:150,CNY:7.2,SGD:1.35,AED:3.67` | Reference rates (units per USD) to translate budgets in other currencies; every converted search is labelled |
+| `DISCOVERY_DETAIL_CACHE_SECONDS` | `600` | How long a fetched product detail is reused |
 | `KERNEL_API_KEY` / `KERNEL_BASE_URL` | blank / `https://api.onkernel.com` | Supplier-portal browser sessions. Blank = no browser is started |
 | `ELASTIC_URL` / `ELASTIC_API_KEY` / `ELASTIC_INDEX_PREFIX` | blank / blank / `paypilot` | Evidence search. Blank URL = in-process keyword fallback |
 | `ZAPIER_WEBHOOK_URL` / `ZAPIER_SIGNING_SECRET` | blank | Catch Hook for signed event notifications (the URL is a secret). Blank = off |

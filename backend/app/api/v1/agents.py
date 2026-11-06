@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import uuid
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Query
+from pydantic import Field
 
 from app.agents.orchestrator import GrowthOrchestrator
 from app.api.deps import DbSession, Principal, require_permission
@@ -27,7 +28,7 @@ from app.schemas.agent import (
     ToolCallOut,
 )
 from app.schemas.campaign import ExperimentSummary
-from app.schemas.common import APIResponse
+from app.schemas.common import APIResponse, SchemaBase
 from app.tools import registry
 
 router = APIRouter(prefix="/agents", tags=["agents"])
@@ -343,3 +344,112 @@ async def list_tools(
     principal: Principal = Depends(require_permission(Permission.AGENTS_VIEW)),
 ) -> APIResponse[list[dict]]:
     return APIResponse(data=registry.catalogue())
+
+
+# --------------------------------------------------------------------------- #
+# Merchant OS - the seven-agent orchestrator
+# --------------------------------------------------------------------------- #
+class ExecuteRequest(SchemaBase):
+    message: str = Field(min_length=2, max_length=2000)
+    agent: str | None = Field(
+        default=None,
+        pattern="^(business_intelligence|product_discovery|supply_intelligence|pricing_intelligence|"
+        "growth_strategy|paypal_transaction)$",
+        description="Force a specialist; omit to let the Orchestrator Agent decide.",
+    )
+    params: dict[str, Any] = Field(default_factory=dict, description="Optional structured inputs, e.g. product_ids.")
+
+
+@router.post(
+    "/execute",
+    summary="Ask the Merchant OS (Orchestrator -> specialist agent -> approval gate)",
+    description=(
+        "The Orchestrator Agent routes the request to Business Intelligence, Product Discovery, Supply "
+        "Intelligence, Pricing Intelligence, Growth Strategy or the PayPal Transaction Agent. Every tool call is "
+        "permission-checked, traced and recorded. Nothing that moves money happens without a human approval."
+    ),
+)
+async def execute(
+    payload: ExecuteRequest,
+    session: DbSession,
+    principal: Principal = Depends(require_permission(Permission.AGENTS_RUN)),
+) -> APIResponse[dict[str, Any]]:
+    from app.agents.merchant_os import MerchantOS
+
+    params = {k: v for k, v in payload.params.items() if k in _ALLOWED_PARAMS}
+    result = await MerchantOS(
+        session, merchant_id=principal.merchant_id, merchant_name=principal.merchant.name,
+        user_id=principal.user_id, permissions=principal.permissions, actor_label=principal.label,
+    ).execute(payload.message, agent=payload.agent, params=params)
+    return APIResponse(data=result)
+
+
+_ALLOWED_PARAMS = {"days", "max_results", "product_id", "product_ids", "features", "limit", "max_recommendations",
+                   "recommendation_id", "quantity", "unit_cost", "payee_email"}
+
+
+@router.get("/catalogue", summary="The Merchant OS agents, what each does, and its tools")
+async def catalogue(
+    principal: Principal = Depends(require_permission(Permission.AGENTS_VIEW)),
+) -> APIResponse[list[dict[str, Any]]]:
+    from app.agents.merchant_os import agent_catalogue
+
+    return APIResponse(data=agent_catalogue())
+
+
+@router.get(
+    "/activity",
+    summary="Agent activity: agent, task, trigger, tools invoked, status, results and errors",
+)
+async def activity(
+    session: DbSession,
+    limit: Annotated[int, Query(ge=1, le=100)] = 40,
+    agent_name: Annotated[str | None, Query(max_length=48)] = None,
+    status: Annotated[str | None, Query(max_length=24)] = None,
+    principal: Principal = Depends(require_permission(Permission.AGENTS_VIEW)),
+) -> APIResponse[dict[str, Any]]:
+    from sqlalchemy import select
+
+    from app.db.models.agent import AgentRun
+
+    stmt = select(AgentRun).where(AgentRun.merchant_id == principal.merchant_id)
+    if agent_name:
+        stmt = stmt.where(AgentRun.agent_name == agent_name)
+    if status:
+        stmt = stmt.where(AgentRun.status == status)
+    runs = (await session.execute(stmt.order_by(AgentRun.created_at.desc()).limit(limit))).scalars().all()
+    items = []
+    per_agent: dict[str, dict[str, Any]] = {}
+    for run in runs:
+        calls = sorted(run.tool_calls, key=lambda t: t.sequence)
+        specialists = sorted({s.agent_name for s in run.steps if s.agent_name != run.agent_name})
+        meta = run.metadata_json or {}
+        items.append({
+            "run_id": str(run.id),
+            "agent_name": run.agent_name,
+            "agent_label": AgentName.LABELS.get(run.agent_name, run.agent_name),
+            "specialists": [AgentName.LABELS.get(s, s) for s in specialists],
+            "task": run.input_text[:300],
+            "trigger": meta.get("trigger") or ("voice" if run.channel == "voice" else f"{run.workflow} ({run.channel})"),
+            "workflow": run.workflow,
+            "status": run.status,
+            "tools": [{"tool": t.tool_name, "agent": AgentName.LABELS.get(t.agent_name, t.agent_name), "status": t.status,
+                       "duration_ms": t.duration_ms, "summary": t.result_summary[:300], "error": t.error} for t in calls],
+            "result": run.summary[:600],
+            "error": run.error,
+            "requires_approval": run.requires_approval,
+            "used_fallback": run.used_fallback,
+            "duration_ms": run.duration_ms,
+            "created_at": run.created_at.isoformat() if run.created_at else None,
+        })
+        for name in [run.agent_name, *specialists]:
+            agg = per_agent.setdefault(name, {"agent_name": name, "label": AgentName.LABELS.get(name, name),
+                                              "runs": 0, "failed": 0, "tool_calls": 0})
+            agg["runs"] += 1
+            agg["failed"] += int(run.status == "FAILED")
+        for call in calls:
+            agg = per_agent.setdefault(call.agent_name, {"agent_name": call.agent_name,
+                                                         "label": AgentName.LABELS.get(call.agent_name, call.agent_name),
+                                                         "runs": 0, "failed": 0, "tool_calls": 0})
+            agg["tool_calls"] += 1
+    return APIResponse(data={"items": items, "agents": sorted(per_agent.values(), key=lambda a: -a["runs"])})

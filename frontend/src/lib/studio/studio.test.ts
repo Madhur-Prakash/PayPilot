@@ -99,10 +99,17 @@ describe("default Studio report", () => {
     }
   });
 
-  it("opens the AI panel only when the assistant is available", () => {
-    const on = buildDefaultReport(["suppliers"], { aiAvailable: true }) as { panels: Record<string, { collapsed: boolean }> };
-    const off = buildDefaultReport(["suppliers"]) as { panels: Record<string, { collapsed: boolean }> };
-    expect(on.panels.ai.collapsed).toBe(false);
-    expect(off.panels.ai.collapsed).toBe(true);
+  it("opens on the dashboard with every panel collapsed, AI included", () => {
+    const report = buildDefaultReport(["suppliers"]) as { panels: Record<string, { collapsed: boolean }> };
+    expect(Object.values(report.panels).every((p) => p.collapsed)).toBe(true);
+  });
+
+  it("skips a dataset too thin to chart", () => {
+    const report = buildDefaultReport({ paypal_transactions: 1, suppliers: 3 }) as {
+      pages: { widgets: Record<string, unknown> }[];
+    };
+    const ids = Object.keys(report.pages[0]!.widgets);
+    expect(ids.some((id) => id.includes("paypal"))).toBe(false);
+    expect(ids).toContain("grid-suppliers");
   });
 });
