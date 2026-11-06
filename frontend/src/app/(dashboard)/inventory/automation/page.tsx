@@ -30,6 +30,7 @@ import { Badge, Card, CardContent, CardHeader, CardTitle } from "@/components/ui
 import { useAutomationRuns } from "@/hooks/use-api";
 import { useInventoryStream } from "@/hooks/use-inventory-stream";
 import { inventoryApi } from "@/lib/api/endpoints";
+import { n8nExecutionUrl } from "@/lib/n8n";
 import { cn, formatRelativeTime } from "@/lib/utils";
 import { useSearchParams } from "next/navigation";
 import type { AutomationRunRow } from "@/types/api";
@@ -297,7 +298,7 @@ function RunCard({
 
           {run.n8n_execution_id && n8nBase && (
             <a
-              href={`${n8nBase.replace(/\/$/, "")}/workflow/executions/${run.n8n_execution_id}`}
+              href={n8nExecutionUrl(n8nBase, run.workflow_name, run.n8n_execution_id)}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1.5 text-2xs font-medium text-primary hover:underline"

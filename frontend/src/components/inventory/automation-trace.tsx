@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/overlays";
 import { Badge, Separator } from "@/components/ui/primitives";
 import { useAutomationTrace } from "@/hooks/use-api";
+import { n8nExecutionUrl } from "@/lib/n8n";
 import { cn, formatCompactCurrency, formatNumber, formatRelativeTime } from "@/lib/utils";
 
 const DELIVERY_TONE: Record<string, string> = {
@@ -130,7 +131,7 @@ export function AutomationTraceDialog({
                   </ol>
                   {run.n8n_execution_id && n8nBase && (
                     <a
-                      href={`${n8nBase.replace(/\/$/, "")}/workflow/executions/${run.n8n_execution_id}`}
+                      href={n8nExecutionUrl(n8nBase, run.workflow_name, run.n8n_execution_id)}
                       target="_blank"
                       rel="noreferrer"
                       className="mt-2 inline-flex items-center gap-1 text-2xs font-medium text-primary hover:underline"

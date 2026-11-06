@@ -100,6 +100,13 @@ envVarGroups:
         value: tavily
       - key: TAVILY_API_KEY
         sync: false
+      # Optional Gmail sending (invites, vendor purchase-order emails). Blank = the email
+      # is written to the log and the PO's "Notify vendor" step shows as declined.
+      # Mint the credential with: python backend/scripts/mint_gmail_token.py
+      - key: GMAIL_CREDENTIALS_B64
+        sync: false
+      - key: GMAIL_SENDER
+        sync: false
       - key: EMBEDDING_PROVIDER
         value: hash
       - key: MEMORY_ENABLED
