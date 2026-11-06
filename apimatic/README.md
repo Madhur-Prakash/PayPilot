@@ -44,8 +44,34 @@ scripts/apimatic.sh portal      # just the static portal -> apimatic/portal
 
 On Windows PowerShell: `.\scripts\apimatic.ps1` with the same steps.
 
-Outputs: `apimatic/portal/` (static site, git-ignored - it is rebuilt on deploy),
-`apimatic/sdk/python`, `apimatic/sdk/typescript`, `apimatic/plugin/`.
+Outputs (all generated and git-ignored - rebuild them with the script): `apimatic/portal/`
+(static site, also rebuilt on deploy), `apimatic/sdk/python`, `apimatic/sdk/typescript`,
+`apimatic/plugin/`. The portal's *SDKs* and *Context Plugin* pages offer the same SDKs and
+plugin as zip downloads.
+
+## Using the Python SDK
+
+```bash
+pip install ./apimatic/sdk/python      # or download python.zip from the portal
+```
+
+```python
+from pay_pilot_api import PayPilotApiClient
+
+# environment="production" is the hosted API; base_url points at any other server.
+with PayPilotApiClient(base_url="http://localhost:8000") as anon:
+    session = anon.auth_api.login({"email": "owner@juniperoak.com", "password": "Autopilot@2024"})
+    token = session.data.tokens.access_token
+
+with PayPilotApiClient(base_url="http://localhost:8000", http_bearer=token) as client:
+    radar = client.paypal.subscription_radar(days_back=90, days_ahead=45)
+    print(radar.data["summary"])
+    procurements = client.supply_agents.list_procurement()
+```
+
+`AsyncPayPilotApiClient` has the same methods as coroutines. Methods are grouped like the API
+tags (`client.supply_agents`, `client.paypal`, `client.inventory`, ...); the full list is in
+the generated `api-reference.md`.
 `apimatic plugin publish` prints the git commands to publish the plugin; review them
 before running.
 

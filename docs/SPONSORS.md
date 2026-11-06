@@ -22,7 +22,7 @@ Nothing is claimed that the code does not do. The same facts are served live by
 | **Zapier** | Yes, optional | Signed business-event notifications | Mocked HTTP only; off without a hook URL |
 | **Render** | Blueprint | `render.yaml`: API (runs the event relays), web, Postgres - all free plan | YAML validated; **not deployed** |
 | **Postman** | Yes | Collection (59 requests) + environment | Collection structure validated; not run in Postman here |
-| **APIMatic** | Yes | Supplier payments run on PayPal's **APIMatic-generated Server SDK**, written with the **PayPal Context Plugin**; PayPilot's own spec, guides and portal config in `apimatic/` | SDK path verified against the sandbox and with stub-session tests; portal/SDK generation for PayPilot's own API needs an APIMatic account (not run here) |
+| **APIMatic** | Yes | Supplier payments run on PayPal's **APIMatic-generated Server SDK**, written with the **PayPal Context Plugin**; PayPilot's own spec, guides and portal config in `apimatic/` | SDK path verified against the sandbox; PayPilot's spec passes `apimatic api validate` with 0 errors, and its portal, Python + TypeScript SDKs and Context Plugin were built with the APIMatic CLI |
 | **Astropods** | **Not used** | - | Docs reviewed; see below |
 
 > The Devpost page lists sponsor prizes for **AG Grid, APIMatic, Bryntum, Channel3 and
@@ -320,6 +320,16 @@ can integrate with PayPilot the same way PayPilot integrated with PayPal. `scrip
 CLI; the `paypilot-docs` service in `render.yaml` rebuilds and hosts the portal as a free static
 site. Both need an APIMatic account key (`APIMATIC_API_KEY`); see
 [apimatic/README.md](../apimatic/README.md).
+
+Built and checked: the spec passes `apimatic api validate` with **0 errors**. The export writes
+OpenAPI 3.0.3 (FastAPI's 3.1 `anyOf [X, null]` becomes `nullable`, which APIMatic needs to accept
+real `null`s), strips Pydantic's per-field titles, inlines the file-upload bodies, drops empty enum
+values, declares every tag and gives every operation a description. The generated portal has the
+guides, an API reference with a live playground and cURL / Python / TypeScript samples, SDK pages
+and a Context Plugin page, and offers the SDKs and plugin as zip downloads. The Python SDK
+(`pay_pilot_api`, sync and async) was installed and run against the local API: login, the revenue
+radar and the procurement list all deserialise into typed models. The plugin has manifests for
+Claude Code, Codex and Cursor. Generated output is git-ignored and rebuilt by the script.
 
 ## Render, Postman, Astropods
 

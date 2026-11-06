@@ -2,8 +2,6 @@
 title: Money controls
 ---
 
-# Money controls
-
 How PayPilot keeps AI away from the money, so an integration built on this API -
 including one written by an AI coding agent - cannot move funds on its own.
 

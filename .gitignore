@@ -62,5 +62,8 @@ n8n/deploy/
 # Legacy local data from the removed cognee memory backend - safe to delete.
 backend/.cognee/
 
-# APIMatic: generated portal (rebuilt by scripts/apimatic.* and the Render docs site)
+# APIMatic: generated output, rebuilt with scripts/apimatic.* (the portal also on Render).
+# The portal ships the SDKs and plugin as downloads, so they need not live in git.
 apimatic/portal/
+apimatic/sdk/
+apimatic/plugin/

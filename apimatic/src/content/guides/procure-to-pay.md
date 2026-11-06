@@ -2,8 +2,6 @@
 title: Procure to pay
 ---
 
-# Procure to pay
-
 The signature flow: a product is about to run out, three supplier agents negotiate,
 a person approves, PayPal pays the supplier, and the books reconcile.
 

@@ -2,8 +2,6 @@
 title: PayPilot API
 ---
 
-# PayPilot API
-
 PayPilot is an AI operating system for small merchants on PayPal. Its API lets you
 drive the same loop the PayPilot app does:
 

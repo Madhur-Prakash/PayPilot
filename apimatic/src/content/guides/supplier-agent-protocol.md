@@ -2,8 +2,6 @@
 title: Supplier agent protocol
 ---
 
-# Supplier agent protocol
-
 Supplier agents - PayPilot's own or yours - talk to the buyer through typed,
 signed messages. External agents post them to:
 

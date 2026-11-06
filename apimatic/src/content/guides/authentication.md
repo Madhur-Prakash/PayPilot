@@ -2,8 +2,6 @@
 title: Authentication
 ---
 
-# Authentication
-
 PayPilot uses short-lived bearer tokens.
 
 ```bash
