@@ -36,7 +36,16 @@ for _ in $(seq 1 60); do
   if [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:5678/healthz || true)" = "200" ]; then
     sleep 3
     echo
-    docker logs "$CONTAINER" --since 2m 2>&1 | grep -E 'Activated workflow' || echo "  no workflow was activated - check 'docker logs $CONTAINER'"
+    # Probe the router's webhook with a bad signature instead of grepping the logs
+    # (n8n 2.x no longer prints "Activated workflow"): 401 = active and verifying,
+    # 404 = not registered.
+    code="$(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:5678/webhook/pga-inventory-event \
+      -H 'Content-Type: application/json' -H 'X-Signature: sha256=bad' -d '{}' || true)"
+    if [ "$code" = "401" ]; then
+      echo "  webhook live: PGA 01 is active and rejecting unsigned requests (401)"
+    else
+      echo "  webhook answered $code, expected 401 - check the workflows are active in the n8n UI"
+    fi
     exit 0
   fi
   sleep 2
