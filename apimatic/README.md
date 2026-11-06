@@ -30,16 +30,29 @@ The export adds the server URLs, a real description, and readable operation ids
 
 ## Build (needs an APIMatic account)
 
+The CLI is `@apimatic/cli` 2.x (Node 22.14+): `npm i -g @apimatic/cli@2`. Every build
+command needs you signed in - either once with `apimatic auth login` (opens the
+browser), or with an API key from the APIMatic dashboard (**Account -> API Keys**) in
+the root `.env` as `APIMATIC_API_KEY`. The scripts pass it as `--auth-key` and never
+print it.
+
 ```bash
-npm i -g @apimatic/cli@2        # Node 24+
-apimatic auth login
-cd apimatic
-apimatic portal serve           # build the portal and preview it locally
-apimatic sdk generate           # SDKs (run with --help for the language flags)
-apimatic plugin generate        # PayPilot's Context Plugin (uses src/apimatic.json "plugin")
-apimatic plugin publish         # prints the git commands to publish it; review, then run them
+scripts/apimatic.sh             # refresh spec, validate, portal, Python + TypeScript SDKs, plugin
+scripts/apimatic.sh serve       # live preview at http://localhost:23513
+scripts/apimatic.sh portal      # just the static portal -> apimatic/portal
 ```
 
-Then host the portal (see APIMatic's *Host Your Portal*), set `portal.pluginUrl` and
-`portal.site.url` in `src/apimatic.json`, and link the portal from the README and
-the Devpost submission.
+On Windows PowerShell: `.\scripts\apimatic.ps1` with the same steps.
+
+Outputs: `apimatic/portal/` (static site, git-ignored - it is rebuilt on deploy),
+`apimatic/sdk/python`, `apimatic/sdk/typescript`, `apimatic/plugin/`.
+`apimatic plugin publish` prints the git commands to publish the plugin; review them
+before running.
+
+## Host it
+
+`render.yaml` includes **`paypilot-docs`**, a free Render static site that runs
+`apimatic portal generate` on every deploy and serves `apimatic/portal`. Set
+`APIMATIC_API_KEY` on that service when Render asks. `portal.site.url` in
+`src/apimatic.json` is `https://paypilot-docs.onrender.com`; change it if Render gives
+the service another name.

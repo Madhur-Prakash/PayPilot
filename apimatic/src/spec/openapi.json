@@ -4188,6 +4188,25 @@
         "title": "Decision",
         "type": "object"
       },
+      "DeliveryDelayRequest": {
+        "properties": {
+          "days": {
+            "default": 3,
+            "maximum": 30.0,
+            "minimum": 1.0,
+            "title": "Days",
+            "type": "integer"
+          },
+          "reason": {
+            "default": "",
+            "maxLength": 240,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "title": "DeliveryDelayRequest",
+        "type": "object"
+      },
       "DetectOpportunitiesRequest": {
         "properties": {
           "days": {
@@ -14173,6 +14192,92 @@
         ]
       }
     },
+    "/api/v1/integrations/shelf": {
+      "get": {
+        "description": "Live products from Channel3 for each shelf slot (grinders, brewing kits, filters, mugs,\nstorage), and an estimate - with its assumptions - of what recommending them could earn.",
+        "operationId": "gear_shelf",
+        "parameters": [
+          {
+            "description": "Bypass the 30-minute cache",
+            "in": "query",
+            "name": "refresh",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Bypass the 30-minute cache",
+              "title": "Refresh",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "title": "Merchant Id"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Merchant-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_dict_str__Any__"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Gear shelf: complementary Channel3 products for the merchant's best seller",
+        "tags": [
+          "integrations"
+        ]
+      }
+    },
     "/api/v1/integrations/status": {
       "get": {
         "operationId": "integrations_status",
@@ -18332,6 +18437,104 @@
         ]
       }
     },
+    "/api/v1/paypal/subscriptions/radar": {
+      "get": {
+        "description": "One row per PayPal subscriber, one bar per billing period - drawn with Bryntum Scheduler.",
+        "operationId": "subscription_radar",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days_back",
+            "required": false,
+            "schema": {
+              "default": 120,
+              "maximum": 365,
+              "minimum": 14,
+              "title": "Days Back",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "days_ahead",
+            "required": false,
+            "schema": {
+              "default": 60,
+              "maximum": 180,
+              "minimum": 7,
+              "title": "Days Ahead",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "title": "Merchant Id"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Merchant-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_dict_str__Any__"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Subscription revenue radar (billing periods, retries, recovery)",
+        "tags": [
+          "paypal"
+        ]
+      }
+    },
     "/api/v1/paypal/subscriptions/{record_id}/action": {
       "post": {
         "operationId": "subscription_action",
@@ -19964,6 +20167,100 @@
         "summary": "Approve or reject an order",
         "tags": [
           "inventory"
+        ]
+      }
+    },
+    "/api/v1/purchase-orders/{order_id}/delivery-delay": {
+      "post": {
+        "description": "Plays the supplier's side of the protocol: its agent sends a signed DELIVERY_UPDATE\n(status DELAYED), the PO's expected date moves, and the Gantt redraws the delivery and\nthe PayPal payment that waits on it - in red, with the original plan underneath.",
+        "operationId": "report_delivery_delay",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Order Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "title": "Merchant Id"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Merchant-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeliveryDelayRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_dict_str__Any__"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Supplier agent reports a delivery delay (signed DELIVERY_UPDATE; reschedules the timeline)",
+        "tags": [
+          "supply-agents"
         ]
       }
     },

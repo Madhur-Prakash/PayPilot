@@ -173,3 +173,19 @@ services:
         sync: false
       - key: NEXT_PUBLIC_VAPI_ASSISTANT_ID
         sync: false
+
+  # PayPilot's developer portal, built by APIMatic from apimatic/ (spec, guides, SDK and
+  # Context Plugin pages). A free static site: the build runs the APIMatic CLI with an API
+  # key from your APIMatic account (dashboard -> Account -> API Keys). Leave the key blank
+  # and the build fails harmlessly; the API and web app are unaffected.
+  - type: web
+    name: paypilot-docs
+    runtime: static
+    rootDir: apimatic
+    buildCommand: npx --yes @apimatic/cli@2.2.0 portal generate --input=./ --destination=./portal --force --auth-key=$APIMATIC_API_KEY
+    staticPublishPath: ./portal
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: APIMATIC_API_KEY
+        sync: false

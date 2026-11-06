@@ -4,18 +4,28 @@
   "portal": {
     "site": {
       "name": "PayPilot API",
-      "description": "The AI operating system for PayPal merchants: growth intelligence, agent-to-agent procurement and human-approved PayPal settlement."
+      "description": "The AI operating system for PayPal merchants: growth intelligence, agent-to-agent procurement and human-approved PayPal settlement.",
+      "url": "https://paypilot-docs.onrender.com"
     },
     "brand": {
       "colors": {
-        "primary": { "light": "#0070e0", "dark": "#5aa9ff" }
+        "primary": {
+          "light": "#0070e0",
+          "dark": "#5aa9ff"
+        }
       },
       "colorMode": "both"
     },
     "navigation": {
       "links": [
-        { "label": "Live demo", "url": "https://paypilot-web.onrender.com" },
-        { "label": "GitHub", "url": "https://github.com/Madhur-Prakash/PayPilot" }
+        {
+          "label": "Live demo",
+          "url": "https://paypilot-web.onrender.com"
+        },
+        {
+          "label": "GitHub",
+          "url": "https://github.com/Madhur-Prakash/PayPilot"
+        }
       ]
     },
     "ai": {
@@ -26,8 +36,12 @@
     "pluginId": "paypilot",
     "pluginName": "PayPilot",
     "pluginVersion": "0.1.0",
-    "author": { "name": "PayPilot team" },
-    "license": "MIT"
+    "author": {
+      "name": "PayPilot team"
+    },
+    "license": "MIT",
+    "homepage": "https://paypilot-docs.onrender.com",
+    "repository": "https://github.com/Madhur-Prakash/PayPilot"
   },
   "languages": {
     "python": {},

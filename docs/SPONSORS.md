@@ -315,10 +315,11 @@ servers, description, licence) to `docs/openapi.json` and `apimatic/src/spec/ope
 `apimatic/` is a ready APIMatic project: portal branding and navigation, four guides
 (authentication, procure-to-pay, the supplier-agent protocol, money controls), Python and
 TypeScript SDKs, and a **PayPilot Context Plugin** definition - so an external supplier agent
-can integrate with PayPilot the same way PayPilot integrated with PayPal. Building and hosting
-the portal needs an APIMatic account (`apimatic portal serve`, `apimatic sdk generate`,
-`apimatic plugin generate`); see [apimatic/README.md](../apimatic/README.md). That build was not
-run from this environment.
+can integrate with PayPilot the same way PayPilot integrated with PayPal. `scripts/apimatic.sh`
+(or `.ps1`) refreshes the spec and builds the portal, both SDKs and the plugin with the APIMatic
+CLI; the `paypilot-docs` service in `render.yaml` rebuilds and hosts the portal as a free static
+site. Both need an APIMatic account key (`APIMATIC_API_KEY`); see
+[apimatic/README.md](../apimatic/README.md).
 
 ## Render, Postman, Astropods
 
