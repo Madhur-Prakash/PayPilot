@@ -149,7 +149,7 @@ services:
       - key: FRONTEND_URL
         value: https://paypilot-web-0lqv.onrender.com
       - key: BACKEND_URL
-        value: https://paypilot-api.onrender.com
+        value: https://paypilot-api-bjn2.onrender.com
       - key: CORS_ORIGINS
         value: https://paypilot-web-0lqv.onrender.com
 
@@ -167,7 +167,7 @@ services:
       - key: NEXT_TELEMETRY_DISABLED
         value: "1"
       - key: NEXT_PUBLIC_API_URL
-        value: https://paypilot-api.onrender.com/api/v1
+        value: https://paypilot-api-bjn2.onrender.com/api/v1
       - key: NEXT_PUBLIC_APP_NAME
         value: PayPilot
       - key: NEXT_PUBLIC_DEMO_EMAIL

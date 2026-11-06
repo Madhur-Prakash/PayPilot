@@ -18351,7 +18351,7 @@
   "servers": [
     {
       "description": "Hosted demo (Render)",
-      "url": "https://paypilot-api.onrender.com"
+      "url": "https://paypilot-api-bjn2.onrender.com"
     },
     {
       "description": "Local (docker compose up)",

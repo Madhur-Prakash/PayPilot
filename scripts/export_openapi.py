@@ -108,7 +108,7 @@ def polish(spec: dict, app) -> dict:
     """Make the spec good input for APIMatic: servers, readable operation ids, a real description."""
     readable_operation_ids(spec)
     spec["servers"] = [
-        {"url": "https://paypilot-api.onrender.com", "description": "Hosted demo (Render)"},
+        {"url": "https://paypilot-api-bjn2.onrender.com", "description": "Hosted demo (Render)"},
         {"url": "http://localhost:8000", "description": "Local (docker compose up)"},
     ]
     info = spec.setdefault("info", {})

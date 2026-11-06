@@ -134,11 +134,12 @@ shelf updates itself when a retailer changes a price or runs out.
 
 ## Links
 
-* Live demo: `<Render URL>` - log in as `owner@juniperoak.com` / `Autopilot@2024`
+* Live demo: <https://paypilot-web-0lqv.onrender.com> - log in as `owner@juniperoak.com` / `Autopilot@2024`
   (other roles in [DEMO.md](DEMO.md)); first load may take a minute (free plan).
-* API docs (APIMatic portal): `https://paypilot-docs.onrender.com` - live once the Render docs site is deployed
+* API docs (APIMatic portal): <https://paypilot-docs.onrender.com>
+* API (OpenAPI / Swagger): <https://paypilot-api-bjn2.onrender.com/docs>
 * Video: `<YouTube URL>`
-* Code: `<GitHub URL>`
+* Code: <https://github.com/Madhur-Prakash/PayPilot>
 
 ## Testing instructions for judges
 
