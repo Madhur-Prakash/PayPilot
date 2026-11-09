@@ -9,6 +9,7 @@ code does not do.
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from app.core.config import settings
@@ -164,9 +165,12 @@ def integration_status() -> list[dict[str, Any]]:
             "key": "render",
             "name": "Render",
             "category": "sponsor",
-            "mode": "BLUEPRINT",
-            "used_for": "render.yaml deploys the API (with in-process event relays), web app and Postgres on the free "
-            "plan; not deployed from this environment",
+            # Render sets RENDER=true in every service it runs, so the row says DEPLOYED only where
+            # that is true and BLUEPRINT everywhere else (a laptop, CI, the test suite).
+            "mode": "DEPLOYED" if os.environ.get("RENDER") else "BLUEPRINT",
+            "used_for": "render.yaml deploys the API (with in-process event relays), web app, Postgres, Key Value "
+            "(Redis: shared rate limits, Channel3 caches, realtime pub/sub), n8n and the APIMatic docs portal on the "
+            "free plan",
             "where": "render.yaml",
         },
         {

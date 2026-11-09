@@ -34,8 +34,10 @@ a voice assistant, and n8n automation.
 | Memory | Replaced the external memory library with pgvector-native memory (HNSW cosine index, tenant isolation in SQL, entity tags, no LLM or API key required) |
 | Frontend | 19 new screens: Command Center, Supply Command Center, Reorder, Supplier Network + profiles, RFQ Management, Live Negotiations + the Negotiation Workspace, Quote Comparison, Goods Receiving, Supplier Invoices, Reconciliation, Approval Center, Agent Communication, PayPal Transactions, Payments, Payouts, Invoices, Subscriptions, Webhooks; navigation regrouped into Command / Growth / Supply / Agents / Finance / Governance; AG Grid for data-heavy tables |
 | Localization | US merchant (Juniper & Oak Coffee, Portland), USD everywhere, US names, PayPal spelling; Paytm-specific "PayPal-side audience" logic reframed to PayPal-powered levers the merchant controls |
-| Tooling | `make init` and a cross-platform task runner (`scripts/tasks.py`) behind Make, PowerShell and bash; Render Blueprint; background worker; Postman collection; Vitest |
-| Tests | 80 new backend tests (financial engine, protocol security, PayPal client + simulator, PayPal APIs, pgvector memory, the end-to-end procurement lifecycle) - **389 passing** in total - plus frontend unit tests |
+| Tooling | `make init` and a cross-platform task runner (`scripts/tasks.py`) behind Make, PowerShell and bash; Render Blueprint (API, web, Postgres, Key Value, n8n, docs portal); worker in Docker Compose; Postman collection; Vitest |
+| Redis | Render Key Value behind one seam (`app/core/redis.py`): shared HTTP rate-limit counters, the per-merchant Channel3 budget, Channel3 caches that survive free-plan sleeps and deploys, and realtime pub/sub between API processes - with a circuit breaker that falls back to in-process state, so Redis is never a hard dependency |
+| n8n on Render | The automation engine defined for the free plan: state in the free Postgres, workflows rebuilt from the repo at boot, a generated shared HMAC secret, and a health workflow (`/webhook/pga-health`) an external monitor can poll |
+| Tests | **515 backend tests** (financial engine, protocol security, PayPal client + simulator, PayPal APIs, pgvector memory, the Redis layer, the end-to-end procurement lifecycle) plus frontend unit tests |
 
 ## AI and tools actually used
 
@@ -55,7 +57,7 @@ a voice assistant, and n8n automation.
 | Elasticsearch | Evidence search across audit, messages, offers, invoices, events, reviews (keyword fallback without a node) |
 | Kernel | Observe-only supplier-page verification sessions (labelled fallback without a key) |
 | Zapier | Signed, at-most-once business-event notifications |
-| Render | Deployment Blueprint (`render.yaml`) prepared; not deployed from this environment |
+| Render | Deployed from one Blueprint (`render.yaml`), free plan: API (Docker), web, Postgres + pgvector, **Key Value (Redis)**, n8n and the APIMatic docs portal. Details: [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md#render) |
 | Postman | `postman/PayPilot.postman_collection.json` + environment (59 requests with assertions) |
 | APIMatic | Supplier payments (Orders v2) on PayPal's APIMatic-generated Server SDK, written with the PayPal Context Plugin; PayPilot's own spec, guides and portal config in `apimatic/` |
 | Claude Code | Coding assistant used to build the upgrade |
@@ -63,7 +65,12 @@ a voice assistant, and n8n automation.
 **Not used** (so not claimed): Astropods.
 Full, per-tool detail with what was and was not verified: [SPONSORS.md](SPONSORS.md).
 
-## For judges: testing without keys
+## For judges
+
+Start with **[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)**: why PayPal is central, how every sponsor tool is used,
+the key features, and the judging criteria mapped to evidence.
+
+### Testing without keys
 
 ```bash
 git clone <repo> && cd PayPilot-Paypal
@@ -89,12 +96,13 @@ look for:
 ## Compliance checklist
 
 * Working application - backend, frontend, seed data, tests and builds all run.
-* Meaningful PayPal use - transaction analytics, invoicing, payouts, supplier
-  settlement, subscriptions, verified webhooks, reconciliation.
+* Meaningful PayPal use - PayPal is the merchant's data source and the only payment rail:
+  transaction analytics, supplier settlement, invoicing, payouts, subscriptions, verified
+  webhooks, reconciliation ([PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md#2-why-paypal-is-central-not-decoration)).
 * Meaningful AI use - agent orchestration, negotiation strategy, growth diagnosis,
   recommendations, semantic memory.
 * Runs without judges' keys - deterministic agents, simulated PayPal, clearly labelled.
+* Hosted demo - <https://paypilot-web-0lqv.onrender.com>; PayPal **sandbox**, Channel3 **live**, LLM configured.
 * Open-source licence - MIT ([LICENSE](../LICENSE)).
 * No committed secrets - `.env` is gitignored; `.env.example` has blank secrets.
-* Not done from this environment: deploying to Render, recording the demo video,
-  submitting to Devpost.
+* Team to-do before submitting: record the demo video and submit on Devpost.

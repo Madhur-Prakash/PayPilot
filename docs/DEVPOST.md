@@ -61,6 +61,17 @@ PayPilot runs a merchant's business loop on top of PayPal:
   that waits on it move right and turn red, with the original plan drawn
   underneath.
 
+### Why PayPal is central
+
+PayPal is the merchant's **system of record** (Transaction Search feeds every growth
+insight) and the **only rail money moves on** (Orders v2 pays the supplier, Invoicing and
+Payouts reach customers, Subscriptions and webhooks keep recurring revenue honest). The
+agents never touch the money: they negotiate and recommend, a human approves terms bound
+to a hash, a three-way match gates the payment, `PayPal-Request-Id` is derived from the
+business action so a retry cannot pay twice, and PayPal's own Agent Toolkit is reachable
+read-only - 16 of its 46 tools callable, the 30 that create, pay or send blocked in code.
+Full mapping, with code and screens: [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md).
+
 ## How we built it
 
 * **Backend:** FastAPI, SQLAlchemy 2 (async), PostgreSQL 16 + pgvector, Alembic.
@@ -83,9 +94,12 @@ PayPilot runs a merchant's business loop on top of PayPal:
   through an `AgLlmAdapter` (the key never reaches the browser); it works, but on
   Groq's free tier Studio's agents are too slow to finish a request, so the hosted
   demo keeps it switched off.
-* **Ops:** Docker Compose for the whole stack including n8n, a Render Blueprint
-  that fits the free plan, a Postman collection, and an APIMatic project for
-  PayPilot's own API (spec, guides, SDK and Context Plugin config).
+* **Ops:** Docker Compose for the whole stack including n8n, and one Render Blueprint
+  that runs the product on the free plan - API, web, Postgres + pgvector, **Key Value
+  (Redis)** for shared rate limits, Channel3 caches and realtime pub/sub (with an
+  in-process fallback), n8n, and the APIMatic docs portal - plus a Postman collection
+  and an APIMatic project for PayPilot's own API (spec, guides, SDK and Context Plugin
+  config).
 
 ## Challenges we ran into
 
@@ -109,8 +123,8 @@ PayPilot runs a merchant's business loop on top of PayPal:
 * A complete purchase-to-pay loop where every figure is reproducible and every
   money movement has a named human approver.
 * Agent-to-agent negotiation with real, persisted, verified protocol messages.
-* <!-- update before submitting --> backend and frontend test suites green,
-  including the full procurement lifecycle through the real API.
+* 515 backend tests (unit, API and integration - including the full procurement
+  lifecycle through the real API) plus frontend unit tests, all passing.
 
 ## What we learned
 
@@ -130,7 +144,7 @@ shelf updates itself when a retailer changes a price or runs out.
 `paypal` `paypal-orders-v2` `paypal-payouts` `paypal-invoicing` `paypal-subscriptions`
 `paypal-agent-toolkit` `paypal-server-sdk` `apimatic` `mcp` `next.js` `react`
 `typescript` `ag-grid` `ag-studio` `bryntum` `channel3` `n8n` `docker` `render`
-`postman` `langfuse` `vapi`
+`postman` `langfuse` `vapi` `redis` `elasticsearch` `kernel` `zapier`
 
 ## Links
 
@@ -143,9 +157,14 @@ shelf updates itself when a retailer changes a price or runs out.
 
 ## Testing instructions for judges
 
-No keys needed: `docker compose up -d --build`, open <http://localhost:3000>, and
-follow [DEMO.md](DEMO.md) (three minutes). PayPal runs in a labelled simulator and
-agents in deterministic mode unless keys are configured.
+**Hosted:** open the live demo above (allow a minute for the free plan to wake) and
+follow [DEMO.md](DEMO.md) (three minutes). It runs against the **PayPal sandbox**, with
+Channel3 live and an LLM configured; `GET /api/v1/integrations/status` lists every
+integration's mode.
+
+**Locally, no keys needed:** `docker compose up -d --build`, open <http://localhost:3000>.
+PayPal then runs in a labelled simulator and agents in deterministic mode unless keys are
+configured. Project overview: [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md).
 
 ## APIMatic: Description of Context Plugin usage
 

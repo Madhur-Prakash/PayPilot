@@ -22,6 +22,7 @@ New to the project? Read in this order.
 
 | # | Document | Time | What you get |
 | :--: | --- | :--: | --- |
+| 0 | [**Project overview**](PROJECT_OVERVIEW.md) | 10 min | **Start here:** what it is, why PayPal is central, every sponsor tool and where it is used, key features, criteria mapped to evidence, what is verified |
 | 1 | [Installation](INSTALLATION.md) | 10 min | A running local stack |
 | 2 | [Demo script](DEMO.md) | 3 min | The signature scenario, end to end |
 | 3 | [Hackathon notes](HACKATHON.md) | 5 min | What was built for the PayPal AI Hackathon, tools used, judge testing |

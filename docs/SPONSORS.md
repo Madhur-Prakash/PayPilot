@@ -16,11 +16,11 @@ Nothing is claimed that the code does not do. The same facts are served live by
 | **AG Grid** (Community 36.3) | Yes | Every data-heavy table | Yes (builds, renders) |
 | **AG Studio** | Yes, incl. its AI agents | Pre-built + merchant-built dashboards over computed datasets, and Studio's agent harness running on PayPilot's LLM (`/studio`) | Renders in a real browser (evaluation mode); AI agents ran real turns on Groq - full runs need a paid Groq tier, see below |
 | **Bryntum Gantt + Scheduler** (Enterprise 8.0) | Yes | Procurement timeline with agent-driven rescheduling (`/supply/timeline`); subscription revenue radar (`/finance/subscriptions/radar`) | Renders in a real browser (production build); trial key registered and accepted, so it shows Bryntum's Trial badge until 2026-12-20 |
-| **Channel3** | Yes | **Product Discovery** (natural-language search, comparison, similar products, URL lookup, conversational shopping agent) and **Supply Intelligence** (assortment expansion, alternatives, market prices, recommendations); **gear shelf**; market price reference for purchase approvals | **Yes** - live API with a real key (search, details, similar, categories, conversations verified 2026-11-06); built with Channel3's agent skill |
-| **Elasticsearch** | Yes, optional | Evidence search (`/search`) | Mocked HTTP only; keyword fallback without `ELASTIC_URL` |
-| **Kernel** | Yes, optional | Supplier-portal verification sessions | Mocked HTTP only; labelled fallback without a key |
-| **Zapier** | Yes, optional | Signed business-event notifications | Mocked HTTP only; off without a hook URL |
-| **Render** | Blueprint | `render.yaml`: API (runs the event relays), web, Postgres - all free plan | YAML validated; **not deployed** |
+| **Channel3** | Yes (**LIVE** on the hosted demo) | **Product Discovery** (natural-language search, comparison, similar products, URL lookup, conversational shopping agent) and **Supply Intelligence** (assortment expansion, alternatives, market prices, recommendations); **gear shelf**; market price reference for purchase approvals | **Yes** - live API with a real key (search, details, similar, categories, conversations verified 2026-11-06); built with Channel3's agent skill |
+| **Elasticsearch** | Yes, optional | Evidence search (`/search`) | Mocked HTTP only; **off on the hosted demo** (labelled keyword fallback) |
+| **Kernel** | Yes, optional | Supplier-portal verification sessions | Mocked HTTP in tests; **key configured on the hosted demo**, session-close call unverified; labelled fallback without a key |
+| **Zapier** | Yes, optional | Signed business-event notifications | Mocked HTTP only; **off on the hosted demo** (no hook URL) |
+| **Render** | Yes - **deployed** | `render.yaml`: API (runs the event relays), web, Postgres + pgvector, **Key Value (Redis)**, n8n, docs portal - all free plan | **Yes** - the hosted demo runs from it; `/health` reports `redis: ok`; see [below](#render-postman-astropods) |
 | **Postman** | Yes | Collection (59 requests) + environment | Collection structure validated; not run in Postman here |
 | **APIMatic** | Yes | Supplier payments run on PayPal's **APIMatic-generated Server SDK**, written with the **PayPal Context Plugin**; PayPilot's own spec, guides and portal config in `apimatic/` | SDK path verified against the sandbox; PayPilot's spec passes `apimatic api validate` with 0 errors, and its portal, Python + TypeScript SDKs and Context Plugin were built with the APIMatic CLI |
 | **Astropods** | **Not used** | - | Docs reviewed; see below |
@@ -343,10 +343,24 @@ Claude Code, Codex and Cursor. Generated output is git-ignored and rebuilt by th
 
 ## Render, Postman, Astropods
 
-* **Render:** `render.yaml` defines the API, web app and managed Postgres, all on the free plan,
-  with every secret `sync: false`. The API runs the outbox and Zapier relays in-process
-  (`OUTBOX_RELAY_IN_PROCESS=true`), so no paid worker is needed; n8n stays local (Docker Compose).
-  It parses and passes review but **was not deployed** from this environment.
+* **Render:** one Blueprint (`render.yaml`) defines everything on the free plan, and the hosted demo runs from it.
+  * **API** (Docker): migrates, seeds the demo tenant idempotently, serves on `$PORT`, health check
+    `/api/v1/health`, and runs the outbox and Zapier relays in-process (`OUTBOX_RELAY_IN_PROCESS=true`) so no
+    paid worker is needed. **Web** (Node) and **docs** (static APIMatic portal) are separate services.
+  * **Postgres 16** holds the application data and the pgvector agent memory.
+  * **Key Value** (Redis-compatible, private, `allkeys-lru`) backs four things - shared HTTP rate-limit counters,
+    the per-merchant Channel3 call budget, the Channel3 response caches (a free service restarts on every deploy
+    and idle sleep, which would otherwise empty them and re-spend credits), and pub/sub so realtime events reach
+    browsers on any API instance. It is never a source of truth and **falls back to in-process state when
+    unreachable** (circuit breaker, 31 tests). See [CONFIGURATION.md](CONFIGURATION.md#redis).
+  * **n8n** is defined for the free plan (state in the free Postgres, workflows rebuilt from the repo at boot, a
+    generated shared HMAC secret, health URLs for an external monitor); see
+    [n8n/README.md](../n8n/README.md#on-render-free-plan).
+  * Wiring is declarative: an env group with generated secrets and `fromDatabase` / `fromService` references, so
+    no connection string is copied by hand. Every other secret is `sync: false`.
+  * **Free-plan realities, stated rather than hidden:** services sleep after about 15 idle minutes (the first
+    request takes about a minute), the free database expires after 30 days, and a sleeping n8n cannot fire its
+    schedules without an external ping.
 * **Postman:** `postman/PayPilot.postman_collection.json` (59 requests, with assertions) and
   `postman/PayPilot.local.postman_environment.json`. The new *Integrations & sponsors* folder
   includes the checks that matter - a write tool returns `403`, an unsafe portal URL returns

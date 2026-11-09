@@ -7,6 +7,8 @@ export type IntegrationMode =
   | "DISABLED"
   | "NOT_USED"
   | "BLUEPRINT"
+  | "DEPLOYED"
+  | "SDK"
   | "COLLECTION"
   | "SPEC_EXPORT";
 

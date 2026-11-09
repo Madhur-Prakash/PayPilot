@@ -2,7 +2,9 @@
 
 [Back to docs](README.md)
 
-PayPal is an operating component of PayPilot, not a logo: merchant transactions
+PayPal is the merchant's system of record and the only rail money moves on - see
+[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md#2-why-paypal-is-central-not-decoration) for where it is used, how it
+helps and what is unique. It is an operating component of PayPilot, not a logo: merchant transactions
 feed growth analytics, supplier invoices are settled with PayPal Orders v2,
 customers are invoiced with PayPal Invoicing, rewards go out through Payouts,
 subscription failures arrive by webhook, and every payment is reconciled against
@@ -134,9 +136,11 @@ See [SPONSORS.md](SPONSORS.md#paypal-agent-toolkit-over-mcp) for the full accoun
 
 ## Known limitations
 
-* No credentials were available while building, so every PayPal path was
-  exercised against the simulator and against mocked PayPal responses
-  (`tests/unit/test_paypal_client.py`); run the sandbox steps above to verify live.
+* **Verified live against the sandbox:** OAuth, and the Orders v2 supplier payment (create -> buyer
+  approval -> capture) on the official Server SDK. **Exercised against the simulator and mocked PayPal
+  responses only:** Transaction Search, Invoicing, Payouts, Subscriptions and webhook verification
+  (`tests/unit/test_paypal_client.py`, `tests/api/test_paypal_api.py`); run the sandbox steps above to
+  verify them live. Real webhooks are rejected until `PAYPAL_WEBHOOK_ID` is set.
 * Transaction Search data can lag several hours behind real time.
 * The simulator keeps order/invoice state in memory; restart the API and simulated
   PayPal objects are forgotten (PayPilot's own rows persist).

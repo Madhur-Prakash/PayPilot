@@ -8,7 +8,7 @@
 
 PayPal AI Hackathon 2026 · Idea 4 (Growth Autopilot) + Idea 5 (Supply Agents) · Team PayFlux
 
-[![Tests](https://img.shields.io/badge/backend_tests-489_passing-16a34a?style=flat-square&logo=pytest&logoColor=white)](docs/TESTING.md)
+[![Tests](https://img.shields.io/badge/backend_tests-515_passing-16a34a?style=flat-square&logo=pytest&logoColor=white)](docs/TESTING.md)
 [![Lint](https://img.shields.io/badge/ruff-clean-16a34a?style=flat-square&logo=ruff&logoColor=white)](docs/CONTRIBUTING.md)
 [![Types](https://img.shields.io/badge/typecheck-clean-16a34a?style=flat-square&logo=typescript&logoColor=white)](docs/CONTRIBUTING.md)
 [![PayPal](https://img.shields.io/badge/PayPal-Orders_v2_·_Invoicing_·_Payouts_·_Subscriptions_·_Webhooks-003087?style=flat-square&logo=paypal&logoColor=white)](docs/PAYPAL.md)
@@ -33,6 +33,10 @@ PayPal AI Hackathon 2026 · Idea 4 (Growth Autopilot) + Idea 5 (Supply Agents) �
 </div>
 
 ---
+
+> **Start here:** **[docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md)** - why PayPal is central, how every sponsor tool is
+> used and where, the key features, the criteria mapped to evidence, and what is verified. Live demo:
+> <https://paypilot-web-0lqv.onrender.com> (`owner@juniperoak.com` / `Autopilot@2024`; the first load can take a minute).
 
 > **PayPilot doesn't just tell merchants what happened. It helps them decide what
 > to do next, coordinates the agents that execute it, and measures the impact on
@@ -87,6 +91,27 @@ PayPilot also works as a **product scientist** for the merchant, on live data fr
 
 Details: **[docs/SUPPLY_INTELLIGENCE.md](docs/SUPPLY_INTELLIGENCE.md)** · demo path:
 [docs/DEMO.md](docs/DEMO.md#supply-intelligence-and-merchant-os-four-minutes).
+
+## Why PayPal is central
+
+PayPal is the merchant's **system of record** and the **only rail money moves on** - take
+it away and PayPilot has no data to reason over and no way to act.
+
+| Stage | PayPal | Result |
+| --- | --- | --- |
+| See the business | Transaction Search | Sales, fees, refunds and failures feed the Growth Scientist |
+| Pay a supplier | Orders v2 on PayPal's APIMatic-generated Server SDK | Supplier is the payee; payment only after a human approval **and** a three-way match |
+| Bill and reward customers | Invoicing, Payouts | Win-back invoices; approval-gated cashback |
+| Recurring revenue | Subscriptions | A revenue radar with one-click failed-payment recovery |
+| React to events | Verified webhooks | Settle or flag the matching record; replay-guarded, idempotent |
+| Let agents look | Agent Toolkit (MCP), read-only | 16 of 46 tools callable; the 30 that create, pay or send are blocked in code |
+| Prove it | Reconciliation | PO x receipt x invoice x capture agree to the cent |
+
+**What is unique:** AI agents negotiate and recommend but can never pay; approvals are
+bound to a hash of the exact terms; `PayPal-Request-Id` is derived from the business action
+so a retry cannot pay twice; and nothing simulated is ever presented as real.
+Where each is used, how it helps, and how every sponsor tool is integrated:
+**[docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md)**.
 
 ## The signature scenario
 
@@ -196,7 +221,9 @@ Full, honest detail (what is live, what is a labelled fallback, what was verifie
 * **Elasticsearch** - ranked evidence search (keyword fallback without `ELASTIC_URL`).
 * **Kernel** - observe-only supplier-page verification (labelled fallback without a key).
 * **Zapier** - signed, de-duplicated business-event notifications (off without a hook URL).
-* **Render** - complete Blueprint (`render.yaml`); not deployed from this environment.
+* **Render** - the whole product from one Blueprint (`render.yaml`), all on the free plan, deployed: API (Docker),
+  web app, Postgres + pgvector, **Key Value (Redis)** - shared rate limits, Channel3 caches and realtime pub/sub,
+  falling back to in-process state if it is down - n8n, and the APIMatic docs portal.
 * **Postman** - collection + environment, 59 requests with assertions.
 * **APIMatic** - supplier payments (Orders v2 create / get / capture) run on PayPal's
   APIMatic-generated **Server SDK**, written with the **PayPal Context Plugin**; PayPilot's own
@@ -218,10 +245,10 @@ FastAPI (Pydantic v2) ── auth → merchant scope → require_permission
    │          · approvals · PO · receiving · three-way match · reconciliation
    ├─ Finance: PayPal gateway (client | simulator) · sync · webhooks · invoices · payouts · subscriptions
    ├─ Governance: approval inbox · audit log · RBAC (51 permissions, 5 roles)
-   ├─ Agents: LangGraph (growth + procurement) · 36-tool registry · signed agent protocol
+   ├─ Agents: LangGraph (growth + procurement) · 49-tool registry · signed agent protocol
    └─ Unified events (transactional outbox) ──► n8n / worker / WebSocket
    ▼
-PostgreSQL 16 + pgvector (57 tables) · SQLAlchemy 2 · Alembic
+PostgreSQL 16 + pgvector (62 tables) · Redis / Render Key Value (optional) · SQLAlchemy 2 · Alembic
 ```
 
 197 API operations · 62 tables · 49 agent tools · 51 permissions · 57 dashboard screens.
@@ -307,7 +334,7 @@ Full reference: [docs/CONFIGURATION.md](docs/CONFIGURATION.md).
 ## Testing
 
 ```bash
-make test-backend    # 489 tests: unit, integration, API - SQLite, no Docker, no keys
+make test-backend    # 515 tests: unit, integration, API - SQLite, no Docker, no keys
 make test-frontend   # vitest
 ```
 
@@ -358,15 +385,16 @@ Full breakdown: [docs/HACKATHON.md](docs/HACKATHON.md).
 
 ## Known limitations
 
-* PayPal sandbox **authentication is verified live**; the REST payment paths are verified against
-  the simulator and mocked PayPal responses, so run the sandbox steps in
+* PayPal sandbox **OAuth and the Orders v2 supplier payment (create -> buyer approval -> capture, on the
+  official Server SDK) are verified live**; Transaction Search, Invoicing, Payouts, Subscriptions and webhook
+  verification are verified against the simulator and mocked PayPal responses, so run the sandbox steps in
   [docs/PAYPAL.md](docs/PAYPAL.md#using-the-sandbox) to confirm a payment end to end.
 * PayPal's sandbox **MCP runtime currently returns an internal error for every tool call**
   (`Unsupported cache mode: default`); the bridge reports it faithfully. See
   [docs/SPONSORS.md](docs/SPONSORS.md#paypal-agent-toolkit-over-mcp).
-* Channel3, Kernel, Elasticsearch and Zapier were verified against **mocked HTTP only** and run
-  on labelled fallbacks until their keys are set. The new migration (`0006`) was validated as
-  Postgres SQL offline; Docker was unavailable to run it against a live Postgres.
+* **Channel3 is verified against the live API.** Elasticsearch and Zapier were verified against
+  **mocked HTTP only** and are off on the hosted demo (labelled fallbacks). Kernel is configured on the
+  hosted demo, but its session-close call is best-effort and unverified.
 * AG Studio (evaluation) shows a watermark without its licence key. Bryntum Gantt runs on a
   registered trial key (valid until 2026-12-20), which still shows Bryntum's Trial badge.
   Production use needs purchased licences for both.
@@ -375,7 +403,9 @@ Full breakdown: [docs/HACKATHON.md](docs/HACKATHON.md).
 * Analytics run on a seeded demo dataset; synced PayPal transactions are shown separately with
   their mode. CLV is an *estimate* with its assumptions returned beside it.
 * Sandbox supplier payments need a payer approval in PayPal before capture.
-* Not done from this environment: Render deployment, demo video, Devpost submission.
+* Team to-do before submitting: record the demo video and submit on Devpost.
+* Free-plan hosting: services sleep after about 15 idle minutes (the first request takes about a minute)
+  and the free database expires after 30 days.
 
 ## Project layout
 
@@ -389,7 +419,7 @@ backend/app/
                      · intelligence (events, unified)
   integrations/      paypal (client, simulator, gateway) · vector_memory · groq · langfuse · vapi
   agents/            growth graph · procurement_graph · orchestrator · memory narratives
-  tools/             36-tool registry (incl. supply, PayPal, memory)
+  tools/             49-tool registry (incl. supply, PayPal, memory)
   db/models/         … · supply · governance · paypal · memory
   seed/              deterministic demo (US merchant) + supply network
 frontend/src/app/(dashboard)/

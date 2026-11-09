@@ -5,19 +5,19 @@
 [![Docs index](https://img.shields.io/badge/-Docs_index-475569?style=flat-square&logo=markdown&logoColor=white)](README.md)
 [![Contributing](https://img.shields.io/badge/-Contributing-64748b?style=flat-square)](CONTRIBUTING.md)
 [![Architecture](https://img.shields.io/badge/-Architecture-2563eb?style=flat-square)](ARCHITECTURE.md)
-[![Tests](https://img.shields.io/badge/tests-208_passing-16a34a?style=flat-square&logo=pytest&logoColor=white)](#the-suite)
+[![Tests](https://img.shields.io/badge/tests-515_passing-16a34a?style=flat-square&logo=pytest&logoColor=white)](#the-suite)
 [![Agent memory](https://img.shields.io/badge/-Agent_memory-7c3aed?style=flat-square)](MEMORY.md)
 
 </div>
 
-208 tests, roughly ten seconds, no Docker required.
+515 backend tests, no Docker required.
 
 ```bash
 make test
 ```
 
 ```
-105 passed in 9.87s
+515 passed
 ```
 
 ---
@@ -88,17 +88,41 @@ addopts = "-q --disable-warnings"
 ## The suite
 
 ```
-tests/
+tests/                                    515 tests
   conftest.py                             engine, session, seeded data, role clients
   unit/
-    test_permissions_and_security.py      27 tests
-    test_experiment_math.py               20 tests
+    test_agent_memory.py                  27   pgvector memory, tenant isolation
+    test_agent_protocol.py                10   signed agent messages
+    test_channel3_catalog.py              15   Channel3 catalog client
+    test_channel3_shelf.py                10   gear shelf
+    test_discovery_engine.py              27   product discovery
+    test_experiment_math.py               20   statistics
+    test_inventory_signing.py             17   n8n HMAC / canonical JSON
+    test_paypal_client.py                 21   PayPal client + simulator
+    test_permissions_and_security.py      27   RBAC, passwords, tokens, redaction
+    test_procurement_policy.py            36   deterministic financial engine
+    test_realtime_hub.py                   7   websocket hub
+    test_redis_layer.py                   31   rate limits, caches, pub/sub, Redis-down fallbacks
+    test_sponsor_integrations.py          70   sponsor adapters + honest status
+    test_studio_ai.py                     22   AG Studio AI relay
+    test_paypal_server_sdk.py             (needs `paypal-server-sdk` installed)
   api/
-    test_auth.py                          17 tests
-    test_rbac_and_isolation.py            19 tests
+    test_auth.py                          17
+    test_memory_api.py                    13
+    test_paypal_api.py                    10
+    test_rbac_and_isolation.py            19
   integration/
-    test_analytics_and_agents.py          22 tests
+    test_analytics_and_agents.py          22
+    test_dual_market_growth.py            12
+    test_inventory_import.py               8
+    test_outbox_relay.py                  16
+    test_seed_rerun.py                     1
+    test_supply_agents.py                  6   end-to-end procurement lifecycle
+    test_supply_intelligence.py           20
+    test_supply_sponsors.py               31
 ```
+
+The sections below go into the original five files in detail; the rest follow the same pattern.
 
 ### Unit — permissions and security (27)
 
