@@ -559,11 +559,12 @@ That is the point of a seeded generator rather than a SQL dump.
 | `paypilot-db` | Managed Postgres 16 | The first migration runs `CREATE EXTENSION vector` and `pgcrypto` |
 | `paypilot-api` | Web service (Docker, `backend/`) | Start command runs `alembic upgrade head`, the idempotent demo seed, then uvicorn on `$PORT`; health check `/api/v1/health`. Runs the outbox and Zapier relays in-process (`OUTBOX_RELAY_IN_PROCESS=true`) |
 | `paypilot-redis` | Key Value (Redis-compatible), free: 25 MB, no persistence | Private to the workspace (`ipAllowList: []`), `allkeys-lru`. Holds rate-limit counters, Channel3 caches and realtime pub/sub - never a source of truth. The API gets it as `REDIS_URL`; see [Redis](CONFIGURATION.md#redis) |
+| `paypilot-n8n` | Web service (Docker, `n8n/`), free | The inventory/growth automation. State in the free Postgres (`n8n_` tables), workflows rebuilt from the repo on every boot, HMAC secret shared with the API through a generated env group. Free services sleep, so its 02:00 / 06:30 schedules need an external ping to fire; health URLs and the schedule are in [n8n/README.md](../n8n/README.md#on-render-free-plan) |
 | `paypilot-web` | Web service (Node, `frontend/`) | `npm ci && npm run build`, `npx next start -p $PORT` |
 
-There is no separate worker on Render: n8n runs only in Docker Compose, so the
-outbox relay has nothing to deliver there, and the Zapier relay is idle until
-`ZAPIER_WEBHOOK_URL` is set. To split the relays out, add a paid `type: worker`
+There is no separate worker on Render. The outbox relay runs in the API and delivers
+to `paypilot-n8n` once `N8N_INVENTORY_WEBHOOK_URL` is set (it idles until then); the
+Zapier relay is idle until `ZAPIER_WEBHOOK_URL` is set. To split the relays out, add a paid `type: worker`
 service running `python -m app.worker` and set `OUTBOX_RELAY_IN_PROCESS=false`.
 
 Steps:

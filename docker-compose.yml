@@ -190,7 +190,7 @@ services:
         # Import leaves workflows unpublished (activeState=fromJson needs queue mode),
         # so each one is published explicitly afterwards.
         n8n import:workflow --separate --input=/deploy
-        for id in PGAInventoryRouter PGAInventorySweeps PGAGrowthScan; do
+        for id in PGAHealth PGAInventoryRouter PGAInventorySweeps PGAGrowthScan; do
           n8n publish:workflow --id=$$id
         done
 

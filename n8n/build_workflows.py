@@ -127,10 +127,12 @@ def call_backend(name: str, position: list[int], node_id: str) -> dict:
     }
 
 
-def webhook_node(name: str, path: str, position: list[int], node_id: str) -> dict:
+def webhook_node(
+    name: str, path: str, position: list[int], node_id: str, method: str = "POST"
+) -> dict:
     return {
         "parameters": {
-            "httpMethod": "POST",
+            "httpMethod": method,
             "path": path,
             "responseMode": "responseNode",
             "options": {},
@@ -208,6 +210,41 @@ def switch_node(name: str, rules: list[tuple[str, str]], position: list[int], no
         "name": name,
         "type": "n8n-nodes-base.switch",
         "typeVersion": 3.2,
+        "position": position,
+    }
+
+
+def if_node(name: str, left: str, right: str, position: list[int], node_id: str) -> dict:
+    """Two outputs: 0 = the condition holds, 1 = it does not."""
+    return {
+        "parameters": {
+            "conditions": {
+                "options": {
+                    "caseSensitive": True,
+                    "leftValue": "",
+                    "typeValidation": "loose",
+                    "version": 2,
+                },
+                "conditions": [
+                    {
+                        "id": "c1",
+                        "leftValue": left,
+                        "rightValue": right,
+                        "operator": {
+                            "type": "string",
+                            "operation": "equals",
+                            "name": "filter.operator.equals",
+                        },
+                    }
+                ],
+                "combinator": "and",
+            },
+            "options": {},
+        },
+        "id": node_id,
+        "name": name,
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
         "position": position,
     }
 
@@ -517,7 +554,69 @@ return [{ json: { detected: data.detected ?? 0, titles: data.titles ?? [] } }];
 }
 
 
+# --------------------------------------------------------------------------- #
+# 0. Health - a GET an external monitor can poll
+# --------------------------------------------------------------------------- #
+# n8n's own ``/healthz`` only says the process is up. This says the part that
+# matters to PayPilot: the workflows are *registered* (a 404 here means they are
+# not, which is also what a 404 on the event webhook means), and - with
+# ``?deep=1`` - that n8n can reach the backend it calls back into.
+#
+# Unauthenticated on purpose, so any uptime monitor can use it, and it reveals
+# nothing beyond up/down. The backend probe is the unauthenticated liveness
+# route, not anything that reads data.
+HEALTH = {
+    "id": "PGAHealth",
+    "active": True,
+    "name": "PGA 00 Health",
+    "nodes": [
+        webhook_node("Health Check", "pga-health", [-520, 300], "hc1", method="GET"),
+        if_node("Deep Check?", "={{ $json.query.deep }}", "1", [-280, 300], "hc2"),
+        {
+            "parameters": {
+                "method": "GET",
+                "url": f"{BACKEND}/api/v1/health/live",
+                # A free-plan backend that is asleep needs about a minute to wake.
+                "options": {"timeout": 60000},
+            },
+            "id": "hc3",
+            "name": "Ping Backend",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [-40, 200],
+            "onError": "continueErrorOutput",
+        },
+        respond_node(
+            "Healthy Deep",
+            '={{ JSON.stringify({ status: "ok", n8n: "up", backend: "reachable" }) }}',
+            [220, 140],
+            "hc4",
+        ),
+        respond_node(
+            "Backend Down",
+            '={{ JSON.stringify({ status: "degraded", n8n: "up", backend: "unreachable" }) }}',
+            [220, 300],
+            "hc5",
+            code=503,
+        ),
+        respond_node(
+            "Healthy",
+            '={{ JSON.stringify({ status: "ok", n8n: "up", workflows: "registered" }) }}',
+            [-40, 440],
+            "hc6",
+        ),
+    ],
+    "connections": wire(
+        ("Health Check", "Deep Check?"),
+        ("Deep Check?", ["Ping Backend", "Healthy"]),
+        ("Ping Backend", ["Healthy Deep", "Backend Down"]),
+    ),
+    "settings": {"executionOrder": "v1"},
+}
+
+
 WORKFLOWS = [
+    ("00_health.json", HEALTH),
     ("01_event_router.json", ROUTER),
     ("02_nightly_sweeps.json", SWEEPS),
     ("03_growth_scan.json", SCAN),

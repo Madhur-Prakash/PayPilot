@@ -2,7 +2,8 @@
 #
 # Deploys, all on Render's free plan: managed Postgres 16 (pgvector is enabled by
 # the first migration), Key Value (Redis-compatible), the FastAPI API (Docker, which
-# also runs the event relays) and the Next.js web app (Node). Secrets are
+# also runs the event relays), n8n (the inventory/growth automation) and the Next.js
+# web app (Node). Secrets are
 # `sync: false` - Render prompts for them on first deploy; leave them blank to run
 # the deterministic, simulated-PayPal demo judges can use without keys.
 #
@@ -30,6 +31,13 @@ databases:
     postgresMajorVersion: "16"
 
 envVarGroups:
+  # The HMAC secret both directions of the API <-> n8n webhooks are signed with. One
+  # generated value, attached to both services, so there is nothing to copy between them.
+  - name: paypilot-n8n-link
+    envVars:
+      - key: N8N_WEBHOOK_SECRET
+        generateValue: true
+
   - name: paypilot-shared
     envVars:
       - key: APP_ENV
@@ -160,6 +168,7 @@ services:
           type: keyvalue
           name: paypilot-redis
           property: connectionString
+      - fromGroup: paypilot-n8n-link
       # The API runs the outbox and Zapier relays itself, so the whole blueprint fits
       # Render's free plan. The outbox relay idles until N8N_INVENTORY_WEBHOOK_URL is set,
       # the Zapier relay until ZAPIER_WEBHOOK_URL is set.
@@ -167,15 +176,13 @@ services:
       # `dockerCommand: python -m app.worker` and set this to "false".
       - key: OUTBOX_RELAY_IN_PROCESS
         value: "true"
-      # Optional hosted n8n (n8n Cloud or your own HTTPS instance) - see n8n/README.md.
+      # The paypilot-n8n service below (or any HTTPS n8n) - see n8n/README.md.
       # Blank URL = inventory events are recorded but not delivered (marked SKIPPED).
-      # https://<your-n8n>/webhook/pga-inventory-event
+      # Set once after the first deploy: https://<paypilot-n8n host>/webhook/pga-inventory-event
+      # (Render appends a random suffix to the hostname, so it cannot be written here).
       - key: N8N_INVENTORY_WEBHOOK_URL
         sync: false
-      # The same secret the workflows were built with (both directions are signed).
-      - key: N8N_WEBHOOK_SECRET
-        sync: false
-      # https://<your-n8n> - only used for "open in n8n" links.
+      # https://<paypilot-n8n host> - only used for "open in n8n" links.
       - key: N8N_BASE_URL
         sync: false
       - key: FRONTEND_URL
@@ -184,6 +191,89 @@ services:
         value: https://paypilot-api-bjn2.onrender.com
       - key: CORS_ORIGINS
         value: https://paypilot-web-0lqv.onrender.com
+
+  # n8n: the scheduler/router for inventory and growth automation (n8n/README.md).
+  # FREE PLAN, so three things to know:
+  #  * It sleeps after ~15 idle minutes. Webhooks wake it (about a minute; the outbox
+  #    relay retries), but its 02:00 / 06:30 schedules do not fire while it is asleep -
+  #    see "Keeping the schedules alive" in n8n/README.md.
+  #  * No disk on the free plan, so n8n keeps its state in the free Postgres above
+  #    (tables prefixed n8n_ next to the app's own).
+  #  * 512 MB is tight for n8n; the heap is capped so it fails soft instead of being
+  #    killed. If it restarts under load, that is the reason.
+  # Health, for an external monitor (no auth):
+  #   GET /healthz                       n8n process is up
+  #   GET /healthz/readiness             ... and its database is reachable
+  #   GET /webhook/pga-health            ... and the PGA workflows are registered
+  #   GET /webhook/pga-health?deep=1     ... and n8n can reach the API (wakes it)
+  - type: web
+    name: paypilot-n8n
+    runtime: docker
+    region: oregon
+    rootDir: n8n
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      - fromGroup: paypilot-n8n-link
+      - key: DB_TYPE
+        value: postgresdb
+      - key: DB_TABLE_PREFIX
+        value: n8n_
+      - key: DB_POSTGRESDB_HOST
+        fromDatabase:
+          name: paypilot-db
+          property: host
+      - key: DB_POSTGRESDB_PORT
+        fromDatabase:
+          name: paypilot-db
+          property: port
+      - key: DB_POSTGRESDB_DATABASE
+        fromDatabase:
+          name: paypilot-db
+          property: database
+      - key: DB_POSTGRESDB_USER
+        fromDatabase:
+          name: paypilot-db
+          property: user
+      - key: DB_POSTGRESDB_PASSWORD
+        fromDatabase:
+          name: paypilot-db
+          property: password
+      # Encrypts the credentials n8n stores. Generated once; must not change afterwards.
+      - key: N8N_ENCRYPTION_KEY
+        generateValue: true
+      # Where n8n calls back into: the API's public URL (the free plan has no private network).
+      - key: PGA_BACKEND_URL
+        value: https://paypilot-api-bjn2.onrender.com
+      # The merchant the scheduled sweeps run for: sign in to the app, open
+      # GET /api/v1/merchants/current and copy the id. Blank = only the schedules refuse to run.
+      - key: PGA_MERCHANT_ID
+        sync: false
+      # Editor login, created from the environment so nobody can claim an unowned n8n.
+      # The password must be a bcrypt hash - see n8n/README.md.
+      - key: N8N_INSTANCE_OWNER_EMAIL
+        sync: false
+      - key: N8N_INSTANCE_OWNER_PASSWORD_HASH
+        sync: false
+      - key: GENERIC_TIMEZONE
+        value: America/Los_Angeles
+      - key: TZ
+        value: America/Los_Angeles
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=384
+      # Keep the free database small: drop execution history after a week.
+      - key: EXECUTIONS_DATA_PRUNE
+        value: "true"
+      - key: EXECUTIONS_DATA_MAX_AGE
+        value: "168"
+      - key: N8N_DIAGNOSTICS_ENABLED
+        value: "false"
+      - key: N8N_PERSONALIZATION_ENABLED
+        value: "false"
+      - key: N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS
+        value: "true"
 
   - type: web
     name: paypilot-web

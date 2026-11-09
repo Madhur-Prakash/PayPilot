@@ -81,6 +81,86 @@ the JSON, or the next import will overwrite your change.
 The restart is not optional. n8n reads workflow activation only at boot, so an
 imported workflow's webhook is not registered until the container restarts.
 
+### On Render (free plan)
+
+`render.yaml` deploys n8n as `paypilot-n8n`, next to the API. Nothing about the loop
+changes - the outbox relay still POSTs signed events to an HTTPS webhook, and n8n still
+calls the API back over HTTPS - so the only new thing is where n8n runs.
+
+How it fits the free plan:
+
+* **No disk, so Postgres.** n8n keeps workflows and execution history in the existing
+  free Postgres (tables prefixed `n8n_`, beside the app's own). Execution history is
+  pruned after a week to keep the free database small.
+* **Workflows come from the repo, at every boot.** The image holds templates built by
+  `build_workflows.py`; `render-start.sh` fills in the secret, backend URL and merchant
+  id from the service's environment, imports and publishes them, then starts n8n -
+  the same order Docker Compose uses. An edit made to a PGA workflow in the n8n UI is
+  therefore overwritten on the next restart: change `build_workflows.py` instead.
+* **One shared secret.** Render generates `N8N_WEBHOOK_SECRET` once (group
+  `paypilot-n8n-link`) and gives it to both services - nothing to copy between them.
+* **n8n -> API over the public URL**, because free services have no private network.
+
+First deploy, after Render creates the service:
+
+1. On **`paypilot-n8n`** set
+   * `PGA_MERCHANT_ID` - sign in to the app, open `GET /api/v1/merchants/current`, copy
+     the id. Without it only the 02:00 sweep and 06:30 scan refuse to run.
+   * `N8N_INSTANCE_OWNER_EMAIL` and `N8N_INSTANCE_OWNER_PASSWORD_HASH` - the editor is on
+     a public URL, and an unowned n8n lets the first visitor claim it. The password must
+     be a bcrypt hash (n8n 2.17+):
+     `pip install bcrypt && python -c "import bcrypt,getpass; print(bcrypt.hashpw(getpass.getpass().encode(), bcrypt.gensalt(10)).decode())"`.
+     If either is blank the service still starts, logs a warning, and the first visitor
+     owns it.
+2. On **`paypilot-api`** set `N8N_INVENTORY_WEBHOOK_URL` to
+   `https://<paypilot-n8n host>/webhook/pga-inventory-event` and `N8N_BASE_URL` to
+   `https://<paypilot-n8n host>`. Render adds a random suffix to the hostname, so these
+   cannot be written into the blueprint.
+3. Confirm with the health URLs below.
+
+Moving from an n8n you already run: leave it running until the Render one answers
+`/webhook/pga-health`, then switch `N8N_INVENTORY_WEBHOOK_URL`. The shared secret is a new
+value, so the old n8n's workflows would reject the API's signatures - that is expected,
+not a bug.
+
+#### Health URLs for an external monitor
+
+All are plain `GET`s with no authentication and reveal nothing beyond up/down.
+
+| URL | Healthy | What it proves |
+|---|---|---|
+| `/healthz` | `200 {"status":"ok"}` | The n8n process is up (also Render's health check) |
+| `/healthz/readiness` | `200` | ... and its database is reachable |
+| `/webhook/pga-health` | `200 {"status":"ok","n8n":"up","workflows":"registered"}` | ... and the PGA workflows are **registered**. `404` here means they are not, which is also what would break the event webhook |
+| `/webhook/pga-health?deep=1` | `200 {"status":"ok","n8n":"up","backend":"reachable"}` | ... and n8n can reach the API it calls back into. `503 {"backend":"unreachable"}` if it cannot |
+
+`?deep=1` waits up to 60 seconds for the API, so give the monitor a timeout of at least
+that - a sleeping free API needs about a minute to wake, and the check wakes it.
+
+#### Keeping the schedules alive
+
+Free services sleep after about 15 idle minutes. A webhook wakes n8n (about a minute; the
+outbox relay retries until it answers), but a **schedule trigger cannot fire while n8n is
+asleep**, and a missed run is not caught up. So the 02:00 sweep and 06:30 growth scan need
+n8n awake at those times. Point an external scheduler (cron-job.org, a GitHub Actions
+cron, etc.) at the deep health URL a few minutes before each:
+
+| When (America/Los_Angeles, n8n's timezone) | URL |
+|---|---|
+| 01:55 daily | `https://<n8n host>/webhook/pga-health?deep=1` |
+| 06:25 daily | `https://<n8n host>/webhook/pga-health?deep=1` |
+
+Each ping wakes n8n and, through `deep=1`, the API too, so the run that follows finds both
+awake. **Do not poll more often than every 15 minutes** to "keep it warm": a free
+service that never sleeps uses about 730 of the workspace's 750 free instance-hours a
+month, leaving almost nothing for the API and web app.
+
+Limits to know about: 512 MB is tight for n8n (the heap is capped at 384 MB so it fails
+soft rather than being killed - if it restarts under load, that is why), and the free
+Postgres expires after 30 days, taking n8n's state with it. The workflows are rebuilt
+from the repo on every boot, so recreating the database loses only execution history and
+any credentials you added by hand.
+
 ### Required in `.env`
 
 | Variable | What it is |
@@ -92,6 +172,11 @@ imported workflow's webhook is not registered until the container restarts.
 | `INVENTORY_DISPATCH_INTERVAL_SECONDS` | How often the relay delivers pending events (default 15) |
 
 ## Workflows
+
+**`PGA 00 Health`** (webhook `GET /webhook/pga-health`, active)
+A health check an external monitor can poll. Answers `200` when n8n is up and the PGA
+workflows are registered; with `?deep=1` it also calls the backend's liveness route and
+answers `503` if n8n cannot reach it. It carries no secret and does no work.
 
 **`PGA 01 Inventory Event Router`** (webhook, active)
 Verifies the signature, then routes on `event_type`:
@@ -159,3 +244,10 @@ curl -s -o /dev/null -w '%{http_code}\n' \
 
 A `404` means the workflow is not active: re-run `import.sh`, which restarts the
 container for exactly this reason.
+
+The health workflow is the quicker check, and works from anywhere:
+
+```bash
+curl -s http://localhost:5678/webhook/pga-health          # {"status":"ok","n8n":"up","workflows":"registered"}
+curl -s "http://localhost:5678/webhook/pga-health?deep=1" # also checks n8n -> backend
+```
