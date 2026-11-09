@@ -318,10 +318,9 @@ holding direct connections.
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
 ```
 
-> **Warning.** Rate limiting is an in-process counter, so each worker has its own.
-> Four workers means four times the configured limit. Move the `_hits` store in
-> [`core/middleware.py`](../backend/app/core/middleware.py) to Redis before
-> relying on it.
+> **Warning.** Without `REDIS_URL`, rate limiting is an in-process counter, so each
+> worker has its own: four workers means four times the configured limit. Set
+> `REDIS_URL` (see [Redis](CONFIGURATION.md#redis)) to share one budget.
 
 ---
 
@@ -414,7 +413,7 @@ own.
 - [ ] `LOG_FORMAT=json`
 - [ ] Logs shipped to an aggregator
 - [ ] Health check wired to `/api/v1/health`
-- [ ] Rate limiting moved to Redis, or documented as per-worker
+- [ ] `REDIS_URL` set (shared rate limits and caches), or rate limiting documented as per-worker
 - [ ] Langfuse configured if you want agent traces
 
 ### Before real traffic
@@ -489,7 +488,7 @@ unreachable, so a load balancer can distinguish "up but broken" from "down".
 
 | Component | Current | To scale |
 | --- | --- | --- |
-| Backend | Stateless apart from the rate-limit counter | Add workers or replicas; move rate limiting to Redis |
+| Backend | Stateless once `REDIS_URL` is set (rate limits, caches and realtime pub/sub are shared) | Add workers or replicas |
 | Database | Composite indexes on the real access paths | Read replica for analytics; materialise period rollups |
 | Analytics | Computed per request | Cache `metrics_snapshot` per merchant and period |
 | Agent runs | Synchronous | Move to a queue if investigations exceed a few seconds |
@@ -559,6 +558,7 @@ That is the point of a seeded generator rather than a SQL dump.
 | --- | --- | --- |
 | `paypilot-db` | Managed Postgres 16 | The first migration runs `CREATE EXTENSION vector` and `pgcrypto` |
 | `paypilot-api` | Web service (Docker, `backend/`) | Start command runs `alembic upgrade head`, the idempotent demo seed, then uvicorn on `$PORT`; health check `/api/v1/health`. Runs the outbox and Zapier relays in-process (`OUTBOX_RELAY_IN_PROCESS=true`) |
+| `paypilot-redis` | Key Value (Redis-compatible), free: 25 MB, no persistence | Private to the workspace (`ipAllowList: []`), `allkeys-lru`. Holds rate-limit counters, Channel3 caches and realtime pub/sub - never a source of truth. The API gets it as `REDIS_URL`; see [Redis](CONFIGURATION.md#redis) |
 | `paypilot-web` | Web service (Node, `frontend/`) | `npm ci && npm run build`, `npx next start -p $PORT` |
 
 There is no separate worker on Render: n8n runs only in Docker Compose, so the
@@ -584,3 +584,7 @@ Steps:
 `DATABASE_URL` comes from Render as `postgres://…`; the backend normalises it to
 `postgresql+asyncpg://` (and `sslmode=` to asyncpg's `ssl=`) automatically.
 Free-plan databases expire after 30 days and free web services sleep when idle.
+Because the API's caches live in Key Value, waking it after a sleep (or deploying)
+does not re-spend Channel3 credits on shelf and product lookups that are still fresh.
+Check it with `GET /api/v1/health` -> `checks.redis` (`ok`); if it shows
+`unreachable` the app keeps working on in-process state.

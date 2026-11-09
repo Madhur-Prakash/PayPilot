@@ -285,6 +285,22 @@ class Settings(BaseSettings):
     rate_limit_requests: int = 300
     rate_limit_window_seconds: int = 60
 
+    # ---------------------------------------------------------------- redis
+    #: Redis / Render Key Value. Blank = every feature below keeps its in-process
+    #: behaviour (single instance, state lost on restart). Redis is never a source
+    #: of truth here: it holds counters, caches and pub/sub only, so the free
+    #: plan's lack of persistence costs nothing but a cold cache.
+    redis_url: str = ""
+    #: Prefix for every key and channel, so environments can share one instance.
+    redis_key_prefix: str = "paypilot"
+    redis_connect_timeout_seconds: float = 2.0
+    redis_command_timeout_seconds: float = 1.5
+    #: After a Redis failure, skip Redis for this long (callers use their in-process
+    #: fallback) instead of making every request wait out a timeout.
+    redis_retry_seconds: float = 15.0
+    #: Fan realtime events out to every API process through Redis pub/sub.
+    realtime_redis_enabled: bool = True
+
     # ---------------------------------------------------------------- demo seed
     seed_random_seed: int = 20240917
     demo_owner_email: str = "owner@juniperoak.com"

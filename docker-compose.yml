@@ -41,6 +41,21 @@ services:
       timeout: 5s
       retries: 20
 
+  # Cache / rate-limit counters / realtime pub-sub (Render: the paypilot-redis Key Value).
+  # Nothing here is a source of truth, so no volume: a restart just starts with a cold cache.
+  redis:
+    image: redis:7-alpine
+    container_name: pga-redis
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "64mb", "--maxmemory-policy", "allkeys-lru"]
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   backend:
     build:
       context: ./backend
@@ -54,6 +69,7 @@ services:
         required: false
     environment:
       DATABASE_URL: postgresql+asyncpg://autopilot:autopilot@postgres:5432/autopilot
+      REDIS_URL: redis://redis:6379/0
       FRONTEND_URL: http://localhost:3000
       OUTBOX_RELAY_IN_PROCESS: "false"
       CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
@@ -67,6 +83,8 @@ services:
       - "8000:8000"
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     command: >
       sh -c "alembic upgrade head &&
@@ -112,10 +130,13 @@ services:
         required: false
     environment:
       DATABASE_URL: postgresql+asyncpg://autopilot:autopilot@postgres:5432/autopilot
+      REDIS_URL: redis://redis:6379/0
       N8N_INVENTORY_WEBHOOK_URL: http://n8n:5678/webhook/pga-inventory-event
       N8N_WEBHOOK_SECRET: ${N8N_WEBHOOK_SECRET:-paypilot-local-n8n-secret}
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     command: ["python", "-m", "app.worker"]
     # The image's HEALTHCHECK probes the API port, which the worker never opens.

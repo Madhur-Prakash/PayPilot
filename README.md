@@ -320,8 +320,8 @@ invalidation, RBAC denials, tenant isolation, pgvector memory isolation, and the
 
 ## Deployment
 
-`render.yaml` deploys Postgres, the API (Docker), the web app and a background
-worker on Render; secrets are prompted (leave blank for the keyless demo). See
+`render.yaml` deploys Postgres, Key Value (Redis - shared caches, rate limits and
+realtime pub/sub), the API (Docker) and the web app on Render; secrets are prompted (leave blank for the keyless demo). See
 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md#render-blueprint). Docker Compose runs
 the same stack locally, plus n8n: `docker compose up -d --build`.
 

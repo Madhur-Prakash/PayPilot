@@ -29,6 +29,11 @@ greenlet==3.5.5
 PyJWT==2.14.0
 argon2-cffi==25.1.0
 
+# ---- Redis (Render Key Value) -------------------------------------------------------
+# Rate-limit counters, Channel3 caches and realtime pub/sub. Optional at runtime: with no
+# REDIS_URL everything falls back to in-process state.
+redis==7.4.1
+
 # ---- HTTP / resilience -------------------------------------------------------------
 httpx==0.28.1
 tenacity==9.1.4
@@ -59,6 +64,7 @@ langfuse==4.15.2
 pytest==9.1.1
 pytest-asyncio==1.4.0
 aiosqlite==0.22.1
+fakeredis==2.40.0
 ruff==0.16.7
 mypy==2.3.1
 types-python-dateutil==2.9.0.20260807

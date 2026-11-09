@@ -285,11 +285,11 @@ class RecommendationService:
     async def _channel3_products(self, query: str, *, category: str | None, max_price: Decimal | None,
                                  limit: int = 10) -> tuple[list[CatalogProduct], str | None]:
         filters = build_filters(max_price=max_price, category_ids=[category] if category else None)
-        _throttle(self.merchant_id)
+        await _throttle(self.merchant_id)
         page = await self.catalog.search(query, filters=filters, limit=limit, user_id=attribution_id(self.merchant_id))
         used_category = category
         if category and len(page.products) < 3:
-            _throttle(self.merchant_id)
+            await _throttle(self.merchant_id)
             filters.pop("category_ids", None)
             wider = await self.catalog.search(query, filters=filters, limit=limit, user_id=attribution_id(self.merchant_id))
             if len(wider.products) > len(page.products):
@@ -475,7 +475,7 @@ class RecommendationService:
             equivalent = await discovery._fetch(channel3_id)
         else:
             query = " ".join(product.name.replace("(", " ").replace(")", " ").split())
-            _throttle(self.merchant_id)
+            await _throttle(self.merchant_id)
             page = await self.catalog.search(query, filters=build_filters(min_price=price * Decimal("0.3"), max_price=price * 4),
                                              limit=5, user_id=attribution_id(self.merchant_id))
             if not page.products:

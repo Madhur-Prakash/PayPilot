@@ -143,7 +143,7 @@ class ShoppingAssistant:
         constraints = merge_constraints(row.constraints or {}, message, self.catalog.currency)
         catalog_budget = (constraints.get("budget") or {}).get("catalog") or {}
         pinned = build_filters(min_price=catalog_budget.get("min"), max_price=catalog_budget.get("max"))
-        _throttle(self.merchant_id, 2)
+        await _throttle(self.merchant_id, 2)
         turn = await self.catalog.conversation_turn(
             message, conversation_id=row.channel3_conversation_id or None, filters=pinned or None,
             user_id=attribution_id(self.merchant_id),

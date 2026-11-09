@@ -36,7 +36,7 @@ import random
 import re
 import time
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from decimal import Decimal, InvalidOperation
 from typing import Any
 from urllib.parse import urlparse
@@ -326,6 +326,28 @@ def _parse_ratings(raw: Any) -> dict[str, Any] | None:
     if not 0 <= value <= 5:
         return None
     return {"value": round(value, 2), "count": count}
+
+
+def product_to_cache(product: CatalogProduct) -> dict[str, Any]:
+    """A JSON-safe form of a product, for the shared (Redis) detail cache."""
+    data = asdict(product)
+    for offer in data["offers"]:
+        for name in ("price", "compare_at_price", "commission_rate"):
+            if offer[name] is not None:
+                offer[name] = str(offer[name])
+    return data
+
+
+def product_from_cache(data: dict[str, Any]) -> CatalogProduct:
+    """Inverse of :func:`product_to_cache`. Raises on a shape it does not recognise (a cache miss)."""
+    offers = []
+    for raw in data.get("offers") or []:
+        offer = dict(raw)
+        for name in ("price", "compare_at_price", "commission_rate"):
+            if offer.get(name) is not None:
+                offer[name] = Decimal(offer[name])
+        offers.append(CatalogOffer(**offer))
+    return CatalogProduct(**{**data, "offers": offers})
 
 
 def parse_catalog_product(raw: Any) -> CatalogProduct | None:
@@ -747,6 +769,8 @@ __all__ = [
     "parse_catalog_page",
     "parse_catalog_product",
     "parse_conversation_turn",
+    "product_from_cache",
+    "product_to_cache",
     "valid_product_id",
     "validate_product_url",
 ]

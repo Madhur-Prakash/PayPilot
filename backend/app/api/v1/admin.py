@@ -21,6 +21,7 @@ from app.core.permissions import (
     Permission,
     permissions_for_role,
 )
+from app.core.redis import redis_store
 from app.db.models.auth import CustomRole
 from app.db.models.merchant import MerchantMembership
 from app.db.session import ping_database
@@ -57,6 +58,10 @@ health_router = APIRouter(tags=["health"])
 )
 async def health() -> APIResponse[dict]:
     db_ok = await ping_database()
+    # Redis is optional: never degrades the status, only reported. Configured but down
+    # means rate limits and caches are running per-process.
+    if redis_store.enabled:
+        await redis_store.ping()
     return APIResponse(
         data={
             "status": "ok" if db_ok else "degraded",
@@ -66,6 +71,7 @@ async def health() -> APIResponse[dict]:
             "timestamp": datetime.now(tz=UTC).isoformat(),
             "checks": {
                 "database": "ok" if db_ok else "unreachable",
+                "redis": redis_store.status(),
                 "llm": "configured" if llm_service.enabled else "not_configured",
                 "langfuse": "configured" if tracer.enabled else "not_configured",
                 "vapi": "configured" if vapi_client.enabled else "not_configured",

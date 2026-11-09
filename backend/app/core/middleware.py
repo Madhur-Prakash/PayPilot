@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
 import time
-from collections import deque
 from collections.abc import Awaitable, Callable
 
 from fastapi import FastAPI
@@ -14,6 +14,7 @@ from starlette.responses import JSONResponse, Response
 
 from app.core.config import settings
 from app.core.logging import bind_context, clear_context, get_logger
+from app.core.ratelimit import WindowLimiter
 from app.core.security import new_request_id
 
 log = get_logger(__name__)
@@ -87,17 +88,17 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    """In-process sliding-window limiter.
+    """API-wide limiter, shared across processes and restarts when Redis is set.
 
-    Deliberately simple and dependency-free: it establishes the limiting *seam*
-    for the app. Swap the ``_hits`` store for Redis to make it multi-worker safe.
+    The counting lives in ``app.core.ratelimit``: Redis (Render Key Value) when
+    ``REDIS_URL`` is configured and reachable, otherwise a per-process sliding
+    window. It fails open - a Redis outage must never turn into a 5xx.
     """
 
     def __init__(self, app: FastAPI, *, limit: int, window_seconds: int) -> None:
         super().__init__(app)
+        self.limiter = WindowLimiter("http", limit=limit, window_seconds=window_seconds)
         self.limit = limit
-        self.window = window_seconds
-        self._hits: dict[str, deque[float]] = {}
 
     def _bucket_key(self, request: Request) -> str:
         forwarded = request.headers.get("x-forwarded-for", "")
@@ -109,7 +110,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # Authenticated callers get their own bucket so one noisy IP cannot starve a tenant.
         auth = request.headers.get("authorization", "")
         identity = auth[-24:] if auth else client_ip
-        return f"{identity}:{request.url.path.split('/')[3] if len(request.url.path.split('/')) > 3 else 'root'}"
+        # Hashed: the key can end up in Redis tooling and logs, and must not carry
+        # any part of a bearer token.
+        digest = hashlib.blake2b(identity.encode(), digest_size=8).hexdigest()
+        parts = request.url.path.split("/")
+        return f"{digest}:{parts[3] if len(parts) > 3 else 'root'}"
 
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
@@ -119,15 +124,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if request.url.path in _QUIET_PATHS:
             return await call_next(request)
 
-        key = self._bucket_key(request)
-        now = time.monotonic()
-        window_start = now - self.window
-        hits = self._hits.setdefault(key, deque())
-        while hits and hits[0] < window_start:
-            hits.popleft()
-
-        if len(hits) >= self.limit:
-            retry_after = max(1, int(self.window - (now - hits[0])))
+        result = await self.limiter.hit(self._bucket_key(request))
+        if not result.allowed:
             log.warning("rate_limited", path=request.url.path, limit=self.limit)
             return JSONResponse(
                 status_code=429,
@@ -139,13 +137,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                     },
                     "request_id": getattr(request.state, "request_id", None),
                 },
-                headers={"Retry-After": str(retry_after)},
+                headers={"Retry-After": str(result.retry_after)},
             )
 
-        hits.append(now)
         response = await call_next(request)
         response.headers["X-RateLimit-Limit"] = str(self.limit)
-        response.headers["X-RateLimit-Remaining"] = str(max(0, self.limit - len(hits)))
+        response.headers["X-RateLimit-Remaining"] = str(result.remaining)
         return response
 
 

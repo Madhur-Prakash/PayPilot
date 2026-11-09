@@ -37,6 +37,7 @@ for _key in (
     "PAYPAL_CLIENT_ID", "PAYPAL_CLIENT_SECRET", "PAYPAL_WEBHOOK_ID", "PAYPAL_SANDBOX_PAYEE_EMAIL",
     "CHANNEL3_API_KEY", "KERNEL_API_KEY", "ELASTIC_URL", "ELASTIC_API_KEY", "ZAPIER_WEBHOOK_URL",
     "STUDIO_AI_API_KEY", "STUDIO_AI_BASE_URL", "TAVILY_API_KEY", "VAPI_PRIVATE_KEY",
+    "REDIS_URL",  # tests use fakeredis explicitly, never a Redis from the developer's .env
 ):
     os.environ[_key] = ""
 os.environ["PAYPAL_ENVIRONMENT"] = "sandbox"

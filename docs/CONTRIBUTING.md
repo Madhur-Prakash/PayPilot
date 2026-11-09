@@ -503,8 +503,8 @@ RECOVERY_RATE = 0.35   # share of lapsed customers a win-back realistically reco
 A merchant may act on a number this produces. The assumption behind it should be
 visible to whoever reads the code next.
 
-**Flag limits rather than papering over them.** The rate limiter is in-process and
-says so. The experiment simulation is labelled. Where the brief's own figures were
+**Flag limits rather than papering over them.** The rate limiter is per-process unless
+`REDIS_URL` is set, and says so. The experiment simulation is labelled. Where the brief's own figures were
 internally inconsistent, the deviation is documented in
 [DATA.md](DATA.md) rather than quietly resolved.
 

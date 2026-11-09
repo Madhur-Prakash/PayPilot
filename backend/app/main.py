@@ -8,11 +8,13 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse, ORJSONResponse
 
+from app.api.realtime import hub
 from app.api.router import api_router
 from app.core.config import settings
 from app.core.exceptions import register_exception_handlers
 from app.core.logging import get_logger, logging_backend, setup_logging
 from app.core.middleware import register_middleware
+from app.core.redis import redis_store
 from app.db.session import dispose_engine, ensure_extensions, ping_database
 from app.integrations.external_search import external_search
 from app.integrations.groq import llm_service
@@ -84,6 +86,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         embeddings=settings.embedding_provider,
         memory=settings.memory_enabled,
         paypal=settings.paypal_mode,
+        redis=redis_store.status(),
     )
     if await ping_database():
         extensions = await ensure_extensions()
@@ -94,6 +97,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             "database_unavailable",
             hint="Run 'make db' to start Postgres, then 'make migrate' and 'make seed'.",
         )
+
+    if redis_store.enabled:
+        # Rate limits, Channel3 caches and the realtime bridge share this. The app boots
+        # without it - each falls back to in-process state - so a failure is reported, not fatal.
+        if await redis_store.ping():
+            log.info("redis_ready", prefix=settings.redis_key_prefix)
+        else:
+            log.warning("redis_unreachable", error=redis_store.last_error, fallback="in-process")
+        hub.start_bridge()
 
     # Nothing else carries inventory events out to n8n, so this starts after
     # the database check rather than before it.
@@ -115,6 +127,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     yield
 
     log.info("application_stopping")
+    await hub.stop_bridge()
     await relay.stop()
     await zapier_relay.stop()
     # Memory writes are queued off the request path, so a shutdown mid-flight
@@ -125,6 +138,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await llm_service.close()
     await vapi_client.close()
     await external_search.close()
+    await redis_store.close()
     await dispose_engine()
 
 

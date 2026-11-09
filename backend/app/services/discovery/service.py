@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import time
 import uuid
-from collections import deque
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from statistics import median
@@ -24,15 +23,28 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.cache import SharedCache
 from app.core.config import settings
 from app.core.exceptions import BadRequestError, RateLimitError
 from app.core.logging import get_logger
+from app.core.ratelimit import WindowLimiter
 from app.db.models.commerce import Product, Transaction
-from app.db.models.discovery import DiscoveredProduct, ProductComparison, ProductSearch, SearchSource
+from app.db.models.discovery import (
+    DiscoveredProduct,
+    ProductComparison,
+    ProductSearch,
+    SearchSource,
+)
 from app.integrations.sponsors import get_channel3_catalog
 from app.integrations.sponsors.base import SponsorError
 from app.integrations.sponsors.channel3 import attribution_id
-from app.integrations.sponsors.channel3_catalog import CatalogProduct, build_filters, valid_product_id
+from app.integrations.sponsors.channel3_catalog import (
+    CatalogProduct,
+    build_filters,
+    product_from_cache,
+    product_to_cache,
+    valid_product_id,
+)
 from app.services.discovery import comparison as comparison_engine
 from app.services.discovery.intent import SearchIntent, budget_in_catalog_currency, understand
 from app.services.discovery.ranking import rank_products, use_case_verdicts
@@ -40,24 +52,24 @@ from app.services.discovery.ranking import rank_products, use_case_verdicts
 log = get_logger(__name__)
 
 CHANNEL3_CALLS_PER_MINUTE = 40
-_calls: dict[uuid.UUID, deque[float]] = {}
-_details: dict[tuple[uuid.UUID, str], tuple[float, CatalogProduct]] = {}
+#: Per-merchant Channel3 call budget. Shared through Redis when it is configured, so the
+#: budget survives restarts (and a deploy overlap cannot double it); per-process otherwise.
+_calls = WindowLimiter("channel3", limit=CHANNEL3_CALLS_PER_MINUTE, window_seconds=60)
+#: Product-detail lookups, reused for ``DISCOVERY_DETAIL_CACHE_SECONDS``. Each miss is a
+#: Channel3 call, and Render restarts the API on every deploy and after every idle sleep.
+_details = SharedCache("discovery-detail", encode=product_to_cache, decode=product_from_cache)
 
 
 def reset_caches() -> None:
-    _calls.clear()
-    _details.clear()
+    _calls.reset()
+    _details.clear_local()
 
 
-def _throttle(merchant_id: uuid.UUID, cost: int = 1) -> None:
-    window = _calls.setdefault(merchant_id, deque())
-    now = time.monotonic()
-    while window and now - window[0] > 60:
-        window.popleft()
-    if len(window) + cost > CHANNEL3_CALLS_PER_MINUTE:
+async def _throttle(merchant_id: uuid.UUID, cost: int = 1) -> None:
+    result = await _calls.hit(str(merchant_id), cost)
+    if not result.allowed:
         raise RateLimitError("Product discovery is limited to "
                              f"{CHANNEL3_CALLS_PER_MINUTE} catalog calls a minute per merchant - try again shortly.")
-    window.extend([now] * cost)
 
 
 def explain_similarity(source: CatalogProduct, candidate: CatalogProduct) -> dict[str, Any]:
@@ -156,7 +168,7 @@ class ProductDiscoveryService:
         notes: list[str] = [budget["note"]] if budget["note"] and min_price is None and max_price is None else []
 
         cost = 1 + (1 if not category and intent.category else 0) + len(intent.brands) + len(intent.exclude_brands)
-        _throttle(self.merchant_id, cost)
+        await _throttle(self.merchant_id, cost)
         record = ProductSearch(merchant_id=self.merchant_id, user_id=self.user_id, source=source, query=text[:2000],
                                intent=intent.model_dump(mode="json"), mode=self.catalog.mode, used_llm=used_llm,
                                agent_run_id=self.agent_run_id)
@@ -174,7 +186,7 @@ class ProductDiscoveryService:
                                              mode=mode, user_id=self.attribution)
             if category_slug and not category and len(page.products) < 3 and not page_token:
                 # A guessed category can be too narrow - widen once, and say so.
-                _throttle(self.merchant_id)
+                await _throttle(self.merchant_id)
                 filters.pop("category_ids", None)
                 wider = await self.catalog.search(query, filters=filters, limit=limit, mode=mode, user_id=self.attribution)
                 if len(wider.products) > len(page.products):
@@ -266,13 +278,14 @@ class ProductDiscoveryService:
 
     async def _fetch(self, product_id: str, *, fresh: bool = False) -> CatalogProduct:
         pid = valid_product_id(product_id)
-        key = (self.merchant_id, pid)
-        cached = _details.get(key)
-        if cached and not fresh and time.monotonic() - cached[0] < settings.discovery_detail_cache_seconds:
-            return cached[1]
-        _throttle(self.merchant_id)
+        key = f"{self.merchant_id}:{pid}"
+        if not fresh:
+            cached = await _details.get(key)
+            if cached is not None:
+                return cached
+        await _throttle(self.merchant_id)
         product = await self.catalog.product(pid, user_id=self.attribution)
-        _details[key] = (time.monotonic(), product)
+        await _details.set(key, product, settings.discovery_detail_cache_seconds)
         return product
 
     async def similar(
@@ -286,7 +299,7 @@ class ProductDiscoveryService:
                                 brand_ids=[base.brand_id] if same_brand and base.brand_id else None)
         if same_brand is False and base.brand_id:
             filters["exclude_brand_ids"] = [base.brand_id]
-        _throttle(self.merchant_id)
+        await _throttle(self.merchant_id)
         fallback_used = False
         try:
             page = await self.catalog.similar(base.id, filters=filters or None, limit=limit, user_id=self.attribution)
@@ -294,7 +307,7 @@ class ProductDiscoveryService:
             if exc.status_code != 404:
                 raise
             # Not in Channel3's similarity index yet - the documented fallback is a title search.
-            _throttle(self.merchant_id)
+            await _throttle(self.merchant_id)
             page = await self.catalog.search(base.title, filters=filters or None, limit=limit + 1, user_id=self.attribution)
             page.products = [p for p in page.products if p.id != base.id]
             fallback_used = True
@@ -316,7 +329,7 @@ class ProductDiscoveryService:
     async def enrich(self, url: str) -> dict[str, Any]:
         """Product URL -> structured Channel3 product (``POST /v1/lookup``), then full details."""
         started = time.perf_counter()
-        _throttle(self.merchant_id, 2)
+        await _throttle(self.merchant_id, 2)
         record = ProductSearch(merchant_id=self.merchant_id, user_id=self.user_id, source=SearchSource.ENRICH,
                                query=url[:2000], intent={"url": url}, request={"url": url}, mode=self.catalog.mode,
                                agent_run_id=self.agent_run_id)
@@ -332,7 +345,7 @@ class ProductDiscoveryService:
             self.session.add(record)
             await self.session.flush()
             raise
-        _details[(self.merchant_id, product.id)] = (time.monotonic(), product)
+        await _details.set(f"{self.merchant_id}:{product.id}", product, settings.discovery_detail_cache_seconds)
         record.result_count, record.product_ids = 1, [product.id]
         record.duration_ms = int((time.perf_counter() - started) * 1000)
         self.session.add(record)

@@ -346,14 +346,40 @@ RATE_LIMIT_WINDOW_SECONDS=60
 | Variable | Notes |
 | --- | --- |
 | `CORS_ORIGINS` | Comma-separated. Credentials are allowed, so wildcards are not |
-| `RATE_LIMIT_*` | Sliding window, **in-process**. See the warning below |
+| `RATE_LIMIT_*` | Per-caller request budget. Shared through Redis when `REDIS_URL` is set, otherwise per-process. See [Redis](#redis) |
 | `BACKEND_URL` | Used to build the Vapi server-tool URL |
 
-> **Warning.** Rate limiting uses an in-memory counter, so each worker keeps its
-> own. With four workers the effective limit is four times the configured value.
-> For production, swap the `_hits` store in
-> [`core/middleware.py`](../backend/app/core/middleware.py) for Redis. The seam is
-> there for exactly this.
+### Redis
+
+Optional. Set `REDIS_URL` (on Render the blueprint wires it to the `paypilot-redis`
+Key Value instance) and these move from process memory to Redis:
+
+| What | Where | Why it matters |
+| --- | --- | --- |
+| HTTP rate-limit counters | [`core/ratelimit.py`](../backend/app/core/ratelimit.py) | One budget across workers and restarts (without Redis, four workers = four times the limit) |
+| Per-merchant Channel3 call budget (40/min) | `services/discovery/service.py` | Survives a restart or deploy |
+| Gear-shelf cache (30 min) and product-detail cache (`DISCOVERY_DETAIL_CACHE_SECONDS`) | [`core/cache.py`](../backend/app/core/cache.py) | Each miss spends Channel3 credits; Render restarts the API on every deploy and after every idle sleep |
+| Realtime events | [`api/realtime.py`](../backend/app/api/realtime.py) | Pub/sub reaches browsers connected to any API process, e.g. both instances during a deploy |
+
+Redis is **never a source of truth** - Postgres holds everything that matters - so it
+needs no persistence (Render's free Key Value plan has none). It is also never a hard
+dependency: with `REDIS_URL` blank, or when Redis is down, each feature falls back to
+the in-process behaviour, and after a failure a circuit breaker skips Redis for
+`REDIS_RETRY_SECONDS` instead of making every request wait out a timeout.
+`GET /api/v1/health` reports `checks.redis` as `ok`, `unreachable` or `not_configured`
+and never degrades `status` for it.
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `REDIS_URL` | blank | `redis://` or `rediss://`. Blank = in-process |
+| `REDIS_KEY_PREFIX` | `paypilot` | Namespaces keys and channels so environments can share an instance |
+| `REDIS_CONNECT_TIMEOUT_SECONDS` / `REDIS_COMMAND_TIMEOUT_SECONDS` | `2` / `1.5` | Kept short: a slow Redis must not slow requests |
+| `REDIS_RETRY_SECONDS` | `15` | How long to use the fallback after a failure |
+| `REALTIME_REDIS_ENABLED` | `true` | `false` keeps realtime process-local while Redis still serves the rest |
+
+The limiter is a fixed window (one `INCRBY` + `EXPIRE` per caller per window), chosen
+over a sliding window so each caller costs one tiny key on a 25 MB instance; a caller
+can burst up to twice the limit across a window boundary.
 
 ---
 

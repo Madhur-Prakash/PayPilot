@@ -1,14 +1,22 @@
 # PayPilot - Render Blueprint (https://render.com/docs/blueprint-spec)
 #
 # Deploys, all on Render's free plan: managed Postgres 16 (pgvector is enabled by
-# the first migration), the FastAPI API (Docker, which also runs the event relays)
-# and the Next.js web app (Node). Secrets are `sync: false` - Render prompts for
-# them on first deploy; leave them blank to run the deterministic, simulated-PayPal
-# demo judges can use without keys.
+# the first migration), Key Value (Redis-compatible), the FastAPI API (Docker, which
+# also runs the event relays) and the Next.js web app (Node). Secrets are
+# `sync: false` - Render prompts for them on first deploy; leave them blank to run
+# the deterministic, simulated-PayPal demo judges can use without keys.
 #
 # Free-plan limits: services sleep after ~15 idle minutes (first request then takes
 # about a minute - open the site before a demo), and the free database expires
 # after 30 days.
+#
+# Key Value is what makes the sleeping API cheap to wake: the Channel3 caches (every
+# miss spends credits), the per-merchant Channel3 call budget and the HTTP rate-limit
+# counters live there instead of in memory, so they survive idle sleeps and deploys,
+# and realtime events reach browsers connected to either instance during a deploy
+# overlap. The free plan is 25 MB with no persistence - fine, because nothing in it
+# is a source of truth (Postgres is). If it is ever down the API falls back to
+# in-process state; see backend/app/core/redis.py.
 #
 # After the first deploy, if you renamed the services, update FRONTEND_URL /
 # CORS_ORIGINS on the API and NEXT_PUBLIC_API_URL on the web service.
@@ -117,6 +125,17 @@ envVarGroups:
         value: none
 
 services:
+  # Redis-compatible store for caches, rate-limit counters and realtime pub/sub.
+  # An empty ipAllowList makes it reachable only from this workspace's services in
+  # the same region (not the public internet). allkeys-lru: when the 25 MB fills,
+  # evict the least recently used entry instead of refusing writes.
+  - type: keyvalue
+    name: paypilot-redis
+    plan: free
+    region: oregon
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []
+
   - type: web
     name: paypilot-api
     runtime: docker
@@ -134,6 +153,12 @@ services:
       - key: DATABASE_URL
         fromDatabase:
           name: paypilot-db
+          property: connectionString
+      # Internal Key Value URL (redis://...). Blank/removed = everything runs in-process.
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: paypilot-redis
           property: connectionString
       # The API runs the outbox and Zapier relays itself, so the whole blueprint fits
       # Render's free plan. The outbox relay idles until N8N_INVENTORY_WEBHOOK_URL is set,

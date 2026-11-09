@@ -334,8 +334,9 @@ execution *control flow* is real — only the channel adapter is a stub.
 
 **Competitor scraping.** Seeded benchmark data, labelled. No platform is accessed.
 
-**Distributed rate limiting.** In-process counter; the seam is there, swap the
-store for Redis.
+**Distributed rate limiting.** Done when `REDIS_URL` is set (Render Key Value):
+the limiter, the Channel3 caches and the realtime hub share Redis, and fall back to
+in-process state when it is absent or down. See [CONFIGURATION.md](CONFIGURATION.md#redis).
 
 ---
 

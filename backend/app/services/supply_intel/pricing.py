@@ -122,7 +122,7 @@ class PricingIntelligence:
                                request={"query": query, "filters": filters, "limit": 15}, mode=self.catalog.mode,
                                agent_run_id=self.agent_run_id)
         try:
-            _throttle(self.merchant_id)
+            await _throttle(self.merchant_id)
             page = await self.catalog.search(query, filters=filters, limit=15, user_id=attribution_id(self.merchant_id))
         except SponsorError as exc:
             record.error = str(exc)[:1000]

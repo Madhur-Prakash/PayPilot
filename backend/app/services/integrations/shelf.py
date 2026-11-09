@@ -21,7 +21,6 @@ online product and estimates what recommending them could earn.
 from __future__ import annotations
 
 import asyncio
-import time
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -32,6 +31,7 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.cache import SharedCache
 from app.db.models.commerce import Product, Transaction, TransactionItem
 from app.integrations.sponsors import SponsorError, get_channel3
 from app.integrations.sponsors.base import LIVE, SIMULATED
@@ -64,11 +64,14 @@ COFFEE_SHELF: tuple[Slot, ...] = (
     Slot("storage", "Bean storage", "airtight coffee bean canister", "food-storage-containers", Decimal("80")),
 )
 
-_cache: dict[uuid.UUID, tuple[float, dict[str, Any]]] = {}
+#: Each build is one Channel3 search per slot (credits). Kept in Redis so a deploy or the free
+#: plan's idle sleep does not throw away a 30-minute cache; per-process when Redis is not set.
+_cache = SharedCache("shelf")
 
 
 def clear_cache() -> None:
-    _cache.clear()
+    """Forget the in-process copy (tests). Redis entries simply expire."""
+    _cache.clear_local()
 
 
 async def _anchor_product(session: AsyncSession, merchant_id: uuid.UUID) -> Product | None:
@@ -153,10 +156,22 @@ def _estimate(buyers: int, slots: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 async def build_shelf(session: AsyncSession, merchant_id: uuid.UUID, *, refresh: bool = False) -> dict[str, Any]:
-    cached = _cache.get(merchant_id)
-    if cached and not refresh and time.monotonic() - cached[0] < CACHE_TTL_SECONDS:
-        return {**cached[1], "cached": True}
+    key = str(merchant_id)
+    if not refresh:
+        cached = await _cache.get(key)
+        if cached is not None:
+            return {**cached, "cached": True}
 
+    # One build per merchant at a time: a double page load must not spend the credits twice.
+    async with _cache.lock(key):
+        if not refresh:
+            cached = await _cache.get(key)  # another request finished while this one waited
+            if cached is not None:
+                return {**cached, "cached": True}
+        return await _build(session, merchant_id, key)
+
+
+async def _build(session: AsyncSession, merchant_id: uuid.UUID, key: str) -> dict[str, Any]:
     anchor = await _anchor_product(session, merchant_id)
     if anchor is None:
         return {"anchor": None, "slots": [], "estimate": None, "mode": get_channel3().mode,
@@ -184,5 +199,5 @@ async def build_shelf(session: AsyncSession, merchant_id: uuid.UUID, *, refresh:
     }
     if mode == SIMULATED:
         payload["estimate"]["assumptions"].append("Prices are from the offline reference, not live data.")
-    _cache[merchant_id] = (time.monotonic(), payload)
+    await _cache.set(key, payload, CACHE_TTL_SECONDS)
     return payload
