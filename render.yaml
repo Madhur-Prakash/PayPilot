@@ -176,7 +176,7 @@ services:
       # `dockerCommand: python -m app.worker` and set this to "false".
       - key: OUTBOX_RELAY_IN_PROCESS
         value: "true"
-      # The paypilot-n8n service below (or any HTTPS n8n) - see n8n/README.md.
+      # The paypilot-n8n service below (or any HTTPS n8n) - see docs/AUTOMATION.md.
       # Blank URL = inventory events are recorded but not delivered (marked SKIPPED).
       # Set once after the first deploy: https://<paypilot-n8n host>/webhook/pga-inventory-event
       # (Render appends a random suffix to the hostname, so it cannot be written here).
@@ -192,11 +192,11 @@ services:
       - key: CORS_ORIGINS
         value: https://paypilot-web-0lqv.onrender.com
 
-  # n8n: the scheduler/router for inventory and growth automation (n8n/README.md).
+  # n8n: the scheduler/router for inventory and growth automation (docs/AUTOMATION.md).
   # FREE PLAN, so three things to know:
   #  * It sleeps after ~15 idle minutes. Webhooks wake it (about a minute; the outbox
   #    relay retries), but its 02:00 / 06:30 schedules do not fire while it is asleep -
-  #    see "Keeping the schedules alive" in n8n/README.md.
+  #    see "Keeping the schedules alive" in docs/AUTOMATION.md.
   #  * No disk on the free plan, so n8n keeps its state in the free Postgres above
   #    (tables prefixed n8n_ next to the app's own).
   #  * 512 MB is tight for n8n; the heap is capped so it fails soft instead of being
@@ -252,7 +252,7 @@ services:
       - key: PGA_MERCHANT_ID
         sync: false
       # Editor login, created from the environment so nobody can claim an unowned n8n.
-      # The password must be a bcrypt hash - see n8n/README.md.
+      # The password must be a bcrypt hash - see docs/AUTOMATION.md.
       - key: N8N_INSTANCE_OWNER_EMAIL
         sync: false
       - key: N8N_INSTANCE_OWNER_PASSWORD_HASH

@@ -2,276 +2,296 @@
 
 # Deployment
 
-[![Docs index](https://img.shields.io/badge/-Docs_index-475569?style=flat-square&logo=markdown&logoColor=white)](README.md)
-[![Previous: Configuration](https://img.shields.io/badge/-Previous:_Configuration-64748b?style=flat-square)](CONFIGURATION.md)
+Running PayPilot beyond `localhost`: Docker Compose, the Render Blueprint, other container hosts, and what to
+change before real traffic.
+
+[![Docs index](https://img.shields.io/badge/-Docs_index-0b2a6f?style=flat-square)](README.md)
+[![Configuration](https://img.shields.io/badge/-Configuration-2563eb?style=flat-square)](CONFIGURATION.md)
 [![Security](https://img.shields.io/badge/-Security-dc2626?style=flat-square)](SECURITY.md)
-[![Automation](https://img.shields.io/badge/-Automation-b45309?style=flat-square)](../n8n/README.md)
+[![Automation](https://img.shields.io/badge/-Automation-b45309?style=flat-square)](AUTOMATION.md)
+[![Render](https://img.shields.io/badge/Render-Blueprint-46E3B7?style=flat-square&logo=render&logoColor=white)](../render.yaml)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)](../docker-compose.yml)
 
 </div>
-
-Taking PayPilot beyond `localhost`.
 
 ---
 
 ## Contents
 
+- [Deployment topology](#deployment-topology)
 - [Before you deploy](#before-you-deploy)
-- [Docker Compose (self-contained)](#docker-compose-self-contained)
-- [Supabase](#supabase)
-- [Split deployment](#split-deployment)
-- [Frontend on Vercel](#frontend-on-vercel)
-- [Backend on a container platform](#backend-on-a-container-platform)
+- [Docker Compose](#docker-compose)
+- [Render Blueprint](#render-blueprint)
+- [Other platforms](#other-platforms)
+- [Managed Postgres](#managed-postgres)
 - [Migrations in production](#migrations-in-production)
 - [Production checklist](#production-checklist)
-- [Observability](#observability)
+- [Observability in production](#observability-in-production)
 - [Scaling notes](#scaling-notes)
 - [Backups and recovery](#backups-and-recovery)
 
 ---
 
+## Deployment topology
+
+Every deployment target runs the same five pieces. Only the API and Postgres are required.
+
+```mermaid
+flowchart LR
+    B["Browser"] -->|HTTPS| WEB["Web app<br/>Next.js 15"]
+    B -->|"HTTPS /api/v1, WebSocket"| API["API<br/>FastAPI, Docker"]
+    API --> DB[("PostgreSQL 16<br/>+ pgvector")]
+    API -.->|optional| R[("Redis or<br/>Render Key Value")]
+    API -->|"signed outbox events"| N8N["n8n<br/>optional"]
+    N8N -->|"signed callbacks"| API
+    API <-->|"REST, verified webhooks"| PP["PayPal"]
+    API --> EXT["Channel3, Groq, Langfuse,<br/>Zapier, Elasticsearch, Kernel"]
+```
+
+| Piece | Required | Image or runtime | Health check |
+| --- | :-: | --- | --- |
+| API | yes | [`backend/Dockerfile`](../backend/Dockerfile) (`python:3.12-slim`, port 8000) | `GET /api/v1/health` |
+| PostgreSQL 16 + pgvector | yes | `pgvector/pgvector:pg16` or any managed Postgres with `vector` | `pg_isready` |
+| Web app | for the UI | [`frontend/Dockerfile`](../frontend/Dockerfile) (`node:22-alpine`, port 3000) or a Node host | `GET /` |
+| Redis | no | `redis:7-alpine` or Render Key Value | `redis-cli ping` |
+| n8n | no | `n8nio/n8n:2.46.5` ([`n8n/Dockerfile`](../n8n/Dockerfile) on Render) | `GET /healthz` |
+
+The outbox relay that delivers events to n8n runs either inside the API process
+(`OUTBOX_RELAY_IN_PROCESS=true`) or as a separate worker (`python -m app.worker`).
+
+---
+
 ## Before you deploy
 
-Three things are non-negotiable.
+Three changes are required for anything reachable from the internet.
 
-### 1. Generate a real `JWT_SECRET`
+**1. A real `JWT_SECRET`.** It signs access tokens and keys the HMAC that stores refresh tokens. The default in
+`.env.example` is public.
 
 ```bash
 python -c "import secrets; print(secrets.token_urlsafe(64))"
 ```
 
-It signs access tokens **and** keys the HMAC that hashes refresh tokens. The
-default in `.env.example` is a placeholder and is public.
-
-### 2. Turn on secure cookies
+**2. Production mode and secure cookies.**
 
 ```dotenv
-REFRESH_COOKIE_SECURE=true
 APP_ENV=production
 DEBUG=false
+LOG_FORMAT=json
+REFRESH_COOKIE_SECURE=true
 ```
 
-`APP_ENV=production` also enables HSTS and strips exception detail from error
-responses.
+`APP_ENV=production` enables HSTS and strips exception detail from error responses.
 
-### 3. Lock down CORS
+**3. Exact origins.**
 
 ```dotenv
-CORS_ORIGINS=https://app.yourdomain.com
-FRONTEND_URL=https://app.yourdomain.com
-BACKEND_URL=https://api.yourdomain.com
+FRONTEND_URL=https://app.example.com
+BACKEND_URL=https://api.example.com
+CORS_ORIGINS=https://app.example.com
 ```
 
 Credentials are allowed on CORS, so a wildcard is neither accepted nor safe.
 
 ---
 
-## Docker Compose (self-contained)
+## Docker Compose
 
-The fastest path to a running deployment. One command brings up the whole
-product: Postgres with pgvector, the backend, the outbox worker, the frontend and
-n8n with its workflows imported and published.
+The whole product on one machine with one command.
 
 ```bash
-cp .env.example .env            # optional; for anything public edit JWT_SECRET, APP_ENV, CORS_ORIGINS, REFRESH_COOKIE_SECURE
+cp .env.example .env        # optional; edit JWT_SECRET, APP_ENV, CORS_ORIGINS for anything public
 docker compose up -d --build
 docker compose logs -f backend
 ```
 
-`.env` is optional: without it the stack runs with simulated PayPal and
-deterministic agents. `make docker-up` (or `docker compose up -d postgres`)
-starts only Postgres, for `make dev`.
+Without `.env` the stack still starts: simulated PayPal, deterministic agents.
+
+### Services
 
 [`docker-compose.yml`](../docker-compose.yml) defines:
 
-| Service | Image / build | Port | What it does |
+| Service | Image or build | Host port | Role |
 | --- | --- | --- | --- |
-| `postgres` | `pgvector/pgvector:pg16` | 5433 | Database (pgvector enabled) |
-| `backend` | `backend/Dockerfile` | 8000 | Migrates, seeds, serves the API |
-| `worker` | `backend/Dockerfile` | - | Delivers the event outbox to n8n every 15 s |
-| `frontend` | `frontend/Dockerfile` | 3000 | Next.js app |
-| `n8n-build` | `backend/Dockerfile` | - | One-shot: renders the workflows for the Docker network (`http://backend:8000`, merchant id read from the database) |
+| `postgres` | `pgvector/pgvector:pg16` | 5433 | Database; `vector` and `pgcrypto` created on first start |
+| `redis` | `redis:7-alpine` | 6379 | Rate limits, caches, realtime pub/sub; no persistence, 64 MB, `allkeys-lru` |
+| `backend` | `backend/Dockerfile` | 8000 | Migrates, seeds (idempotent), serves the API |
+| `frontend` | `frontend/Dockerfile` | 3000 | Next.js production build |
+| `worker` | `backend/Dockerfile` | - | Delivers the event outbox to n8n every 15 seconds (`python -m app.worker`) |
+| `n8n-build` | `backend/Dockerfile` | - | One-shot: renders the workflows for this network (callback `http://backend:8000`, merchant id read from the database) |
 | `n8n-import` | `n8nio/n8n:2.46.5` | - | One-shot: imports and publishes the workflows before n8n boots |
-| `n8n` | `n8nio/n8n:2.46.5` | 5678 | Scheduler and router for inventory automation |
+| `n8n` | `n8nio/n8n:2.46.5` | 5678 | Scheduler and router for automation |
+| `elasticsearch` | `elasticsearch:8.15.3` | 127.0.0.1:9200 | Optional, profile `search`: `docker compose --profile search up -d elasticsearch` |
 
-The HMAC secret shared by the backend, worker and workflows is
-`N8N_WEBHOOK_SECRET` from `.env`, falling back to a local-only default when it is
-blank. After `seed --reset` (the merchant id changes), refresh the scheduled
-workflows with `docker compose up -d --force-recreate n8n-build n8n-import n8n`.
+Start order is enforced with health checks: `postgres` and `redis` -> `backend` (healthy after migrate and seed)
+-> `n8n-build` -> `n8n-import` -> `n8n`. The backend's health check allows a 180-second start period for the
+first seed.
 
-The backend container runs migrations and the seed on start:
+The backend container command is:
 
-```yaml
-command: >
-  sh -c "alembic upgrade head &&
-         python -m app.seed.seed &&
-         uvicorn app.main:app --host 0.0.0.0 --port 8000"
+```sh
+alembic upgrade head && python -m app.seed.seed && uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-`app.seed.seed` is idempotent, so restarts do not duplicate data.
+For a deployment with real users, remove `python -m app.seed.seed`; see
+[production without demo data](#production-without-demo-data).
 
-> **For a real deployment**, drop `python -m app.seed.seed` from the command —
-> you do not want demo data in production. See
-> [Migrations in production](#migrations-in-production).
+### Build-time frontend values
 
-### Build-time frontend configuration
-
-`NEXT_PUBLIC_*` values are baked in at build time, so the API URL is a build arg:
+`NEXT_PUBLIC_*` values are compiled into the bundle, so they are build args, not runtime variables:
 
 ```yaml
 frontend:
   build:
     args:
-      NEXT_PUBLIC_API_URL: https://api.yourdomain.com/api/v1
+      NEXT_PUBLIC_API_URL: https://api.example.com/api/v1
+      NEXT_PUBLIC_AG_STUDIO_LICENSE_KEY: ${NEXT_PUBLIC_AG_STUDIO_LICENSE_KEY:-}
+      NEXT_PUBLIC_BRYNTUM_LICENSE_KEY: ${NEXT_PUBLIC_BRYNTUM_LICENSE_KEY:-}
 ```
 
-Changing it later requires a rebuild, not a restart.
+Changing one requires `docker compose build frontend`, not a restart.
 
-### Stopping
+### Operations
 
-```bash
-make docker-down                    # stop, keep data
-docker compose down -v              # stop and destroy the volume
-```
+| Task | Command |
+| --- | --- |
+| Postgres only (for `make dev`) | `docker compose up -d postgres` or `make docker-up` |
+| Stop, keep data | `docker compose stop` or `make docker-down` |
+| Rebuild after code changes | `docker compose up -d --build` |
+| Re-seed the demo tenant | `docker compose exec backend python -m app.seed.seed --reset` |
+| Refresh n8n after a re-seed (merchant id changed) | `docker compose up -d --force-recreate n8n-build n8n-import n8n` |
+| Wipe all data | `docker compose down -v` |
+
+The HMAC secret shared by the backend, worker and n8n workflows is `N8N_WEBHOOK_SECRET` from `.env`, falling back
+to a local-only default.
 
 ---
 
-## Supabase
+## Render Blueprint
 
-Supabase supplies **PostgreSQL and pgvector**. Authentication stays in FastAPI —
-Supabase Auth is not used as the application's auth abstraction.
+[`render.yaml`](../render.yaml) deploys the whole product on [Render](https://render.com), entirely on the free
+plan. The hosted demo runs from it.
 
-### 1. Enable pgvector
-
-Dashboard -> **Database** -> **Extensions** -> enable `vector`. Enable `pgcrypto`
-too if it is not already on.
-
-### 2. Get the session connection string
-
-**Project Settings** -> **Database** -> **Connection string** -> **URI**. Use the
-**session** pooler (port 5432), not the transaction pooler (6543), unless you
-accept the caveat below.
-
-```dotenv
-DATABASE_URL=postgresql+asyncpg://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres
+```mermaid
+flowchart TB
+    subgraph Render["Render workspace (region: oregon)"]
+        WEB["paypilot-web<br/>Node web service"]
+        API["paypilot-api<br/>Docker web service<br/>+ in-process relays"]
+        N8N["paypilot-n8n<br/>Docker web service"]
+        DOCS["paypilot-docs<br/>static site, APIMatic portal"]
+        DB[("paypilot-db<br/>Postgres 16")]
+        KV[("paypilot-redis<br/>Key Value, private")]
+    end
+    WEB -->|NEXT_PUBLIC_API_URL| API
+    API -->|DATABASE_URL| DB
+    API -->|REDIS_URL| KV
+    API -->|N8N_INVENTORY_WEBHOOK_URL| N8N
+    N8N -->|PGA_BACKEND_URL| API
+    N8N -->|"n8n_ tables"| DB
 ```
 
-Note the `+asyncpg` driver, and URL-encode any special characters in the password.
+### Resources
 
-### 3. Migrate and verify
+| Resource | Type | What it does |
+| --- | --- | --- |
+| `paypilot-db` | Managed Postgres 16 | Application data and pgvector agent memory. The first migration creates `vector` and `pgcrypto` |
+| `paypilot-redis` | Key Value (Redis-compatible), private (`ipAllowList: []`), `allkeys-lru` | Rate-limit counters, Channel3 call budget and caches, realtime pub/sub. Never a source of truth; the API falls back to in-process state if it is unreachable |
+| `paypilot-api` | Docker web service, `backend/` | [`backend/scripts/render-start.sh`](../backend/scripts/render-start.sh): `alembic upgrade head`, idempotent seed, `uvicorn` on `$PORT` with proxy headers. Health check `/api/v1/health`. Runs the outbox and Zapier relays in-process, so no paid worker is needed |
+| `paypilot-n8n` | Docker web service, `n8n/` | Automation. State in the free Postgres (`n8n_` tables), workflows rebuilt from the repo on every boot. See [Automation: on Render](AUTOMATION.md#on-render-free-plan) |
+| `paypilot-web` | Node web service, `frontend/` | `npm ci && npm run build`, then `npx next start -p $PORT` |
+| `paypilot-docs` | Static site, `apimatic/` | Runs the APIMatic CLI to build PayPilot's developer portal. Needs `APIMATIC_API_KEY`; without it the build fails harmlessly |
 
-```bash
-make migrate
-curl -s localhost:8000/api/v1/health | python -m json.tool
-```
+Two environment groups wire it together without copying any value by hand:
 
-### How the pooler is handled
+* `paypilot-shared`: production settings, generated `JWT_SECRET`, `AGENT_PROTOCOL_SECRET`,
+  `PAYPAL_SIMULATOR_WEBHOOK_SECRET` and `ZAPIER_SIGNING_SECRET`, and every optional key as `sync: false`.
+* `paypilot-n8n-link`: one generated `N8N_WEBHOOK_SECRET`, attached to both the API and n8n.
 
-[`db/session.py`](../backend/app/db/session.py) detects `pooler.supabase` (or
-`pgbouncer=true`) in the URL and automatically:
+`DATABASE_URL` and `REDIS_URL` come from `fromDatabase` and `fromService` references. Render's `postgres://` URL is
+normalised to `postgresql+asyncpg://` by the backend.
 
-- switches to `NullPool` — the pooler already pools
-- sets `statement_cache_size=0` and `prepared_statement_cache_size=0`
+### Steps
 
-asyncpg's implicit prepared-statement cache is incompatible with transaction
-pooling; without this you get intermittent
-`prepared statement "__asyncpg_..." does not exist` errors under load. You do not
-need to configure any of it.
+1. Push the repository to GitHub or GitLab.
+2. In the Render dashboard choose **New -> Blueprint** and select the repository.
+3. Render prompts for every `sync: false` secret. Leave them **blank** for the keyless demo, or fill in
+   `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_SANDBOX_PAYEE_EMAIL`, `GROQ_API_KEY`,
+   `CHANNEL3_API_KEY`, `LANGFUSE_*` and the others you need.
+4. `render.yaml` hard-codes the hosted demo's URLs in `FRONTEND_URL`, `BACKEND_URL`, `CORS_ORIGINS`,
+   `PGA_BACKEND_URL` and `NEXT_PUBLIC_API_URL`. Render adds a random suffix to hostnames, so replace these with your
+   services' URLs, then redeploy the web service (Next.js inlines `NEXT_PUBLIC_*` at build time).
+5. PayPal webhooks: register `https://<api-host>/api/v1/paypal/webhooks` in the PayPal developer dashboard and set
+   `PAYPAL_WEBHOOK_ID` on the API.
+6. n8n (optional): on `paypilot-n8n` set `PGA_MERCHANT_ID`, `N8N_INSTANCE_OWNER_EMAIL` and
+   `N8N_INSTANCE_OWNER_PASSWORD_HASH`; on `paypilot-api` set `N8N_INVENTORY_WEBHOOK_URL` and `N8N_BASE_URL`.
+   Details: [Automation: on Render](AUTOMATION.md#on-render-free-plan).
+7. Verify: `GET https://<api-host>/api/v1/health` returns `status: ok` and `checks.redis: ok`.
 
-### Seeding a Supabase database
+### Free-plan behaviour
 
-```bash
-make seed
-```
-
-Expect it to take longer than locally — roughly 14,800 transactions over a network
-round trip. It is idempotent, so a timeout can simply be re-run.
+* Web services sleep after about 15 idle minutes; the first request after that takes about a minute. Open the
+  site before a demo.
+* The free database expires after 30 days.
+* Because the API's caches live in Key Value, waking or redeploying the API does not re-spend Channel3 credits on
+  results that are still fresh.
+* A sleeping n8n cannot fire its 02:00 and 06:30 schedules. An external ping to its deep health URL a few minutes
+  before each wakes it; see [Automation: keeping the schedules alive](AUTOMATION.md#keeping-the-schedules-alive).
+* To move the relays out of the API, add a paid `type: worker` service running `python -m app.worker` and set
+  `OUTBOX_RELAY_IN_PROCESS=false`.
 
 ---
 
-## Split deployment
+## Other platforms
 
-The common production shape: frontend on a CDN platform, backend on a container
-host, database managed.
+### Split deployment
+
+The common production shape: the frontend on a CDN platform, the API on a container host, a managed database.
 
 ```
-  Browser
-     |
-     |  https://app.yourdomain.com
-     v
-  Frontend (Vercel / Netlify / Cloudflare Pages)
-     |
-     |  https://api.yourdomain.com/api/v1     CORS + credentials
-     v
-  Backend (Fly.io / Railway / Render / Cloud Run / ECS)
-     |
-     v
-  PostgreSQL + pgvector (Supabase / RDS / Neon / Cloud SQL)
+Browser
+  |  https://app.example.com
+  v
+Frontend (Vercel, Netlify, Cloudflare Pages, Render)
+  |  https://api.example.com/api/v1    CORS with credentials
+  v
+API container (Render, Fly.io, Railway, Cloud Run, ECS)
+  |
+  v
+PostgreSQL 16 + pgvector (Render, Supabase, Neon, RDS, Cloud SQL)
 ```
 
-### Cookie considerations
+The refresh token is an `HttpOnly` cookie scoped to `/api/v1/auth`. Choose cookie settings for the topology:
 
-The refresh token is an HttpOnly cookie scoped to `/api/v1/auth`.
+| Topology | Settings |
+| --- | --- |
+| Same site (`app.example.com` and `api.example.com`) | `REFRESH_COOKIE_SAMESITE=lax`, `REFRESH_COOKIE_SECURE=true` |
+| Different sites (for example two `onrender.com` subdomains) | `REFRESH_COOKIE_SAMESITE=none`, `REFRESH_COOKIE_SECURE=true` |
 
-**Same site** (`app.example.com` and `api.example.com` share `example.com`):
+`SameSite=None` requires `Secure`; without it browsers drop the cookie and users are signed out on every reload.
 
-```dotenv
-REFRESH_COOKIE_SAMESITE=lax
-REFRESH_COOKIE_SECURE=true
-```
-
-**Cross site** (different registrable domains):
-
-```dotenv
-REFRESH_COOKIE_SAMESITE=none
-REFRESH_COOKIE_SECURE=true
-```
-
-`SameSite=None` **requires** `Secure`, and browsers will silently drop the cookie
-otherwise — the symptom is being logged out on every page refresh. Prefer a
-same-site setup.
-
----
-
-## Frontend on Vercel
-
-```bash
-cd frontend
-vercel
-```
+### Frontend on Vercel
 
 | Setting | Value |
 | --- | --- |
-| Framework | Next.js (auto-detected) |
 | Root directory | `frontend` |
+| Framework | Next.js (auto-detected) |
 | Build command | `npm run build` |
 | Node version | 20 or 22 |
+| Environment | `NEXT_PUBLIC_API_URL=https://api.example.com/api/v1`, `NEXT_PUBLIC_APP_NAME=PayPilot` |
 
-Environment variables (Project Settings -> Environment Variables):
+Omit `NEXT_PUBLIC_DEMO_EMAIL` and `NEXT_PUBLIC_DEMO_PASSWORD` for anything with real users.
 
+### API on a container host
+
+Build context `backend/`. The image's default command serves on port 8000; on hosts that assign a port:
+
+```bash
+sh scripts/render-start.sh          # migrate, seed, serve on $PORT
+# or, without the demo seed:
+alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips='*'
 ```
-NEXT_PUBLIC_API_URL   = https://api.yourdomain.com/api/v1
-NEXT_PUBLIC_APP_NAME  = PayPilot
-```
 
-Omit `NEXT_PUBLIC_DEMO_EMAIL` and `NEXT_PUBLIC_DEMO_PASSWORD` — they exist to
-prefill the login form for reviewers and have no place in a real deployment.
-
-If voice is enabled, add `NEXT_PUBLIC_VAPI_PUBLIC_KEY` and
-`NEXT_PUBLIC_VAPI_ASSISTANT_ID`. The public key is designed to be public; the
-private key stays server-side.
-
-> `NEXT_PUBLIC_*` values are compiled into the bundle. Changing one requires a
-> redeploy, and none of them may be a secret.
-
----
-
-## Backend on a container platform
-
-The backend is a standard Python container — [`backend/Dockerfile`](../backend/Dockerfile)
-builds on `python:3.12-slim` and exposes 8000 with a `HEALTHCHECK` against
-`/api/v1/health`.
-
-### Fly.io
+Fly.io example:
 
 ```bash
 cd backend
@@ -279,111 +299,66 @@ fly launch --no-deploy
 fly secrets set \
   DATABASE_URL="postgresql+asyncpg://..." \
   JWT_SECRET="$(python -c 'import secrets;print(secrets.token_urlsafe(64))')" \
-  APP_ENV=production \
-  DEBUG=false \
-  LOG_FORMAT=json \
-  REFRESH_COOKIE_SECURE=true \
-  CORS_ORIGINS="https://app.yourdomain.com"
+  APP_ENV=production DEBUG=false LOG_FORMAT=json \
+  REFRESH_COOKIE_SECURE=true CORS_ORIGINS="https://app.example.com"
 fly deploy
 ```
 
-### Railway / Render
+Scale-to-zero platforms (Cloud Run) should use a pooled database connection.
 
-Point at `backend/` as the build context. Start command:
-
-```bash
-uvicorn app.main:app --host 0.0.0.0 --port $PORT
-```
-
-Set the same environment variables. Health check path: `/api/v1/health`.
-
-### Google Cloud Run
-
-```bash
-cd backend
-gcloud run deploy growth-autopilot-api \
-  --source . \
-  --region asia-south1 \
-  --allow-unauthenticated \
-  --set-env-vars "APP_ENV=production,DEBUG=false,LOG_FORMAT=json" \
-  --set-secrets "DATABASE_URL=db-url:latest,JWT_SECRET=jwt-secret:latest"
-```
-
-Cloud Run scales to zero, so use a pooled database (Supabase, Neon) rather than
-holding direct connections.
-
-### Workers
+### Multiple workers
 
 ```bash
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
 ```
 
-> **Warning.** Without `REDIS_URL`, rate limiting is an in-process counter, so each
-> worker has its own: four workers means four times the configured limit. Set
-> `REDIS_URL` (see [Redis](CONFIGURATION.md#redis)) to share one budget.
+Set `REDIS_URL` when running more than one worker or replica. Without it, rate limits and caches are per process
+(four workers means four times the configured limit) and realtime events reach only the browsers connected to the
+same process. The outbox relay claims batches with `SKIP LOCKED` and a lease, so several relays never deliver the
+same event twice.
+
+---
+
+## Managed Postgres
+
+Any PostgreSQL 14+ with the `vector` extension works. The first migration runs
+`CREATE EXTENSION IF NOT EXISTS vector` and `pgcrypto`, guarded so it still runs on SQLite.
+
+| Provider | Notes |
+| --- | --- |
+| Render | Wired by the Blueprint |
+| Supabase | Enable `vector` under Database -> Extensions. Use the session pooler (port 5432); the transaction pooler (6543) also works because pooler URLs are detected and asyncpg's statement cache is disabled |
+| Neon, RDS, Cloud SQL | Enable `vector`; use `postgresql+asyncpg://` (or paste `postgres://`, which is normalised) |
+
+URL-encode special characters in the password. Seeding a remote database takes longer (about 15,000
+transactions over the network); the seed is idempotent, so a timeout can be re-run.
 
 ---
 
 ## Migrations in production
 
-Never edit a deployed schema by hand.
-
-### Applying
+Migrations live in [`backend/alembic/versions`](../backend/alembic/versions). Apply them as a release step, before
+the new version serves traffic:
 
 ```bash
 cd backend && python -m alembic upgrade head
 ```
 
-Run it as a release step, before the new application version starts serving.
-
-### Creating
-
-```bash
-make migration MSG="add campaign scheduling"
-```
-
-Then **read the generated file**. Autogenerate is a good first draft and a poor
-final answer — it misses data migrations, gets constraint renames wrong, and
-occasionally proposes a destructive drop.
-
-Two project-specific notes, both handled by the template in
-[`alembic/script.py.mako`](../backend/alembic/script.py.mako):
-
-1. Portable column types render as `app.db.types.GUID()` and similar, so the
-   migration imports `app.db.types`.
-2. The initial migration creates the `vector` and `pgcrypto` extensions, guarded
-   by a dialect check so it still runs on SQLite.
-
-### Verifying there is no drift
-
-```bash
-make migration MSG="drift check"
-# open the generated file; upgrade() should contain only `pass`
-# then delete it
-```
-
-### Rolling back
-
-```bash
-make downgrade        # one step
-```
-
-Test the downgrade path before you need it.
+Create one with `make migration MSG="add supplier ratings"`, then **read the generated file**: autogenerate misses
+data migrations and occasionally proposes destructive drops. Roll back one step with
+`python -m alembic downgrade -1`.
 
 ### Production without demo data
 
-Remove the seed step from the container command and create the first user through
-registration:
+Remove the seed step from the start command and create the first user through registration:
 
 ```bash
-curl -X POST https://api.yourdomain.com/api/v1/auth/register \
+curl -X POST https://api.example.com/api/v1/auth/register \
   -H 'Content-Type: application/json' \
   -d '{"email":"you@company.com","password":"...","full_name":"Your Name","merchant_name":"Your Business"}'
 ```
 
-Registration creates the user, a merchant workspace, and an OWNER membership. The
-RBAC catalogue is seeded separately by `seed_rbac`, which is safe to run on its
-own.
+Registration creates the user, a merchant workspace and an Owner membership.
 
 ---
 
@@ -392,200 +367,82 @@ own.
 ### Security
 
 - [ ] `JWT_SECRET` generated, stored in a secret manager, never committed
-- [ ] `REFRESH_COOKIE_SECURE=true`
-- [ ] `REFRESH_COOKIE_SAMESITE` matches your topology
 - [ ] `APP_ENV=production`, `DEBUG=false`
-- [ ] `CORS_ORIGINS` lists exact origins, no wildcard
-- [ ] TLS terminated in front of the backend
-- [ ] Demo accounts removed or passwords rotated
-- [ ] `NEXT_PUBLIC_DEMO_*` removed from the frontend build
+- [ ] `REFRESH_COOKIE_SECURE=true` and `REFRESH_COOKIE_SAMESITE` matching the topology
+- [ ] `CORS_ORIGINS` lists exact origins
+- [ ] TLS terminated in front of the API
+- [ ] Demo accounts removed or their passwords rotated; `NEXT_PUBLIC_DEMO_*` removed from the frontend build
+- [ ] `PAYPAL_WEBHOOK_ID` set before relying on PayPal webhooks
+- [ ] `AGENT_PROTOCOL_SECRET`, `N8N_WEBHOOK_SECRET`, `ZAPIER_SIGNING_SECRET` set explicitly
 
 ### Database
 
-- [ ] Managed Postgres 14+ with `vector` enabled
-- [ ] Connection string uses the `+asyncpg` driver
-- [ ] Automated backups on
-- [ ] Migrations applied as a release step
-- [ ] Connection limits sized against worker count
+- [ ] Postgres 14+ with `vector` enabled
+- [ ] Automated backups or point-in-time recovery on
+- [ ] Migrations run as a release step
+- [ ] Connection limits sized for the number of workers
 
 ### Operations
 
-- [ ] `LOG_FORMAT=json`
-- [ ] Logs shipped to an aggregator
+- [ ] `LOG_FORMAT=json`, logs shipped to an aggregator
 - [ ] Health check wired to `/api/v1/health`
-- [ ] `REDIS_URL` set (shared rate limits and caches), or rate limiting documented as per-worker
+- [ ] `REDIS_URL` set if running more than one worker or replica
 - [ ] Langfuse configured if you want agent traces
-
-### Before real traffic
-
-- [ ] Analytics caching or materialised rollups added
-- [ ] Refresh-token cleanup scheduled (`purge_expired`)
-- [ ] Password-reset email delivery wired up
-- [ ] Campaign delivery adapter implemented, or the simulation labelling kept
+- [ ] Gmail credentials set if invitations and vendor emails must be delivered
 
 ---
 
-## Observability
+## Observability in production
 
-### Structured logs
+**Logs.** With `LOG_FORMAT=json` every line is one JSON object carrying `request_id`, `user_id`, `merchant_id`
+and, inside agent runs, `agent_run_id`. Secrets are redacted before they reach any sink.
 
-```dotenv
-LOG_FORMAT=json
-LOG_LEVEL=INFO
-```
-
-Every line is one JSON object:
-
-```json
-{
-  "timestamp": "2026-09-14T05:44:12.881Z",
-  "level": "INFO",
-  "service": "paypilot",
-  "environment": "production",
-  "logger": "app.tools.base",
-  "message": "agent_tool_call",
-  "request_id": "6d3919aa5f5441e9",
-  "user_id": "…",
-  "merchant_id": "…",
-  "agent_run_id": "…",
-  "tool": "get_growth_metrics",
-  "duration_ms": 142,
-  "status": "ok"
-}
-```
-
-Useful queries:
-
-| Intent | Filter |
+| Looking for | Filter |
 | --- | --- |
 | Slow requests | `message="http_request" AND duration_ms > 1000` |
 | Permission denials | `message="permission_denied"` |
 | Cross-tenant attempts | `message="merchant_scope_violation"` |
 | Agent tool failures | `message="agent_tool_call" AND status="failed"` |
-| LLM problems | `message="llm_call_failed" OR message="llm_exhausted"` |
 
-Secrets are redacted before reaching any sink — passwords, tokens, API keys and
-cookies, recursively and case-insensitively.
+**Health.** `GET /api/v1/health` reports database, Redis, LLM, Langfuse, Vapi, email, embeddings and the logging
+backend. It returns `200` with `status: "degraded"` when the database is unreachable, so a load balancer can tell
+"up but broken" from "down". `GET /api/v1/health/live` is a bare liveness probe.
 
-### Agent traces
-
-Set the Langfuse keys ([CONFIGURATION.md](CONFIGURATION.md#langfuse-observability))
-and every agent run produces a trace with spans for nodes, generations for LLM
-calls with token usage, and spans for tool calls. The trace URL is stored on the
-run and linked from the Agent Trace screen.
-
-### Health
-
-`GET /api/v1/health` reports database connectivity and which integrations are
-active. It returns `200` with `status: "degraded"` when the database is
-unreachable, so a load balancer can distinguish "up but broken" from "down".
-
-`GET /api/v1/health/live` is a bare liveness probe.
+**Traces.** With Langfuse keys, each agent run is a trace whose URL is stored on the run and linked from the
+agent trace screen.
 
 ---
 
 ## Scaling notes
 
-| Component | Current | To scale |
+| Component | Today | To scale |
 | --- | --- | --- |
-| Backend | Stateless once `REDIS_URL` is set (rate limits, caches and realtime pub/sub are shared) | Add workers or replicas |
-| Database | Composite indexes on the real access paths | Read replica for analytics; materialise period rollups |
-| Analytics | Computed per request | Cache `metrics_snapshot` per merchant and period |
-| Agent runs | Synchronous | Move to a queue if investigations exceed a few seconds |
-| Embeddings | Computed at seed time | Batch; pgvector HNSW index above ~100k rows |
-| Frontend | Static, CDN-friendly | Nothing needed |
-
-### The first bottleneck you will hit
-
-`/dashboard/overview` runs roughly a dozen aggregate queries. It is already one
-round trip from the browser's perspective, which was the design goal, but on a
-large merchant it is the slowest endpoint. Cache
-`AnalyticsService.metrics_snapshot` keyed by `(merchant_id, period)` — the seam is
-already there.
+| API | Stateless once `REDIS_URL` is set | Add workers or replicas |
+| Database | Composite indexes on `(merchant_id, ...)` access paths | Read replica for analytics; materialised period rollups |
+| Analytics | Computed per request | Cache `AnalyticsService.metrics_snapshot` per merchant and period |
+| Agent runs | Synchronous within the request | Move long investigations to a queue |
+| Agent memory | HNSW index on `agent_memories.embedding` | Already indexed for approximate search |
+| Frontend | Static assets, CDN-friendly | Nothing needed |
 
 ---
 
 ## Backups and recovery
 
-### Backing up
-
 ```bash
-pg_dump "postgresql://user:pass@host:5432/autopilot" \
-  --no-owner --no-privileges --format=custom \
-  > autopilot-$(date +%F).dump
+pg_dump "postgresql://user:pass@host:5432/paypilot" --no-owner --no-privileges --format=custom \
+  > paypilot-$(date +%F).dump
+
+pg_restore --no-owner --no-privileges --dbname "postgresql://user:pass@host:5432/paypilot" \
+  paypilot-2026-11-01.dump
 ```
 
-Managed providers give you point-in-time recovery; use it.
-
-### Restoring
-
-```bash
-pg_restore --no-owner --no-privileges \
-  --dbname "postgresql://user:pass@host:5432/autopilot" \
-  autopilot-2026-09-14.dump
-```
-
-Ensure `vector` and `pgcrypto` exist in the target before restoring.
-
-### Rebuilding demo data
-
-Never needs a backup — it is deterministic:
-
-```bash
-make demo        # database + migrations + fresh seed, about 60 seconds
-```
-
-That is the point of a seeded generator rather than a SQL dump.
+Create `vector` and `pgcrypto` in the target database before restoring. Demo data never needs a backup: it is
+deterministic and `make demo` rebuilds it.
 
 ---
 
 <div align="center">
 
-[Docs index](README.md) · [Configuration](CONFIGURATION.md) ·
-[Security](SECURITY.md) · [Architecture](ARCHITECTURE.md) ·
-[Troubleshooting](TROUBLESHOOTING.md)
+[Previous: Configuration](CONFIGURATION.md) | [Docs index](README.md) | [Next: Architecture](ARCHITECTURE.md)
 
 </div>
-
----
-
-## Render (Blueprint)
-
-`render.yaml` at the repository root deploys the whole product on
-[Render](https://render.com), entirely on the free plan:
-
-| Resource | Type | Notes |
-| --- | --- | --- |
-| `paypilot-db` | Managed Postgres 16 | The first migration runs `CREATE EXTENSION vector` and `pgcrypto` |
-| `paypilot-api` | Web service (Docker, `backend/`) | Start command runs `alembic upgrade head`, the idempotent demo seed, then uvicorn on `$PORT`; health check `/api/v1/health`. Runs the outbox and Zapier relays in-process (`OUTBOX_RELAY_IN_PROCESS=true`) |
-| `paypilot-redis` | Key Value (Redis-compatible), free: 25 MB, no persistence | Private to the workspace (`ipAllowList: []`), `allkeys-lru`. Holds rate-limit counters, Channel3 caches and realtime pub/sub - never a source of truth. The API gets it as `REDIS_URL`; see [Redis](CONFIGURATION.md#redis) |
-| `paypilot-n8n` | Web service (Docker, `n8n/`), free | The inventory/growth automation. State in the free Postgres (`n8n_` tables), workflows rebuilt from the repo on every boot, HMAC secret shared with the API through a generated env group. Free services sleep, so its 02:00 / 06:30 schedules need an external ping to fire; health URLs and the schedule are in [n8n/README.md](../n8n/README.md#on-render-free-plan) |
-| `paypilot-web` | Web service (Node, `frontend/`) | `npm ci && npm run build`, `npx next start -p $PORT` |
-
-There is no separate worker on Render. The outbox relay runs in the API and delivers
-to `paypilot-n8n` once `N8N_INVENTORY_WEBHOOK_URL` is set (it idles until then); the
-Zapier relay is idle until `ZAPIER_WEBHOOK_URL` is set. To split the relays out, add a paid `type: worker`
-service running `python -m app.worker` and set `OUTBOX_RELAY_IN_PROCESS=false`.
-
-Steps:
-
-1. Push the repository to GitHub/GitLab.
-2. Render dashboard -> **New -> Blueprint** -> select the repository.
-3. Render prompts for the `sync: false` secrets. Leave them **blank** for the
-   keyless demo (deterministic agents, simulated PayPal), or fill in
-   `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_SANDBOX_PAYEE_EMAIL`,
-   `GROQ_API_KEY` (and `STUDIO_AI_*` for Dashboard Studio's AI agents).
-   `PAYPAL_WEBHOOK_ID` comes later (step 5).
-4. If your service names differ from the defaults, update `FRONTEND_URL`,
-   `CORS_ORIGINS` (API) and `NEXT_PUBLIC_API_URL` (web), then redeploy the web
-   service (Next.js inlines `NEXT_PUBLIC_*` at build time).
-5. For PayPal webhooks, register `https://<api-host>/api/v1/paypal/webhooks` in
-   the PayPal developer dashboard and set `PAYPAL_WEBHOOK_ID`.
-
-`DATABASE_URL` comes from Render as `postgres://…`; the backend normalises it to
-`postgresql+asyncpg://` (and `sslmode=` to asyncpg's `ssl=`) automatically.
-Free-plan databases expire after 30 days and free web services sleep when idle.
-Because the API's caches live in Key Value, waking it after a sleep (or deploying)
-does not re-spend Channel3 credits on shelf and product lookups that are still fresh.
-Check it with `GET /api/v1/health` -> `checks.redis` (`ok`); if it shows
-`unreachable` the app keeps working on in-process state.

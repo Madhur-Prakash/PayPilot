@@ -197,7 +197,7 @@ def integration_status() -> list[dict[str, Any]]:
             "category": "sponsor",
             "mode": "NOT_USED",
             "used_for": "Not used - agents are deployed with the app and traced with Langfuse",
-            "where": "docs/SPONSORS.md",
+            "where": "docs/INTEGRATIONS.md",
         },
     ]
 

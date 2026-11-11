@@ -157,7 +157,7 @@ async def claim_event(
 
 
 def envelope(event: DomainEvent) -> dict[str, Any]:
-    """The wire format n8n receives. Documented in n8n/README.md."""
+    """The wire format n8n receives. Documented in docs/AUTOMATION.md."""
     return {
         "event_id": str(event.id),
         "event_type": event.event_type,

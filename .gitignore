@@ -9,7 +9,6 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
-*.pdf
 .Python
 .venv/
 venv/
@@ -36,7 +35,6 @@ yarn-error.log*
 pnpm-debug.log*
 .pnpm-store/
 *.tsbuildinfo
-recordings/
 next-env.d.ts
 
 # Editors / OS
@@ -52,12 +50,14 @@ logs/
 credentials.json
 *.pickle
 
+# Local media and reference files (recordings, videos, PDFs) - never source
+recordings/
+videos
+*.pdf
+
 # Rendered n8n workflows - they carry the real webhook secret inline,
 # because n8n's Code node cannot read the container's environment.
 n8n/deploy/
-
-# Agent long-term memory: one merchant's knowledge graph, vectors and
-# metadata. Business data, never source.
 
 # Legacy local data from the removed cognee memory backend - safe to delete.
 backend/.cognee/

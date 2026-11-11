@@ -1,250 +1,279 @@
 <div align="center">
 
-# The demo dataset
+# Data
 
-[![Docs index](https://img.shields.io/badge/-Docs_index-475569?style=flat-square&logo=markdown&logoColor=white)](README.md)
-[![Demo script](https://img.shields.io/badge/-Demo_script-64748b?style=flat-square)](DEMO.md)
-[![Architecture](https://img.shields.io/badge/-Architecture-2563eb?style=flat-square)](ARCHITECTURE.md)
+The data model, migrations and portable column types, and the deterministic demo dataset that every figure in
+these documents is measured from.
+
+[![Docs index](https://img.shields.io/badge/-Docs_index-0b2a6f?style=flat-square)](README.md)
+[![Architecture](https://img.shields.io/badge/-Architecture-003087?style=flat-square)](ARCHITECTURE.md#data-layer)
 [![Testing](https://img.shields.io/badge/-Testing-16a34a?style=flat-square)](TESTING.md)
+[![Agent memory](https://img.shields.io/badge/-Agent_memory-7c3aed?style=flat-square)](MEMORY.md)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL_16-pgvector-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://github.com/pgvector/pgvector)
 
 </div>
 
-`Juniper & Oak Coffee`, Portland OR. Fully deterministic from seed `20240917`.
+---
+
+## Contents
+
+- [Data model](#data-model)
+- [Conventions](#conventions)
+- [Portable column types](#portable-column-types)
+- [Migrations](#migrations)
+- [The demo dataset](#the-demo-dataset)
+- [How the story emerges from mechanisms](#how-the-story-emerges-from-mechanisms)
+- [Calibration](#calibration)
+- [Experiments](#experiments)
+- [Supply network seed](#supply-network-seed)
+- [Demo accounts](#demo-accounts)
+- [Provenance labelling](#provenance-labelling)
+
+---
+
+## Data model
+
+62 tables: 60 SQLAlchemy models in [`backend/app/db/models`](../backend/app/db/models) plus 2 association tables.
+
+| Domain | Model file | Tables |
+| --- | --- | --- |
+| Identity and access | [`auth.py`](../backend/app/db/models/auth.py) | `users`, `roles`, `permissions`, `custom_roles`, `refresh_tokens`, `user_roles`, `role_permissions` |
+| Tenancy | [`merchant.py`](../backend/app/db/models/merchant.py) | `merchants`, `merchant_memberships` |
+| Audit | [`audit.py`](../backend/app/db/models/audit.py) | `audit_logs` |
+| Commerce | [`commerce.py`](../backend/app/db/models/commerce.py) | `products`, `customers`, `transactions`, `transaction_items` |
+| Growth | [`growth.py`](../backend/app/db/models/growth.py), [`signal.py`](../backend/app/db/models/signal.py) | `growth_metrics`, `growth_opportunities`, `external_signals` |
+| Reviews and competitors | [`review.py`](../backend/app/db/models/review.py), [`competitor.py`](../backend/app/db/models/competitor.py) | `reviews`, `competitors`, `competitor_reviews` |
+| Campaigns and experiments | [`campaign.py`](../backend/app/db/models/campaign.py), [`experiment.py`](../backend/app/db/models/experiment.py) | `campaigns`, `campaign_audiences`, `campaign_actions`, `experiments`, `experiment_variants`, `experiment_results` |
+| Agents | [`agent.py`](../backend/app/db/models/agent.py), [`memory.py`](../backend/app/db/models/memory.py) | `agent_runs`, `agent_steps`, `agent_tool_calls`, `agent_memories` |
+| Inventory | [`inventory.py`](../backend/app/db/models/inventory.py) | `inventory_items`, `inventory_movements`, `inventory_batches` |
+| Vendors and purchase orders | [`procurement.py`](../backend/app/db/models/procurement.py) | `vendors`, `vendor_products`, `purchase_orders`, `purchase_order_lines` |
+| Supply Agents | [`supply.py`](../backend/app/db/models/supply.py) | `supplier_agents`, `procurement_requests`, `negotiation_sessions`, `negotiation_offers`, `goods_receipts`, `supplier_invoices`, `invoice_matches`, `procurement_reconciliations` |
+| Governance | [`governance.py`](../backend/app/db/models/governance.py) | `agent_messages`, `approval_requests`, `financial_executions` |
+| PayPal | [`paypal.py`](../backend/app/db/models/paypal.py) | `paypal_transactions`, `paypal_sync_checkpoints`, `paypal_webhook_events`, `paypal_invoices`, `paypal_subscriptions` |
+| Product discovery | [`discovery.py`](../backend/app/db/models/discovery.py) | `product_searches`, `discovered_products`, `product_comparisons`, `merchant_recommendations`, `shopping_conversations` |
+| Events and automation | [`automation.py`](../backend/app/db/models/automation.py), [`integrations.py`](../backend/app/db/models/integrations.py) | `domain_events` (outbox), `processed_events`, `automation_runs`, `integration_deliveries` |
+
+Key relationships:
+
+```mermaid
+erDiagram
+    merchants ||--o{ merchant_memberships : has
+    users ||--o{ merchant_memberships : holds
+    merchants ||--o{ transactions : records
+    transactions ||--o{ transaction_items : contains
+    merchants ||--o{ inventory_items : stocks
+    inventory_items ||--o{ procurement_requests : triggers
+    procurement_requests ||--o{ negotiation_sessions : runs
+    negotiation_sessions ||--o{ negotiation_offers : exchanges
+    procurement_requests ||--o| purchase_orders : becomes
+    purchase_orders ||--o{ goods_receipts : receives
+    purchase_orders ||--o{ supplier_invoices : billed_by
+    supplier_invoices ||--o{ invoice_matches : matched_by
+    approval_requests ||--o| financial_executions : executed_as
+    purchase_orders ||--o| procurement_reconciliations : reconciled_in
+```
+
+---
+
+## Conventions
+
+* UUID primary keys; `created_at` and `updated_at` on every table.
+* Every tenant-owned table has `merchant_id`, with composite indexes on the real access paths
+  (`merchant_id + business_date`, `merchant_id + status`).
+* Foreign keys with explicit cascade rules.
+* Status columns are strings validated by Python constant classes, not Postgres enums, so adding a status needs no
+  migration.
+* Money is `Numeric`, handled as `Decimal` in Python.
+* Every PayPal row stores `mode` (`SANDBOX`, `LIVE`, `SIMULATED`).
+
+---
+
+## Portable column types
+
+[`db/types.py`](../backend/app/db/types.py) lets one model definition run on PostgreSQL and SQLite:
+
+| Type | PostgreSQL | SQLite |
+| --- | --- | --- |
+| `GUID` | `UUID` | `CHAR(36)` |
+| `JSONB` | `JSONB` | JSON `TEXT` |
+| `StringArray` | `TEXT[]` | JSON `TEXT` |
+| `Vector` | `vector(384)` | JSON `TEXT` |
+| `UTCDateTime` | `TIMESTAMPTZ` | `DATETIME`, coerced to aware UTC on read |
+
+This is why the full backend test suite runs without Docker. `UTCDateTime` exists because Postgres round-trips
+timezone-aware datetimes, SQLite drops the offset, and comparing the two raises `TypeError`; fixing it in the type
+keeps every call site free of defensive checks.
+
+---
+
+## Migrations
+
+[`backend/alembic/versions`](../backend/alembic/versions):
+
+| Revision | Adds |
+| --- | --- |
+| `0001_initial_schema` | Core schema; creates the `vector` and `pgcrypto` extensions (guarded so it runs on SQLite) |
+| `0002_widen_agent_decision` | `agent_runs.decision` widened to `TEXT` |
+| `0003_custom_roles` | Merchant-defined roles |
+| `0004_dual_market_campaigns` | Store and online channel support for campaigns |
+| `a7b8cba56c55_inventory_automation_vendors_purchase_` | Inventory automation, vendors, purchase orders, outbox |
+| `0005_supply_paypal_memory` | Supply Agents, governance, PayPal tables, `agent_memories` with the HNSW index |
+| `0006_integration_deliveries` | Per-target delivery state for Zapier |
+| `0007_supply_intelligence` | Product discovery and recommendations |
 
 ```bash
-make seed                          # idempotent
-make demo                          # wipe and rebuild
-cd backend && python -m app.seed.calibrate   # verify without a database
+make migrate                         # alembic upgrade head
+make migration MSG="add x"           # autogenerate; read the file before applying
+```
+
+The migration template imports `app.db.types` so portable types render correctly. See
+[Deployment: migrations in production](DEPLOYMENT.md#migrations-in-production).
+
+---
+
+## The demo dataset
+
+**Juniper & Oak Coffee**, Portland, Oregon: a coffee shop with an online bean store. Fully deterministic from seed
+`20240917` ([`app/seed/`](../backend/app/seed)).
+
+```bash
+make seed           # idempotent: skips if the demo merchant exists
+make seed-reset     # remove the demo tenant and rebuild it
+make calibrate      # print the figures without a database
 ```
 
 | | |
 | --- | --- |
 | Products | 8 |
 | Customers | 1,700 |
-| Transactions | ~14,700 over 180 days |
-| Transaction items | ~24,200 |
-| Reviews | ~2,475 |
-| Competitors | 3, with ~495 seeded reviews |
+| Transactions | about 14,700 over 180 days |
+| Transaction items | about 24,200 |
+| Reviews | about 2,475, with embeddings |
+| Competitors | 3, with about 495 reviews |
 | Inventory items | 8 |
 | External signals | 4 |
 | Historical experiments | 2 (one SCALE, one STOP) |
+| Supplier agents | 3, plus supply links and payees |
+
+**Why it reproduces exactly.** Everything flows from `random.Random(20240917)`, and the dataset anchors on the most
+recent completed Sunday rather than on "yesterday". Two consecutive 30-day windows contain different weekday mixes
+depending on where they start, and weekend footfall runs about 25% above a Tuesday, which alone can swing a
+period-over-period comparison by several percent. Pinning the weekday removes that.
 
 ---
 
-## Why it reproduces exactly
+## How the story emerges from mechanisms
 
-Two decisions make the demo stable:
+No code says "the answer is waiting time". The generator
+([`seed/generators/dataset.py`](../backend/app/seed/generators/dataset.py)) creates mechanisms; the analytics layer
+finds their consequences.
 
-**A fixed RNG seed.** Everything flows from `random.Random(20240917)`.
-
-**A pinned anchor weekday.** The dataset anchors on the most recent *completed
-Sunday*, not on "yesterday". Two consecutive 30-day windows contain different
-weekday mixes depending on where they start, and with weekend footfall running
-~25% above a Tuesday, that alone can swing a period-over-period comparison by
-several percent. Pinning the weekday removes it.
-
----
-
-## The business story is discoverable, not asserted
-
-This is the part that matters. **No code anywhere says "the answer is waiting
-time."** The generator creates mechanisms; the analytics layer finds their
-consequences.
-
-### 1 · Customers have shape, not uniformity
-
-```python
-LOYALTY_TIERS = {          # share of base, visits/week, basket bias
-    "CORE":       (0.055, 3.97, 1.14),   # near-daily regulars
-    "REGULAR":    (0.035, 1.17, 1.04),
-    "OCCASIONAL": (0.150, 0.20, 0.96),
-    "RARE":       (0.760, 0.047, 0.90),  # the long tail
-}
-```
-
-A café's repeat rate is only realistic when a small core of regulars sits on top
-of a long tail of infrequent visitors. A small, uniformly-loyal base produces a
-~85% repeat rate, which is not a useful signal. This shape produces ~38%.
-
-### 2 · Evening regulars actually churn
-
-```python
-EVENING_REGULAR_CHURN_PROB = 0.37
-CHURNED_RESIDUAL_RATE      = 0.06
-```
-
-37% of habitual evening regulars stop coming, on **staggered days** beginning just
-before the current window. Staggering matters: a cliff on one day would read as an
-outage, whereas a steady bleed is what an eroding experience actually looks like.
-
-This is real churn, not a uniform dip — which is what makes "recover lost evening
-repeat customers" a genuinely recoverable opportunity.
-
-### 3 · Evening baskets shrink
-
-```python
-EVENING_COMBO_ATTACH_DECAY = 0.28
-```
-
-The attach rate for evening combo items collapses across the window. That is what
-drives AOV down, independently of order count.
-
-### 4 · Service degrades, and reviews follow
-
-```python
-EVENING_SERVICE_DRIFT_MINUTES = 6.4
-```
-
-Evening service time drifts up across the window. Then — and this is the key
-mechanism — **reviews are generated from the orders they describe**:
-
-```python
-wait_excess = max(wait - WAIT_COMPLAINT_THRESHOLD_MINUTES, 0.0)
-complain_p  = min(BASE_COMPLAINT_PROB + wait_excess * WAIT_COMPLAINT_SLOPE, 0.86)
-```
-
-The complaint *rate* is never set. As evening service times cross the threshold,
-more of those orders produce a waiting-time complaint on their own. The
-correlation the Growth Scientist finds is therefore real.
-
-### 5 · Competitors are perceived as faster
-
-Each competitor has a `speed` perception score; a review about waiting time is
-positive with probability `speed_score / 100`. A rival at 86 gets praised for
-speed; the merchant, whose score is computed from its own reviews, does not.
+| Mechanism | Parameter | Consequence the analytics find |
+| --- | --- | --- |
+| Customers have shape: a small core of regulars over a long tail | `LOYALTY_TIERS` (CORE 5.5% at about 4 visits a week ... RARE 76%) | A realistic repeat rate of about 38% |
+| Evening regulars churn on staggered days | `EVENING_REGULAR_CHURN_PROB = 0.37` | A steady evening decline, recoverable through win-back |
+| Evening baskets shrink | `EVENING_COMBO_ATTACH_DECAY = 0.28` | AOV falls independently of order count |
+| Evening service slows | `EVENING_SERVICE_DRIFT_MINUTES = 6.4` | Service time correlates with the decline |
+| Reviews are generated from the orders they describe | complaint probability rises with wait above a threshold | Waiting-time complaints rise without any complaint rate being set |
+| Competitors are perceived as faster | per-competitor `speed` score | Competitor intelligence shows the gap |
+| Premium Coffee Beans demand rises online | 7 to 12 bags a day | The supply loop: 3.5 days of cover, procure 150 |
 
 ---
 
-## What comes out
+## Calibration
 
-Measured by `python -m app.seed.calibrate`, last 30 days vs the previous 30:
+`make calibrate` ([`seed/calibrate.py`](../backend/app/seed/calibrate.py)) generates the dataset in memory and prints
+what the dashboard will show, in about three seconds and without a database. Last 30 days against the previous 30:
 
 | Metric | Current | Previous | Change |
 | --- | --- | --- | --- |
-| Revenue | $24,693 | $28,124 | **−12.2%** |
-| Orders | 2,353 | 2,473 | −4.9% |
-| AOV | $10.49 | $11.37 | −7.7% |
-| Repeat rate | 38.3% | 41.4% | −7.7% |
-| Avg service time | 7.43 min | 6.97 min | +6.6% |
+| Revenue | $24,693 | $28,124 | -12.2% |
+| Orders | 2,353 | 2,473 | -4.9% |
+| AOV | $10.49 | $11.37 | -7.7% |
+| Repeat rate | 38.3% | 41.4% | -7.7% |
+| Average service time | 7.43 min | 6.97 min | +6.6% |
 
-By trading slot:
-
-| Slot | Revenue change | Service time change |
+| Trading slot | Revenue change | Service time change |
 | --- | --- | --- |
-| Morning | −3.1% | −0.4% |
-| Afternoon | +0.1% | −1.8% |
-| **Evening** | **−31.9%** | **+24.5%** |
-| Night | +2.3% | −2.4% |
+| Morning | -3.1% | -0.4% |
+| Afternoon | +0.1% | -1.8% |
+| **Evening** | **-31.9%** | **+24.5%** |
+| Night | +2.3% | -2.4% |
 
-Reviews, evening slot only:
+Evening waiting-time complaints rise from 11 to 21, and the negative share from 6.2% to 22.2%. Every figure is
+measured from the generated ledger, not configured.
 
-| | Previous | Current |
-| --- | --- | --- |
-| Waiting-time complaints | 11 | 21 |
-| Negative share | 6.2% | **22.2%** |
+**Calibration catches what tests cannot.** An earlier generator gave customers a tenure of
+`rng.randint(5, HISTORY_DAYS)`, so about 31% of customers "joined" inside the comparison window and manufactured
+about +10% of apparent growth, masking the real decline. Every test passed; the data was internally consistent and
+the story was simply weaker than intended. The calibration harness found it. If you change anything under
+`app/seed/generators/`, run `make calibrate` and read the numbers.
 
-Every one of these is *measured from the generated ledger*, not configured.
-
-> The brief's illustrative figures ($9.2K revenue, 2,341 orders, $14.35 AOV) are
-> not internally consistent — 2,341 × $14.35 is $33.5K, not $9.2K. The dataset holds
-> `revenue = orders × AOV` instead, because the Growth Graph presents that
-> relationship as arithmetic and a test asserts it. Order count lands within 0.5%
-> of the brief; the direction and magnitude of every movement match.
+The generated metrics are stochastic: a small parameter change shifts the whole RNG stream, so adjacent
+configurations can differ by several percent. Tune against the fixed seed and read the realised numbers.
 
 ---
 
-## The experiments
+## Experiments
 
-Both are measured by the **ordinary measurement service** — synthetic transactions
-are written for each arm, tagged with the experiment and variant, and then
-aggregated exactly as live traffic would be. No result is typed in, which is why
-the numbers on screen always reconcile with the ledger.
+Both historical experiments are measured by the ordinary measurement service: transactions are written for each arm,
+tagged with the experiment and variant, and aggregated exactly as live traffic would be. No result is typed in.
 
 | Experiment | Control | Test | Lift | p | Decision |
 | --- | --- | --- | --- | --- | --- |
-| Weekend Brunch Combo | 9.35% | 13.85% | +48.1% | 0.038 | **SCALE** |
-| Loyalty Chai Pass | 15.13% | 12.33% | −18.5% | 0.321 | **STOP** |
+| Weekend Brunch Combo | 9.35% | 13.85% | +48.1% | 0.038 | SCALE |
+| Loyalty Chai Pass | 15.13% | 12.33% | -18.5% | 0.321 | STOP |
 
-The STOP case is deliberate. A system that measures its own recommendations has to
-be able to say no.
+Converter selection is exact, not sampled: with a few hundred customers per arm, Bernoulli noise would swamp the
+effect, so the generator takes exactly `round(n x rate)` customers ordered by a hash of
+`experiment:variant:customer`.
 
-### Converter selection is exact, not sampled
-
-With a few hundred customers per arm, Bernoulli sampling noise swamps the effect:
-an intended +30% lift routinely realises as anything between −5% and +50%. The
-generator takes exactly `round(n × rate)` customers, ordered by a hash of
-`experiment:variant:customer`, so assignment is deterministic and unbiased.
-
-### Live experiments in the demo
-
-When you approve an opportunity on a **demo tenant**, the system writes the
-transactions the experiment would have produced, from a declared ground truth
-(control 8.8%, test ×1.62, baskets ×1.18). Every row carries
-`metadata_json.simulated = true`.
-
-The measurement service is not told any of that. It aggregates the rows and
-computes conversion, lift, incremental revenue, ROI and significance the same way
-it would for live traffic — so the result on screen is genuinely measured.
+When a person approves an opportunity on a demo tenant, the system writes the transactions the experiment would have
+produced from a declared ground truth (control 8.8%, test x1.62, baskets x1.18), each marked
+`metadata_json.simulated = true`. The measurement service is not told the ground truth; it computes conversion, lift,
+incremental revenue, ROI and a two-proportion z-test from the rows.
 
 ---
 
-## Team accounts
+## Supply network seed
 
-One per role, so the RBAC story can be demonstrated rather than described.
+[`seed/supply.py`](../backend/app/seed/supply.py) creates the three supplier agents with their private policies (see
+[Supply Agents: supplier agents](SUPPLY_AGENTS.md#supplier-agents)), their supply links, registered key fingerprints
+and payees (`PAYPAL_SANDBOX_PAYEE_EMAIL` when set), plus inventory policy and the Premium Coffee Beans demand spike.
+[`seed/inventory_automation.py`](../backend/app/seed/inventory_automation.py) and
+[`seed/operations.py`](../backend/app/seed/operations.py) add vendors, purchase orders, PayPal records and memories.
+
+---
+
+## Demo accounts
 
 | Name | Email | Role |
 | --- | --- | --- |
-| Morgan Hayes | `owner@juniperoak.com` | OWNER |
-| Jordan Ellis | `admin@juniperoak.com` | ADMIN |
-| Avery Chen | `analyst@juniperoak.com` | ANALYST |
-| Sam Rivera | `staff@juniperoak.com` | STAFF |
-| Taylor Brooks | `viewer@juniperoak.com` | VIEWER |
+| Morgan Hayes | `owner@juniperoak.com` | Owner |
+| Jordan Ellis | `admin@juniperoak.com` | Admin |
+| Avery Chen | `analyst@juniperoak.com` | Analyst |
+| Sam Rivera | `staff@juniperoak.com` | Staff |
+| Taylor Brooks | `viewer@juniperoak.com` | Viewer |
 
-Password: `Autopilot@2024`
-
----
-
-## Retuning it
-
-Constants live at the top of
-[`app/seed/generators/dataset.py`](../backend/app/seed/generators/dataset.py).
-
-```bash
-cd backend
-python -m app.seed.calibrate      # measure without touching the database
-```
-
-The harness prints exactly what the dashboard will show. Use it before re-seeding
-— a full seed takes ~45 seconds, the harness takes three.
-
-One warning from experience: the generated metrics are **stochastic**, and a small
-parameter change shifts the whole RNG stream downstream. Adjacent configurations
-can differ by several percent for reasons that have nothing to do with the
-parameter. Tune against the fixed seed and read the realised numbers; do not
-assume a change had the effect you intended.
+Password for all: `Autopilot@2024`. Remove or rotate these for any deployment with real users.
 
 ---
 
-## Provenance
+## Provenance labelling
 
-Everything here is fictional demo data, and the product says so:
+The demo data is fictional and the product says so:
 
-- `merchants.is_demo` and `data_source = SEEDED`
-- `reviews.is_simulated`, `competitor_reviews.is_simulated`,
-  `external_signals.is_simulated`
-- `campaigns.is_simulated`, `experiments.is_simulated`
-- `ProvenanceMeta` on every relevant API response
-- "Demo Simulation" badges in the sidebar, dashboard header, campaigns,
-  experiments and competitors
-
-No claim is made anywhere of live PayPal transaction access, real customer
-messaging, or competitor-platform scraping.
+* `merchants.is_demo` and `data_source = SEEDED`;
+* `is_simulated` on reviews, competitor reviews, external signals, campaigns and experiments;
+* provenance metadata on the relevant API responses;
+* "Demo simulation" badges in the UI;
+* `SIMULATED` mode on every simulated PayPal row; synced PayPal transactions are stored separately with their real
+  mode.
 
 ---
 
 <div align="center">
 
-[Docs index](README.md) · [Demo script](DEMO.md) · [Architecture](ARCHITECTURE.md) ·
-[Testing](TESTING.md) · [Contributing](CONTRIBUTING.md)
+[Previous: Security](SECURITY.md) | [Docs index](README.md) | [Next: Testing](TESTING.md)
 
 </div>

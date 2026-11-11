@@ -2,439 +2,359 @@
 
 # PayPilot
 
-### The AI operating system for merchants
+### The AI operating system for PayPal merchants
 
-**AI Growth Scientist + Agent-to-Agent Supply Network + PayPal financial operations**
+Growth intelligence, an agent-to-agent supply network and human-approved PayPal settlement in one product.
+AI agents find the opportunity and negotiate the purchase. Deterministic code sets every limit.
+A person approves every dollar. PayPal moves the money.
 
-PayPal AI Hackathon 2026 · Idea 4 (Growth Autopilot) + Idea 5 (Supply Agents) · Team PayFlux
-
-[![Tests](https://img.shields.io/badge/backend_tests-535_passing-16a34a?style=flat-square&logo=pytest&logoColor=white)](docs/TESTING.md)
-[![Lint](https://img.shields.io/badge/ruff-clean-16a34a?style=flat-square&logo=ruff&logoColor=white)](docs/CONTRIBUTING.md)
-[![Types](https://img.shields.io/badge/typecheck-clean-16a34a?style=flat-square&logo=typescript&logoColor=white)](docs/CONTRIBUTING.md)
-[![PayPal](https://img.shields.io/badge/PayPal-Orders_v2_·_Invoicing_·_Payouts_·_Subscriptions_·_Webhooks-003087?style=flat-square&logo=paypal&logoColor=white)](docs/PAYPAL.md)
+[![Team](https://img.shields.io/badge/Team-PayFlux-003087?style=flat-square)](#team-name)
+[![PayPal](https://img.shields.io/badge/PayPal-Orders_v2_%7C_Invoicing_%7C_Payouts_%7C_Subscriptions_%7C_Webhooks-003087?style=flat-square&logo=paypal&logoColor=white)](docs/PAYPAL.md)
+[![Tests](https://img.shields.io/badge/backend_tests-535-16a34a?style=flat-square&logo=pytest&logoColor=white)](docs/TESTING.md)
 [![License](https://img.shields.io/badge/license-MIT-475569?style=flat-square)](LICENSE)
 
-[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL_16_+_pgvector-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://github.com/pgvector/pgvector)
-[![LangGraph](https://img.shields.io/badge/LangGraph-1C3C3C?style=flat-square&logo=langchain&logoColor=white)](https://langchain-ai.github.io/langgraph/)
-[![Next.js](https://img.shields.io/badge/Next.js_15-000000?style=flat-square&logo=nextdotjs&logoColor=white)](https://nextjs.org)
-[![AG Grid](https://img.shields.io/badge/AG_Grid-v36-0f172a?style=flat-square)](https://www.ag-grid.com)
+[![Python](https://img.shields.io/badge/Python-3.11--3.14-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.141-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![LangGraph](https://img.shields.io/badge/LangGraph-1.2-1C3C3C?style=flat-square&logo=langchain&logoColor=white)](https://langchain-ai.github.io/langgraph/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL_16-pgvector-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://github.com/pgvector/pgvector)
+[![Redis](https://img.shields.io/badge/Redis-optional-DC382D?style=flat-square&logo=redis&logoColor=white)](docs/CONFIGURATION.md#redis)
+[![Next.js](https://img.shields.io/badge/Next.js-15-000000?style=flat-square&logo=nextdotjs&logoColor=white)](https://nextjs.org)
+[![React](https://img.shields.io/badge/React-19-149ECA?style=flat-square&logo=react&logoColor=white)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)](docker-compose.yml)
+[![Render](https://img.shields.io/badge/Render-Blueprint-46E3B7?style=flat-square&logo=render&logoColor=white)](render.yaml)
 
-**[Demo (3 min)](docs/DEMO.md)** ·
-**[Hackathon notes](docs/HACKATHON.md)** ·
-**[PayPal](docs/PAYPAL.md)** ·
-**[Sponsor tools](docs/SPONSORS.md)** ·
-**[Supply Agents](docs/SUPPLY_AGENTS.md)** ·
-**[Supply Intelligence](docs/SUPPLY_INTELLIGENCE.md)** ·
-**[Architecture](docs/ARCHITECTURE.md)** ·
-**[All docs](docs/README.md)**
+**[Quick start](docs/QUICKSTART.md)** |
+**[Architecture](docs/ARCHITECTURE.md)** |
+**[Deployment](docs/DEPLOYMENT.md)** |
+**[PayPal integration](docs/PAYPAL.md)** |
+**[API reference](docs/API.md)** |
+**[All documentation](docs/README.md)**
 
 </div>
 
 ---
 
-![PayPilot: PayPal is the data source and the only rail money moves on](docs/architecture.svg)
+## Team Name
 
-> **Start here:** **[docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md)** - why PayPal is central, how every sponsor tool is
-> used and where, the key features, the criteria mapped to evidence, and what is verified. Live demo:
-> <https://paypilot-web-0lqv.onrender.com> (`owner@juniperoak.com` / `Autopilot@2024`; the first load can take a minute).
+**PayFlux**
 
-> **PayPilot doesn't just tell merchants what happened. It helps them decide what
-> to do next, coordinates the agents that execute it, and measures the impact on
-> their business.**
+## Project Name
 
-## The problem
+**PayPilot**
 
-Small merchants run on thin margins and little time. They can see last week's
-sales, but not *why* they moved or what to do about it. When a product suddenly
-sells, they find out it is out of stock after the fact; sourcing more means
-emailing suppliers, chasing quotes, haggling and reconciling invoices by hand -
-and every purchase quietly changes the margin their growth decisions assume.
-Automating any of this is risky, because the steps that matter move money.
+## Team Members
 
-## What PayPilot does
+- **Member 1**: [Madhur Prakash](https://github.com/Madhur-Prakash)
+- **Member 2**: [Bhanvi Nayer](https://github.com/bhanvinayer)
 
-One product connects three layers:
+---
 
-| Layer | Loop |
-| --- | --- |
-| **Growth Intelligence** | Observe -> diagnose -> hypothesize -> recommend -> **approve** -> act -> measure (controlled experiment) -> learn |
-| **Procurement Intelligence** | Detect demand -> stock need -> discover suppliers -> RFQ -> **agent-to-agent negotiation** -> evaluate -> **approve** -> PO -> invoice -> receive -> match -> **approve payment** -> PayPal -> reconcile -> learn |
-| **Unified intelligence** | Shared events, memory and financial data: demand drives procurement, procurement cost drives margin, inventory shapes campaigns, supplier outcomes shape future sourcing |
-| **Supply Intelligence** | Sales + inventory -> expansion opportunity -> live Channel3 products -> compare -> explainable recommendation -> **approve** -> catalog / PayPal test-stock order -> **measure** |
+## Demo Video Link
 
-**Who it's for:** independent merchants who sell in person and online through
-PayPal - the demo is *Juniper & Oak Coffee*, a Portland coffee shop with an online
-bean store - and the staff roles around them (Owner, Admin, Analyst, Staff, Viewer).
+<!-- Replace # with the demo video URL -->
+[YouTube Video Link](https://youtu.be/yCqvBDw_EzY)
 
-## Supply Intelligence and the Merchant OS
+---
 
-PayPilot also works as a **product scientist** for the merchant, on live data from
-[Channel3](https://trychannel3.com)'s catalog of products from thousands of retailers:
+## Live Demo
 
-* **AI Product Discovery** - *"wireless earbuds under ₹5,000"*, *"premium office chairs
-  under ₹15,000"*, *"products for a college student"*: budget, currency, brands, use case
-  and features are extracted, turned into a real Channel3 search with filters, and the
-  results are ranked with the reasons shown. Comparison, similar products, URL enrichment
-  and a multi-turn **shopping assistant** (Channel3 Conversations) are built in.
-* **Supply Intelligence** - assortment analysis from the merchant's own sales and
-  inventory, complementary-product expansion, alternatives to existing products, and
-  market price intelligence (retail listings, clearly separated from wholesale cost).
-* **AI Recommendations** with a visible lifecycle - Detected -> Analyzed -> Recommended ->
-  Approved -> Executed -> Measured - each with evidence, an impact *estimate* and its
-  assumptions, and a confidence with reasons.
-* **Seven agents on one LangGraph** (Orchestrator, Business Intelligence, Product Discovery,
-  Supply Intelligence, Pricing Intelligence, Growth Strategy / Growth Autopilot, PayPal
-  Transaction) - every tool call permission-checked, traced and shown in Agent Activity.
-* **PayPal for approved purchases** - an AI-proposed test-stock purchase becomes a
-  hash-bound approval; a person approves, creates the PayPal order, the payer approves it in
-  PayPal, a person captures; a verified webhook can settle it too. **No agent can pay.**
+- **App**: <https://paypilot-web-0lqv.onrender.com> (sign in as `owner@juniperoak.com` / `Autopilot@2024`)
+- **API (Swagger)**: <https://paypilot-api-bjn2.onrender.com/docs>
+- **Developer portal (APIMatic)**: <https://paypilot-docs.onrender.com>
 
-Details: **[docs/SUPPLY_INTELLIGENCE.md](docs/SUPPLY_INTELLIGENCE.md)** · demo path:
-[docs/DEMO.md](docs/DEMO.md#supply-intelligence-and-merchant-os-four-minutes).
+The hosted services run on Render's free plan, so the first request after an idle period takes about a minute.
 
-## Why PayPal is central
-
-PayPal is the merchant's **system of record** and the **only rail money moves on** - take
-it away and PayPilot has no data to reason over and no way to act.
-
-| Stage | PayPal | Result |
-| --- | --- | --- |
-| Start the loop | Orders v2 checkout on the online store + verified webhook | A customer pays with PayPal; the sale is recorded, stock drops and a low-stock event fires - the loop starts from a real PayPal sale, not a seeded one |
-| See the business | Transaction Search | Sales, fees, refunds and failures feed the Growth Scientist |
-| Pay a supplier | Orders v2 on PayPal's APIMatic-generated Server SDK | Supplier is the payee; payment only after a human approval **and** a three-way match |
-| Bill and reward customers | Invoicing, Payouts | Win-back invoices; approval-gated cashback |
-| Recurring revenue | Subscriptions | A revenue radar with one-click failed-payment recovery |
-| React to events | Verified webhooks | Settle or flag the matching record; replay-guarded, idempotent |
-| Let agents look | Agent Toolkit (MCP), read-only | 16 of 46 tools callable; the 30 that create, pay or send are blocked in code |
-| Prove it | Reconciliation | PO x receipt x invoice x capture agree to the cent |
-
-**What is unique:** AI agents negotiate and recommend but can never pay; approvals are
-bound to a hash of the exact terms; `PayPal-Request-Id` is derived from the business action
-so a retry cannot pay twice; and nothing simulated is ever presented as real.
-Where each is used, how it helps, and how every sponsor tool is integrated:
-**[docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md)**.
-
-## The signature scenario
-
-1. Growth Intelligence sees online demand for **Premium Coffee Beans** up **+71%**
-   (7 -> 12 bags/day) and flags *"Capture rising demand"*.
-2. Inventory Intelligence: **42 bags, 3.5 days of cover**, 3-day lead time ->
-   procure **150**, needed within **3 days**.
-3. The deterministic engine sets the limits **before any agent speaks**:
-   `$18.00 × (1 − 40%) = $10.80` max landed per bag, **$1,620** budget.
-4. The Buyer Agent sends an RFQ to **three independent supplier agents** - each
-   with private pricing, stock, delivery and negotiation behaviour.
-5. They negotiate over multiple rounds through **signed, typed protocol
-   messages**; every offer is validated by the backend.
-6. Evaluation recommends **Cascadia Coffee Collective - $1,455.00 landed**,
-   **$248.77** below the best opening quote. Pacific Bean Exchange is excluded
-   (9-day delivery, only 90 bags).
-7. An **Analyst** tries to approve -> **403**. The **Owner** approves the exact,
-   hash-bound terms.
-8. A purchase order is issued; the supplier agent invoices.
-9. **Partial receipt** (100 of 150) -> the three-way match holds payment.
-   The rest arrives -> match clears -> **payment approval**.
-10. **PayPal Orders v2** pays the supplier (simulated without keys, sandbox with keys).
-11. Reconciliation: PO × receipt × invoice × capture agree to the cent; inventory
-    revalued to **$10.12/bag**; product margin **35.6% -> 43.8%**; supplier
-    reliability updated; the Command Center reflects it all.
-
-Walkthrough: **[docs/DEMO.md](docs/DEMO.md)**.
-
-## Non-negotiables, enforced in code
-
-1. **No AI arithmetic.** Every amount comes from a `Decimal` engine
-   ([`services/supply/policy.py`](backend/app/services/supply/policy.py)) or SQL. An
-   LLM may propose a counter-offer; out-of-bounds proposals are refused, not clamped.
-2. **Humans approve money movement** - Owners included. Agents can request,
-   never approve; the agent tools for approving or paying always refuse.
-3. **Approvals bind to exact terms** (SHA-256 of the canonical details, policy
-   version). Any change invalidates the approval, durably.
-4. **Idempotent payments.** `PayPal-Request-Id` / `sender_batch_id` derived from
-   the business action; one live execution per invoice.
-5. **Verified webhooks only.** PayPal's verify-webhook-signature first; event id
-   as replay guard; unverified events stored as rejected and never acted on.
-6. **Signed agent messages.** Per-agent HMAC, schema validation, sender roles,
-   freshness, nonce/idempotency replay protection, tenant isolation.
-7. **Tenant isolation is structural** - merchant from membership, every query scoped.
-8. **Nothing simulated is presented as real** - `SIMULATED` / `SANDBOX` / `LIVE`
-   on every PayPal row and badge; simulated supplier agents are labelled.
-9. **Correlation is not causation** - the Growth Graph only uses
-   `decomposes_into`, `correlates_with`, `evidenced_by`.
-
-Details: [docs/SECURITY.md](docs/SECURITY.md) · [docs/SUPPLY_AGENTS.md](docs/SUPPLY_AGENTS.md).
-
-## PayPal APIs used
-
-| API | Used for |
-| --- | --- |
-| OAuth 2.0 client credentials | Cached, auto-refreshed tokens (server-side only) |
-| Transaction Search | Incremental sync in <=31-day windows -> transaction intelligence (gross/net, fees, refunds, failures, repeat payers) |
-| Orders v2 (+ Payments v2 authorizations) | Supplier invoice settlement, payee = supplier |
-| Orders v2 create / get / capture | Approved, AI-proposed test-stock purchases (Payment Management); idempotent per approval |
-| Invoicing v2 | Merchant -> customer invoices with reminders and cancellation |
-| Payouts | Cashback rewards - approval-gated; never used for supplier settlement |
-| Catalog / Plans / Subscriptions | Plans, lifecycle actions, failed-payment recovery |
-| Webhooks (verify-webhook-signature) | Captures, refunds, payouts, invoices, subscription events |
-| Agent Toolkit via MCP (read-only) | PayPal's own reporting/dispute/invoice read tools through PayPilot's tool registry; the 30 of 46 tools that create, pay or send are blocked in code ([details](docs/SPONSORS.md#paypal-agent-toolkit-over-mcp)) |
-
-Without credentials everything runs against a deterministic simulator with `SIM-`
-identifiers. See **[docs/PAYPAL.md](docs/PAYPAL.md)**.
-
-## AI and services
-
-| | |
-| --- | --- |
-| **LangGraph** | Growth workflow and procurement workflow; both terminate at the approval gate |
-| **Groq GPT-OSS** (`openai/gpt-oss-120b`) | Optional: explanations, intent routing, buyer-agent negotiation strategist |
-| **pgvector** | Agent long-term memory (HNSW cosine) and semantic review search |
-| **Langfuse** | Optional traces for agent runs and tool calls |
-| **Vapi** | Optional voice assistant (growth, supply, approvals, PayPal - read-only) |
-| **n8n** | Event routing from the transactional outbox |
-
-**Runs without any key**: every graph node has a deterministic path; runs are
-labelled *Deterministic mode*.
-
-## Sponsor tools actually used
-
-Full, honest detail (what is live, what is a labelled fallback, what was verified and how):
-**[docs/SPONSORS.md](docs/SPONSORS.md)**. The same facts are served by
-`GET /api/v1/integrations/status`.
-
-* **AG Grid Community** (v36.3) - transactions, quote comparison, invoices, receipts,
-  reconciliations, payments, RFQs, evidence.
-* **AG Studio** - *Dashboard Studio*: opens on a pre-built overview over PayPilot's computed
-  datasets; merchants edit it by drag-and-drop or ask Studio's AI agents, which run on
-  PayPilot's LLM through an `AgLlmAdapter` (the key stays on the server). Evaluation mode
-  without a licence key; full agent runs need a paid Groq tier or `STUDIO_AI_*`.
-* **Bryntum Gantt** - *Procurement timeline*: every real stage from RFQ to payment, partial
-  deliveries and blocked invoices visible. When a supplier agent reports a delay (a signed
-  `DELIVERY_UPDATE`), the delivery and the PayPal payment that waits on it move and turn red,
-  with the original plan underneath.
-* **Bryntum Scheduler** - *Revenue radar* (`/finance/subscriptions/radar`): every PayPal
-  subscriber on one timeline - collected periods, failed charges and PayPal's retries,
-  renewals ahead - with one-click recovery (Bryntum 8.0 Enterprise; licence key via
-  `NEXT_PUBLIC_BRYNTUM_LICENSE_KEY`).
-* **Channel3** - *Product Discovery* (search, compare, similar, lookup, conversational shopping agent) and
-  *Supply Intelligence* (assortment expansion, alternatives, market prices) on the live catalog; no key =
-  setup steps, never fake products. Also the *Gear shelf* of live complementary products with affiliate links, and a market
-  price reference next to a purchase (labelled fallback without a key).
-* **Elasticsearch** - ranked evidence search (keyword fallback without `ELASTIC_URL`).
-* **Kernel** - observe-only supplier-page verification (labelled fallback without a key).
-* **Zapier** - signed, de-duplicated business-event notifications (off without a hook URL).
-* **Render** - the whole product from one Blueprint (`render.yaml`), all on the free plan, deployed: API (Docker),
-  web app, Postgres + pgvector, **Key Value (Redis)** - shared rate limits, Channel3 caches and realtime pub/sub,
-  falling back to in-process state if it is down - n8n, and the APIMatic docs portal.
-* **Postman** - collection + environment, 59 requests with assertions.
-* **APIMatic** - supplier payments (Orders v2 create / get / capture) run on PayPal's
-  APIMatic-generated **Server SDK**, written with the **PayPal Context Plugin**; PayPilot's own
-  API is set up for APIMatic in `apimatic/` (spec, guides, SDK and Context Plugin config).
-
-Not used, so not claimed: Astropods.
-None of these tools can move money or widen a limit.
+---
 
 ## Architecture
 
+![PayPilot system architecture](docs/assets/architecture.svg)
+
+PayPilot is a **modular monolith**: one FastAPI backend and one Next.js frontend, sharing a single
+PostgreSQL database. Each layer has one job, and the layer boundaries are where the safety rules live.
+
+| Layer | What lives there | Key files |
+| --- | --- | --- |
+| **Clients** | Merchant dashboard (65 pages), public PayPal store (`/shop`), Vapi voice, external agents and SDKs | [`frontend/src/app`](frontend/src/app) |
+| **Request pipeline** | Request ID, CORS allow-list, rate limit, security headers, JWT authentication, membership-verified merchant scope, `require_permission` | [`core/middleware.py`](backend/app/core/middleware.py), [`api/deps.py`](backend/app/api/deps.py) |
+| **API** | 200 operations under `/api/v1` in 18 tag groups; thin handlers that validate and delegate | [`backend/app/api/v1`](backend/app/api/v1) |
+| **Domain services** | Growth, Supply Agents, procure-to-pay, Supply Intelligence, Finance (PayPal), Governance | [`backend/app/services`](backend/app/services) |
+| **Agent layer** | Three LangGraph workflows calling a registry of 49 typed, permission-checked tools; deterministic `Decimal` engines for every number | [`backend/app/agents`](backend/app/agents), [`backend/app/tools`](backend/app/tools) |
+| **Approval gate** | Every workflow ends here. Approvals bind to a SHA-256 of the exact terms and are re-verified at execution | [`services/supply/approvals.py`](backend/app/services/supply/approvals.py) |
+| **Platform** | Transactional outbox and relay, realtime WebSocket hub, structured logging with redaction, Langfuse traces | [`services/inventory/relay.py`](backend/app/services/inventory/relay.py), [`api/realtime.py`](backend/app/api/realtime.py) |
+| **Data** | PostgreSQL 16 + pgvector (62 tables, agent memory), optional Redis for shared rate limits, caches and pub/sub | [`backend/app/db/models`](backend/app/db/models), [`core/redis.py`](backend/app/core/redis.py) |
+| **External** | PayPal (8 capabilities), Channel3, Groq, Langfuse, Vapi, n8n, Zapier, Elasticsearch, Kernel | [`backend/app/integrations`](backend/app/integrations) |
+
+### How money moves
+
+The full loop, from a customer's PayPal payment to a reconciled supplier payment. Every step marked
+"human" is an authenticated, permission-checked endpoint; no agent and no graph edge can reach it.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Customer
+    participant PayPal
+    participant API as PayPilot API
+    participant Agents as Buyer and supplier agents
+    participant Human as Merchant (human)
+
+    Customer->>PayPal: Pays at the online store (Orders v2)
+    PayPal-->>API: PAYMENT.CAPTURE.COMPLETED (signature verified)
+    API->>API: Record sale, decrement stock, raise low-stock event
+    API->>API: Deterministic engine sets price ceiling and budget
+    API->>Agents: RFQ to three supplier agents over signed messages
+    Agents-->>API: Quotes and counter-offers, each validated by the backend
+    API-->>Human: Approval request bound to SHA-256 of the exact terms
+    Human->>API: Approve purchase (an Analyst gets 403)
+    API->>API: Purchase order, goods receipt, three-way match
+    Human->>API: Approve payment
+    API->>PayPal: Orders v2 with payee = supplier and an idempotent PayPal-Request-Id
+    PayPal-->>API: Capture completed
+    API->>API: Reconcile PO, receipt, invoice and capture to the cent, revalue stock, update margin
 ```
-Next.js 15 (React 19, TypeScript, Tailwind, shadcn/ui, TanStack Query, AG Grid, Recharts)
-   │  one Axios client · polling + WebSocket hub
-   ▼
-FastAPI (Pydantic v2) ── auth → merchant scope → require_permission
-   │
-   ├─ Growth: analytics · Growth Graph · opportunities (+ supply-aware) · campaigns · experiments
-   ├─ Supply: inventory intelligence · supplier agents · buyer agent · negotiation · evaluation
-   │          · approvals · PO · receiving · three-way match · reconciliation
-   ├─ Finance: PayPal gateway (client | simulator) · sync · webhooks · invoices · payouts · subscriptions
-   ├─ Governance: approval inbox · audit log · RBAC (51 permissions, 5 roles)
-   ├─ Agents: LangGraph (growth + procurement) · 49-tool registry · signed agent protocol
-   └─ Unified events (transactional outbox) ──► n8n / worker / WebSocket
-   ▼
-PostgreSQL 16 + pgvector (62 tables) · Redis / Render Key Value (optional) · SQLAlchemy 2 · Alembic
-```
 
-200 API operations · 62 tables · 49 agent tools · 51 permissions · 57 dashboard screens.
+### Rules enforced in code
 
-## Getting started
+1. **No AI arithmetic.** Every amount, limit, score and match comes from a `Decimal` engine or SQL
+   ([`services/supply/policy.py`](backend/app/services/supply/policy.py)). An LLM may propose a counter-offer;
+   an out-of-bounds proposal is refused, not clamped.
+2. **Humans approve money movement.** Agents can request, never approve. The agent tools named
+   `approve_purchase` and `pay_supplier_invoice` exist only to refuse. Owners are not exempt.
+3. **Approvals bind to exact terms.** A SHA-256 of the canonical terms and the policy version is stored and
+   re-checked at execution; any change invalidates the approval.
+4. **Idempotent payments.** `PayPal-Request-Id` is derived from the business action, so a retry cannot pay twice.
+5. **Verified webhooks only.** PayPal's `verify-webhook-signature` runs on the raw body first; the event id is a
+   replay guard; unverified events are stored as `REJECTED` and never acted on.
+6. **Signed agent messages.** Per-agent HMAC, strict schemas, sender roles, freshness and replay protection at
+   one verification boundary.
+7. **Tenant isolation is structural.** The merchant comes from the caller's membership; repositories filter
+   every query by it.
+8. **Nothing simulated is presented as real.** `SANDBOX`, `LIVE` or `SIMULATED` is stored on every PayPal row
+   and shown in the UI.
 
-### Everything in Docker (only Docker needed)
+Full design notes, request lifecycle, data model and more diagrams: **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**.
+
+---
+
+## What PayPilot does
+
+Small merchants see last week's sales but not why they moved. They discover a stockout after it happens,
+source more by emailing suppliers, and pay quotes they never negotiated. Automating any of this is risky,
+because the steps that matter move money. PayPilot connects four loops on one dataset:
+
+| Loop | Flow |
+| --- | --- |
+| **Growth Intelligence** | Observe -> diagnose -> recommend -> **approve** -> act -> measure with a controlled experiment -> learn |
+| **Supply Agents** | Detect demand -> compute limits -> RFQ -> agent-to-agent negotiation -> evaluate -> **approve** -> PO -> receive -> three-way match -> **approve payment** -> PayPal -> reconcile |
+| **Supply Intelligence** | Sales and inventory -> expansion opportunity -> live Channel3 products -> compare -> recommendation -> **approve** -> catalog or PayPal test-stock order -> measure |
+| **Unified intelligence** | Shared business events and memory: demand drives procurement, procurement cost drives margin, stock levels shape campaigns |
+
+On the seeded demo merchant (Juniper & Oak Coffee, Portland), the procurement loop computes these figures
+deterministically: demand **+71%** (7 -> 12 bags a day), **3.5 days** of cover, a ceiling of
+`$18.00 x (1 - 40%) = $10.80` per bag, a negotiated order of **$1,455.00** that is **$248.77** below the best
+opening quote, and a product margin that moves from **35.6% to 43.8%** after reconciliation.
+
+---
+
+## PayPal integration
+
+PayPal is the merchant's system of record and the only rail money moves on.
+
+| PayPal capability | Used for | Code |
+| --- | --- | --- |
+| OAuth 2.0 client credentials | Cached, lock-guarded token refresh, server side only | [`integrations/paypal/client.py`](backend/app/integrations/paypal/client.py) |
+| Orders v2 (customer checkout) | The online store: server-priced cart, idempotent capture, webhook and return both record the sale once | [`services/shop.py`](backend/app/services/shop.py) |
+| Orders v2 (supplier payment) | Payee = supplier, on PayPal's APIMatic-generated Server SDK, only after approval and a three-way match | [`integrations/paypal/server_sdk.py`](backend/app/integrations/paypal/server_sdk.py) |
+| Transaction Search | Incremental sync in 31-day windows feeding growth analytics | [`services/paypal/sync.py`](backend/app/services/paypal/sync.py) |
+| Invoicing v2 | Merchant-to-customer invoices with reminders and cancellation | [`services/paypal/finance.py`](backend/app/services/paypal/finance.py) |
+| Payouts | Approval-gated cashback; never used for suppliers | [`services/paypal/finance.py`](backend/app/services/paypal/finance.py) |
+| Catalog, Plans, Subscriptions | Plans, lifecycle actions, subscription revenue radar with one-click recovery | [`services/paypal/radar.py`](backend/app/services/paypal/radar.py) |
+| Webhooks | Signature-verified on raw bytes, replay-guarded, idempotent handlers | [`services/paypal/webhooks.py`](backend/app/services/paypal/webhooks.py) |
+| Agent Toolkit over MCP | Read-only bridge: 16 of PayPal's 46 tools callable, the 30 that create, pay or send are blocked in code | [`integrations/paypal/mcp.py`](backend/app/integrations/paypal/mcp.py) |
+
+Without credentials everything runs on a deterministic simulator with `SIM-` identifiers.
+Details, modes and sandbox setup: **[docs/PAYPAL.md](docs/PAYPAL.md)**.
+
+---
+
+## Tech stack
+
+| Area | Technology |
+| --- | --- |
+| Backend | Python 3.12, FastAPI 0.141, Pydantic v2, SQLAlchemy 2 (async), Alembic, asyncpg |
+| Agents | LangGraph 1.2, Groq GPT-OSS-120B (optional), deterministic fallback for every node |
+| Data | PostgreSQL 16, pgvector (HNSW cosine), Redis 7 or Render Key Value (optional) |
+| Frontend | Next.js 15 (App Router), React 19, TypeScript 5.7, Tailwind CSS, shadcn/ui, TanStack Query, Zustand |
+| Data grids and charts | AG Grid Community 36.3, AG Studio, Bryntum Gantt and Scheduler 8.0, Recharts |
+| Payments | PayPal REST APIs, `paypal-server-sdk` 2.4.0 (APIMatic-generated), PayPal MCP server |
+| Product data | Channel3 catalog API |
+| Automation | n8n 2.46 (HMAC-signed both ways), Zapier Catch Hook |
+| Observability | Structured JSON logs with redaction, Langfuse traces |
+| Delivery | Docker Compose, Render Blueprint, APIMatic portal and SDKs, Postman collection |
+
+---
+
+## Quick start
+
+No API keys are needed. Without them PayPal runs on a labelled simulator and every agent runs in
+deterministic mode.
+
+**Everything in Docker** (only Docker required):
 
 ```bash
-cp .env.example .env          # optional - without it: simulated PayPal, deterministic agents
-docker compose up -d --build  # postgres, API, worker, web app and n8n (workflows imported + published)
+git clone https://github.com/Madhur-Prakash/PayPilot.git
+cd PayPilot
+docker compose up -d --build
 ```
 
-App <http://localhost:3000> · API docs <http://localhost:8000/docs> · n8n
-<http://localhost:5678> (create the n8n owner account on first visit). The first
-start migrates and seeds the demo merchant, about two minutes.
-`docker compose stop` keeps the data; `docker compose down -v` wipes it.
+Open <http://localhost:3000>. The API is at <http://localhost:8000/docs> and n8n at <http://localhost:5678>.
+The first start migrates and seeds the demo merchant, which takes about two minutes.
 
-### Local development
-
-Requires **Python 3.11-3.14**, **Node 20+**, **Git**, and **Docker** (for the
-local Postgres; or bring your own Postgres 16 with `vector`).
+**Local development** (Python 3.11-3.14, Node 20+, Docker for Postgres):
 
 ```bash
-make init     # tools check -> .env (never overwritten) -> deps -> Postgres -> migrations -> demo seed
-make dev      # backend http://localhost:8000 (docs at /docs) + frontend http://localhost:3000
+make init     # tools check, .env, dependencies, Postgres, migrations, demo seed
+make dev      # backend on :8000, frontend on :3000
 ```
 
-Windows PowerShell without Make:
+On Windows PowerShell without Make:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\setup.ps1
 powershell -ExecutionPolicy Bypass -File scripts\dev.ps1
 ```
 
-### Demo credentials
+**Demo accounts** (password `Autopilot@2024` for all):
 
 | Role | Email | Can |
 | --- | --- | --- |
 | Owner | `owner@juniperoak.com` | Everything, including users |
-| Admin | `admin@juniperoak.com` | Approve purchases and payments, execute |
-| Analyst | `analyst@juniperoak.com` | Source and negotiate - **cannot** approve or pay |
+| Admin | `admin@juniperoak.com` | Approve and execute purchases and payments |
+| Analyst | `analyst@juniperoak.com` | Source and negotiate; cannot approve or pay |
 | Staff | `staff@juniperoak.com` | Receive goods, inventory actions |
 | Viewer | `viewer@juniperoak.com` | Read only |
 
-Password for all: `Autopilot@2024`.
+Step-by-step guides: **[Quick start](docs/QUICKSTART.md)** and **[Installation](docs/INSTALLATION.md)**.
 
-### Commands
-
-```bash
-make help        # every target
-make check       # tools, versions, .env, PayPal/LLM/Channel3 mode
-make integrations  # verify Channel3 + PayPal sandbox credentials live (no secrets printed)
-make test        # backend pytest (SQLite, no Docker) + frontend vitest
-make lint        # ruff + next lint
-make typecheck   # tsc (+ advisory mypy)
-make build       # backend import check + next build
-make docker-up   # Postgres (FULL=1 for the whole stack)
-make migrate     # alembic upgrade head
-make seed        # idempotent demo seed   ·   make seed-reset to rebuild it
-make reset-db    # DESTRUCTIVE - requires CONFIRM=yes
-make clean       # caches and build output only
-```
-
-### Configuration
-
-One `.env` at the repository root (created by `make env` from `.env.example`;
-the copy works as-is). Key settings:
-
-| Variable | Purpose |
-| --- | --- |
-| `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_ENVIRONMENT` | Sandbox/live PayPal; blank = simulator |
-| `PAYPAL_WEBHOOK_ID` | Required to accept real webhooks |
-| `PAYPAL_SANDBOX_PAYEE_EMAIL` | Sandbox business account used as supplier payee |
-| `GROQ_API_KEY` | Optional LLM; blank = deterministic mode |
-| `CHANNEL3_API_KEY` | Live product catalog for Product Discovery and Supply Intelligence; blank = those screens show setup steps |
-| `DISCOVERY_FX_PER_USD` | Labelled reference rates for budgets in currencies Channel3 does not price in (e.g. INR) |
-| `PROCUREMENT_*` | Negotiation rounds, quote TTL, default margin, matching tolerances |
-| `MEMORY_ENABLED` | pgvector agent memory (on by default) |
-
-Full reference: [docs/CONFIGURATION.md](docs/CONFIGURATION.md).
-
-## Testing
-
-```bash
-make test-backend    # 535 tests: unit, integration, API - SQLite, no Docker, no keys
-make test-frontend   # vitest
-```
-
-Highlights: the financial engine (Decimal limits, tampered totals), the agent
-protocol (bad signatures, cross-tenant, stale, schema violations, replays), the
-PayPal client against mocked PayPal responses (token refresh, retries,
-idempotency, 31-day windows, webhook verification), the simulator, approval
-invalidation, RBAC denials, tenant isolation, pgvector memory isolation, and the
-**end-to-end procurement lifecycle through the real API**.
+---
 
 ## Deployment
 
-`render.yaml` deploys Postgres, Key Value (Redis - shared caches, rate limits and
-realtime pub/sub), the API (Docker) and the web app on Render; secrets are prompted (leave blank for the keyless demo). See
-[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md#render-blueprint). Docker Compose runs
-the same stack locally, plus n8n: `docker compose up -d --build`.
+| Target | Command or file | Guide |
+| --- | --- | --- |
+| Docker Compose | `docker compose up -d --build` (Postgres, Redis, API, worker, web, n8n) | [Deployment: Docker Compose](docs/DEPLOYMENT.md#docker-compose) |
+| Render | [`render.yaml`](render.yaml): API, web, Postgres, Key Value, n8n and the docs portal, all on the free plan | [Deployment: Render](docs/DEPLOYMENT.md#render-blueprint) |
+| Any container host | [`backend/Dockerfile`](backend/Dockerfile), [`frontend/Dockerfile`](frontend/Dockerfile) | [Deployment: other platforms](docs/DEPLOYMENT.md#other-platforms) |
 
-## What we built during the hackathon
+Before real traffic, work through the [production checklist](docs/DEPLOYMENT.md#production-checklist).
 
-PayPilot started as our "Growth Autopilot" from a previous hackathon (growth
-analytics, Growth Graph, opportunities, campaigns, experiments, inventory
-automation, vendors/POs, RBAC, LangGraph agents, voice). **After October 1,
-2026** we added:
+---
 
-* the **PayPal integration layer** (client + simulator, transaction sync and
-  intelligence, Orders v2 settlement, invoicing, payouts, subscriptions,
-  verified webhooks, reconciliation);
-* the **Supply Agents network** (Inventory Intelligence, three independent
-  supplier agents, the Buyer Agent, multi-round negotiation, deterministic
-  evaluation, the procurement LangGraph workflow);
-* the **signed agent-to-agent protocol**;
-* the **deterministic financial and negotiation engine**;
-* the **full procurement lifecycle** (hash-bound approvals, POs, invoices,
-  partial receiving, three-way matching, PayPal payment, reconciliation,
-  supplier learning);
-* **unified intelligence** (business events, supply-aware growth opportunities,
-  inventory constraints on campaigns, procurement cost -> margin);
-* the **Approval Center**, 13 new permissions, **pgvector memory** (replacing an
-  external memory library), **19 new screens** with AG Grid, US localization,
-  `make init` + cross-platform scripts, Render Blueprint, Postman collection and
-  **80 new tests**.
-* **sponsor integrations** (Bryntum Gantt timeline, AG Studio dashboards, Channel3 market reference,
-  Elasticsearch evidence search, Kernel supplier-page checks, Zapier notifications), a **read-only PayPal
-  Agent Toolkit (MCP) bridge** verified against the live sandbox, customer lifetime value and purchase
-  frequency analytics, and the tests for all of it ([docs/SPONSORS.md](docs/SPONSORS.md)).
+## Documentation
 
-Full breakdown: [docs/HACKATHON.md](docs/HACKATHON.md).
+| Document | Contents |
+| --- | --- |
+| [Quick start](docs/QUICKSTART.md) | Running in five minutes, three ways |
+| [Installation](docs/INSTALLATION.md) | Prerequisites, platform notes, manual setup, verification |
+| [Configuration](docs/CONFIGURATION.md) | Every environment variable and how each integration is enabled |
+| [Deployment](docs/DEPLOYMENT.md) | Docker Compose, Render Blueprint, other hosts, production checklist |
+| [Architecture](docs/ARCHITECTURE.md) | System design, request lifecycle, data model, events, diagrams |
+| [Agents](docs/AGENTS.md) | LangGraph workflows, the 49-tool registry, LLM handling |
+| [Agent memory](docs/MEMORY.md) | Long-term memory on pgvector with tenant isolation |
+| [Supply Agents](docs/SUPPLY_AGENTS.md) | Agent-to-agent procurement, signed protocol, negotiation, three-way match |
+| [Supply Intelligence](docs/SUPPLY_INTELLIGENCE.md) | Channel3 product discovery, recommendations, approved purchases |
+| [PayPal integration](docs/PAYPAL.md) | Every PayPal API used, modes, webhooks, sandbox setup |
+| [Integrations](docs/INTEGRATIONS.md) | Channel3, AG Grid, AG Studio, Bryntum, APIMatic, Render, Elasticsearch, Kernel, Zapier, Postman |
+| [Automation](docs/AUTOMATION.md) | Transactional outbox, n8n workflows, signed callbacks |
+| [API portal and SDKs](docs/APIMATIC.md) | Building the APIMatic portal, Python and TypeScript SDKs |
+| [API reference](docs/API.md) | Every endpoint with its permission, envelopes and error codes |
+| [Security](docs/SECURITY.md) | Authentication, RBAC, tenant isolation, approval gates, auditing |
+| [Data](docs/DATA.md) | Data model and the deterministic demo dataset |
+| [Testing](docs/TESTING.md) | Test suites, how to run them, how to add to them |
+| [Contributing](docs/CONTRIBUTING.md) | Conventions and adding a feature end to end |
+| [Troubleshooting](docs/TROUBLESHOOTING.md) | Symptom, cause, fix |
+
+---
+
+## Repository layout
+
+```
+backend/                 FastAPI application
+  app/
+    api/v1/              18 routers: auth, dashboard, growth, campaigns, agents, inventory, supply,
+                         supply_intel, approvals, paypal, payments, shop, intelligence, memory,
+                         integrations, voice, admin (+ health)
+    agents/              LangGraph workflows: growth graph, procurement graph, Merchant OS
+    tools/               49-tool agent registry
+    services/            business logic: analytics, growth, campaigns, experiments, inventory,
+                         supply, supply_intel, discovery, paypal, intelligence, integrations, auth
+    integrations/        PayPal (client, Server SDK, simulator, MCP), Channel3, Groq, Langfuse,
+                         Vapi, Elasticsearch, Kernel, Zapier, vector memory
+    db/models/           SQLAlchemy models (62 tables)
+    core/                config, security, permissions, middleware, rate limiting, Redis, logging
+    seed/                deterministic demo dataset and supply network
+  alembic/versions/      database migrations
+  tests/                 unit, api and integration suites (SQLite, no Docker needed)
+frontend/                Next.js 15 application
+  src/app/               65 pages: (auth), (dashboard), shop
+  src/components/        feature components, shadcn/ui primitives
+  src/lib/               API client, Studio adapter, utilities
+n8n/                     workflow builder, Docker image and Render start script
+apimatic/                APIMatic project for PayPilot's own API (portal, SDKs, Context Plugin)
+postman/                 Postman collection (59 requests) and local environment
+scripts/                 cross-platform task runner, setup and dev scripts, diagram and OpenAPI export
+docker/                  Postgres init (pgvector, pgcrypto)
+docs/                    technical documentation and diagrams
+docker-compose.yml       full local stack
+render.yaml              Render Blueprint
+Makefile                 every developer command (delegates to scripts/tasks.py)
+```
+
+---
+
+## Testing and quality
+
+```bash
+make test            # backend pytest (SQLite, no Docker, no keys) + frontend vitest
+make lint            # ruff + next lint
+make typecheck       # tsc --noEmit (+ advisory mypy)
+make build           # backend import check + next build
+make verify          # lint + typecheck + test
+```
+
+The backend suite covers the financial engine (Decimal limits, tampered totals), the agent protocol (bad
+signatures, cross-tenant, stale and replayed messages), the PayPal client against mocked PayPal responses
+(token refresh, retries, idempotency, 31-day windows, webhook verification), approval invalidation, RBAC
+denials, tenant isolation, pgvector memory isolation and the end-to-end procurement lifecycle through the
+real API. Details: **[docs/TESTING.md](docs/TESTING.md)**.
+
+---
 
 ## Known limitations
 
-* PayPal sandbox **OAuth and the Orders v2 supplier payment (create -> buyer approval -> capture, on the
-  official Server SDK) are verified live**; Transaction Search, Invoicing, Payouts, Subscriptions and webhook
-  verification are verified against the simulator and mocked PayPal responses, so run the sandbox steps in
-  [docs/PAYPAL.md](docs/PAYPAL.md#using-the-sandbox) to confirm a payment end to end.
-* PayPal's sandbox **MCP runtime currently returns an internal error for every tool call**
-  (`Unsupported cache mode: default`); the bridge reports it faithfully. See
-  [docs/SPONSORS.md](docs/SPONSORS.md#paypal-agent-toolkit-over-mcp).
-* **Channel3 is verified against the live API.** Elasticsearch and Zapier were verified against
-  **mocked HTTP only** and are off on the hosted demo (labelled fallbacks). Kernel is configured on the
-  hosted demo, but its session-close call is best-effort and unverified.
-* AG Studio (evaluation) shows a watermark without its licence key. Bryntum Gantt runs on a
-  registered trial key (valid until 2026-12-20), which still shows Bryntum's Trial badge.
-  Production use needs purchased licences for both.
-* Supplier agents in the demo are simulated policy engines (labelled as such); external agents can
+* **Verified live against the PayPal sandbox:** OAuth, and the Orders v2 supplier payment (create, buyer
+  approval, capture) on the official Server SDK. Transaction Search, Invoicing, Payouts, Subscriptions and
+  webhook verification are verified against the simulator and mocked PayPal responses.
+* PayPal's sandbox MCP runtime currently returns `Unsupported cache mode: default` for every tool call; the
+  bridge reports it as an error rather than as data.
+* Supplier agents in the demo are simulated policy engines and are labelled as such; external agents can
   connect through the signed inbound endpoint.
-* Analytics run on a seeded demo dataset; synced PayPal transactions are shown separately with
-  their mode. CLV is an *estimate* with its assumptions returned beside it.
-* Sandbox supplier payments need a payer approval in PayPal before capture.
-* The customer checkout (`/shop`) is covered by 20 tests against the labelled simulator, including the
-  webhook-before-return and return-before-webhook cases; run it once against your PayPal sandbox (needs a
-  sandbox *personal* buyer account) before relying on it live.
-* Team to-do before submitting: record the demo video and submit on Devpost.
-* Free-plan hosting: services sleep after about 15 idle minutes (the first request takes about a minute)
-  and the free database expires after 30 days.
+* Analytics run on a seeded demo dataset; synced PayPal transactions are stored and shown with their mode.
+* AG Studio runs in evaluation mode without a licence key, and Bryntum on a trial key; both show a watermark.
+* Render's free plan sleeps idle services and expires the free database after 30 days.
 
-## Project layout
-
-```
-backend/app/
-  api/v1/            auth · dashboard · growth · campaigns · agents · inventory · supply · approvals
-                     · paypal · intelligence · memory · voice · admin
-  services/          analytics · growth · campaigns · experiments · inventory
-                     · supply (policy, demand, protocol, supplier/buyer agents, negotiation,
-                       evaluation, approvals, lifecycle) · paypal (sync, webhooks, finance)
-                     · intelligence (events, unified)
-  integrations/      paypal (client, simulator, gateway) · vector_memory · groq · langfuse · vapi
-  agents/            growth graph · procurement_graph · orchestrator · memory narratives
-  tools/             49-tool registry (incl. supply, PayPal, memory)
-  db/models/         … · supply · governance · paypal · memory
-  seed/              deterministic demo (US merchant) + supply network
-frontend/src/app/(dashboard)/
-  command · supply/* · approvals · finance/* · agents/communication · (growth screens) · …
-scripts/             tasks.py (cross-platform) · setup/dev/check (.ps1 + .sh)
-postman/             PayPilot.postman_collection.json
-render.yaml · docker-compose.yml · Makefile · .env.example
-```
+---
 
 ## License
 
-MIT - see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
+
+---
+
+<div align="center">
+
+Made with ❤️ for PayPal Hackathon
+
+</div>

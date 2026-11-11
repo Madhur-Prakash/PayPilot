@@ -2,203 +2,165 @@
 
 # Installation
 
-[![Docs index](https://img.shields.io/badge/-Docs_index-475569?style=flat-square&logo=markdown&logoColor=white)](README.md)
-[![Configuration](https://img.shields.io/badge/-Next:_Configuration-2563eb?style=flat-square)](CONFIGURATION.md)
+A complete local development environment, step by step, on macOS, Linux or Windows.
+
+[![Docs index](https://img.shields.io/badge/-Docs_index-0b2a6f?style=flat-square)](README.md)
+[![Quick start](https://img.shields.io/badge/-Quick_start-16a34a?style=flat-square)](QUICKSTART.md)
+[![Configuration](https://img.shields.io/badge/-Configuration-2563eb?style=flat-square)](CONFIGURATION.md)
 [![Troubleshooting](https://img.shields.io/badge/-Troubleshooting-dc2626?style=flat-square)](TROUBLESHOOTING.md)
 
 </div>
-
-Getting PayPilot running locally. Budget about ten minutes, most of
-it dependency downloads.
 
 ---
 
 ## Contents
 
 - [Prerequisites](#prerequisites)
-- [Fast path](#fast-path)
-- [Step by step](#step-by-step)
+- [Automated setup](#automated-setup)
+- [Manual setup](#manual-setup)
 - [Verify the installation](#verify-the-installation)
-- [Platform notes](#platform-notes)
 - [Running without Docker](#running-without-docker)
+- [Platform notes](#platform-notes)
 - [What gets installed](#what-gets-installed)
-- [Next steps](#next-steps)
+- [The task runner](#the-task-runner)
 
 ---
 
 ## Prerequisites
 
-| Requirement | Version | Why | Check |
-| --- | --- | --- | --- |
-| **Python** | 3.11 or newer | Backend | `python --version` |
-| **Node.js** | 20 or newer | Frontend | `node --version` |
-| **Docker** | any recent | Postgres + pgvector | `docker --version` |
-| **make** | any | Task runner | `make --version` |
-| **git** | any | Clone | `git --version` |
+| Tool | Version | Required | Used for | Check |
+| --- | --- | :-: | --- | --- |
+| Python | 3.11 to 3.14 | yes | Backend (`requires-python = ">=3.11,<3.15"`) | `python --version` |
+| Node.js | 20 or newer | yes | Frontend (`engines.node >= 20`) | `node --version` |
+| npm | ships with Node | yes | Frontend dependencies | `npm --version` |
+| Git | any | yes | Clone | `git --version` |
+| Docker | any recent, with Compose | recommended | Local Postgres 16 + pgvector, optional Redis and n8n | `docker compose version` |
+| GNU Make | any | optional | Short commands; every target has a PowerShell or Python equivalent | `make --version` |
+| uv | any | optional | Faster backend installs (used automatically when present) | `uv --version` |
 
-Built and verified on Python 3.12.10, Node 22.15.1, Docker 29.7.2.
-
-### If you do not have Docker
-
-You can point at any PostgreSQL 14+ with the `vector` extension available —
-including Supabase. See [Running without Docker](#running-without-docker).
-
-### If you do not have make
-
-Every target is a short shell command; run them directly. The
-[fast path](#fast-path) shows the expansion.
+The container images use Python 3.12 and Node 22.
 
 ---
 
-## Fast path
+## Automated setup
 
 ```bash
-git clone https://github.com/Madhur-Prakash/PayPilot
-cd paypilot
-
-cp .env.example .env
-make setup          # env -> dependencies -> database -> migrations -> seed
-make dev            # backend :8000, frontend :3000
+git clone https://github.com/Madhur-Prakash/PayPilot.git
+cd PayPilot
+make init
 ```
 
-Open <http://localhost:3000> and sign in with `owner@juniperoak.com` /
-`Autopilot@2024`.
+`make init` runs, in order:
 
-<details>
-<summary><b>Without make</b> — the same steps expanded</summary>
+1. **Tool check.** Python, Node, npm and Git must be present; Docker and uv are reported if missing.
+2. **Environment.** Copies `.env.example` to `.env` only if `.env` does not exist. The copy works as-is.
+3. **Dependencies.** `uv sync` in `backend/` when uv is installed, otherwise a `backend/.venv` virtualenv with
+   `pip install -r requirements.txt` plus the optional extras (best effort). Then `npm ci` in `frontend/`.
+4. **Database.** If Docker is running: `docker compose up -d postgres`, wait until `pg_isready`, run
+   `alembic upgrade head`, seed the demo data. If Docker is not running but `DATABASE_URL` points at a reachable
+   database, it migrates and seeds that one. Otherwise it tells you what to run next.
 
-```bash
-# 1. Environment
-cp .env.example .env
-
-# 2. Backend dependencies
-cd backend
-python -m venv .venv
-# macOS / Linux:
-source .venv/bin/activate
-# Windows PowerShell:
-#   .venv\Scripts\Activate.ps1
-# Windows Git Bash:
-#   source .venv/Scripts/activate
-pip install --upgrade pip
-pip install -r requirements.txt
-pip install -r requirements-optional.txt   # best effort
-cd ..
-
-# 3. Frontend dependencies
-cd frontend && npm install && cd ..
-
-# 4. Database
-docker compose up -d postgres
-
-# 5. Schema and data
-cd backend
-python -m alembic upgrade head
-python -m app.seed.seed
-cd ..
-
-# 6. Run (two terminals)
-cd backend && python -m uvicorn app.main:app --reload --port 8000
-cd frontend && npm run dev
-```
-
-</details>
-
----
-
-## Step by step
-
-### 1. Clone and enter
-
-```bash
-git clone <repository-url> paypilot
-cd paypilot
-```
-
-### 2. Create the environment file
-
-```bash
-cp .env.example .env
-```
-
-The defaults work for local development out of the box. Nothing needs an API key.
-
-> **Before deploying anywhere**, change `JWT_SECRET`. Generate one with:
-> ```bash
-> python -c "import secrets; print(secrets.token_urlsafe(64))"
-> ```
-> Full reference: [CONFIGURATION.md](CONFIGURATION.md).
-
-### 3. Install dependencies
-
-```bash
-make install
-```
-
-This creates `backend/.venv`, installs Python requirements, then installs the
-frontend's npm packages.
-
-Optional extras (`logifyx` for structured logging, `fastembed` for real semantic
-embeddings) install on a best-effort basis — the application degrades gracefully
-if either is unavailable.
-
-### 4. Start PostgreSQL
-
-```bash
-make db          # docker compose up -d postgres
-make wait-db     # blocks until it accepts connections
-```
-
-Uses the `pgvector/pgvector:pg16` image on **port 5433** (not 5432, to avoid
-colliding with an existing local Postgres). `vector` and `pgcrypto` are created on
-first start by [`docker/postgres/init/01-extensions.sql`](../docker/postgres/init/01-extensions.sql).
-
-### 5. Apply migrations
-
-```bash
-make migrate
-```
-
-Creates all 30 tables. The initial migration also creates the `vector` and
-`pgcrypto` extensions, guarded so it still runs on SQLite.
-
-### 6. Seed the demo data
-
-```bash
-make seed
-```
-
-Takes roughly 45-70 seconds: 1,700 customers, ~14,800 transactions, ~2,475
-reviews with embeddings, competitors, inventory, signals, two historical
-experiments, and the opportunities detected from all of it.
-
-`make seed` is idempotent — it skips if data is already present. Use `make reseed`
-to wipe and rebuild.
-
-### 7. Run
+Then start everything:
 
 ```bash
 make dev
 ```
 
-Starts both. Or separately:
+On Windows without Make, use `scripts\setup.ps1` and `scripts\dev.ps1` (see [Quick start](QUICKSTART.md#path-c-windows-powershell)).
+On macOS and Linux without Make, `sh scripts/setup.sh` and `sh scripts/dev.sh` do the same.
+
+---
+
+## Manual setup
+
+The same steps without the task runner, useful when something needs to be done differently.
+
+### 1. Environment file
 
 ```bash
-make backend     # http://localhost:8000
-make frontend    # http://localhost:3000
+cp .env.example .env
+```
+
+There is exactly one `.env`, at the repository root. Both the backend and the frontend read it. Every secret is
+blank by default. See [Configuration](CONFIGURATION.md).
+
+### 2. Backend dependencies
+
+```bash
+cd backend
+python -m venv .venv
+
+# macOS / Linux
+source .venv/bin/activate
+# Windows PowerShell
+.venv\Scripts\Activate.ps1
+# Windows Git Bash
+source .venv/Scripts/activate
+
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+pip install -r requirements-optional.txt   # optional: local embedding model
+cd ..
+```
+
+### 3. Frontend dependencies
+
+```bash
+cd frontend
+npm ci
+cd ..
+```
+
+### 4. Database
+
+```bash
+docker compose up -d postgres
+```
+
+This starts `pgvector/pgvector:pg16` on host port **5433** (not 5432, so it never collides with a Postgres you
+already run). [`docker/postgres/init/01-extensions.sql`](../docker/postgres/init/01-extensions.sql) creates the
+`vector` and `pgcrypto` extensions on first start.
+
+Optional, for shared rate limits and caches:
+
+```bash
+docker compose up -d redis
+# then in .env:  REDIS_URL=redis://localhost:6379/0
+```
+
+### 5. Schema and demo data
+
+```bash
+cd backend
+python -m alembic upgrade head
+python -m app.seed.seed
+cd ..
+```
+
+The seed is idempotent: if the demo merchant already exists it does nothing. `python -m app.seed.seed --reset`
+removes the demo tenant and rebuilds it.
+
+### 6. Run
+
+Two terminals:
+
+```bash
+cd backend && python -m uvicorn app.main:app --reload --port 8000
+```
+
+```bash
+cd frontend && npm run dev
 ```
 
 ---
 
 ## Verify the installation
 
-### Health check
+### Health
 
 ```bash
 curl -s http://localhost:8000/api/v1/health | python -m json.tool
 ```
-
-Expect:
 
 ```json
 {
@@ -207,124 +169,64 @@ Expect:
     "status": "ok",
     "checks": {
       "database": "ok",
+      "redis": "not_configured",
       "llm": "not_configured",
       "langfuse": "not_configured",
       "vapi": "not_configured",
+      "email": "...",
       "embeddings": "hash",
-      "logging_backend": "logifyx"
+      "logging_backend": "..."
     }
   }
 }
 ```
 
-`not_configured` is expected and fine — everything works without those.
+`not_configured` is expected; every feature has a documented behaviour without its integration. `status` is
+`degraded` only when the database is unreachable.
 
-### Data is present
-
-```bash
-make seed-stats
-```
-
-```
-  Merchant : Juniper & Oak Coffee (juniper-oak-coffee)
-  products            : 8
-  customers           : 1,700
-  transactions        : 14,819
-  reviews             : 2,475
-  competitors         : 3
-  external signals    : 4
-```
-
-### Tests pass
+### Configuration report
 
 ```bash
-make test
+make check
 ```
 
-```
-105 passed in 10s
+Prints the tool versions, whether `.env` is present, the PayPal mode (`SIMULATED` or `SANDBOX/LIVE`), whether
+Groq and Channel3 keys are set, and whether dependencies are installed.
+
+### The UI
+
+Open <http://localhost:3000>, sign in as `owner@juniperoak.com` / `Autopilot@2024`, and open the Command Center.
+
+### Tests
+
+```bash
+make test-backend
 ```
 
-Tests run on SQLite, so this works even with Docker stopped.
+The backend suite runs on SQLite in memory, so it passes with Docker stopped and no keys set. See
+[Testing](TESTING.md).
 
-### The story is intact
+### The demo story without a database
 
 ```bash
 make calibrate
 ```
 
-Prints the figures the dashboard will show, computed without touching a database.
-Revenue should be down roughly 12%, with the evening slot down roughly 32%.
-
-### The UI loads
-
-Open <http://localhost:3000>, sign in as `owner@juniperoak.com` /
-`Autopilot@2024`, and confirm the Command Center shows four KPI cards with
-negative deltas and an Opportunity Radar with four entries.
-
----
-
-## Platform notes
-
-### macOS
-
-```bash
-brew install python@3.12 node docker make
-```
-
-Docker Desktop must be running before `make db`.
-
-### Linux (Debian / Ubuntu)
-
-```bash
-sudo apt update
-sudo apt install -y python3.12 python3.12-venv nodejs npm make
-# Docker: https://docs.docker.com/engine/install/
-```
-
-If `docker compose` needs sudo, add yourself to the `docker` group:
-
-```bash
-sudo usermod -aG docker "$USER" && newgrp docker
-```
-
-### Windows
-
-Use **Git Bash** or **WSL2**; the Makefile is POSIX shell.
-
-```powershell
-winget install Python.Python.3.12
-winget install OpenJS.NodeJS.LTS
-winget install Docker.DockerDesktop
-```
-
-`make` is not present by default. Either install it:
-
-```powershell
-winget install GnuWin32.Make
-```
-
-or use WSL2, or run the expanded commands in the
-[fast path](#fast-path) `<details>` block.
-
-Inside the venv on Windows, the interpreter is `backend/.venv/Scripts/python.exe`
-(not `bin/python`). The Makefile detects both layouts automatically.
+Generates the dataset in memory and prints the figures the dashboard will show. See [Data](DATA.md#calibration).
 
 ---
 
 ## Running without Docker
 
-Any PostgreSQL 14+ with pgvector works.
+Any PostgreSQL 14 or newer with the `vector` extension works.
 
-### Existing local PostgreSQL
+### An existing local PostgreSQL
 
 ```bash
 createdb autopilot
 psql -d autopilot -c 'CREATE EXTENSION IF NOT EXISTS "vector";'
 psql -d autopilot -c 'CREATE EXTENSION IF NOT EXISTS "pgcrypto";'
 ```
-
-Then in `.env`:
 
 ```dotenv
 DATABASE_URL=postgresql+asyncpg://YOUR_USER:YOUR_PASSWORD@localhost:5432/autopilot
@@ -334,98 +236,135 @@ DATABASE_URL=postgresql+asyncpg://YOUR_USER:YOUR_PASSWORD@localhost:5432/autopil
 make migrate && make seed
 ```
 
-### Supabase
+### A managed database
 
-Enable the `vector` extension in **Database -> Extensions**, then use the
-**session** connection string:
-
-```dotenv
-DATABASE_URL=postgresql+asyncpg://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres
-```
-
-The engine detects the pooler and disables asyncpg's prepared-statement cache
-automatically — required for transaction-pooling mode.
-
-Full walkthrough: [DEPLOYMENT.md](DEPLOYMENT.md#supabase).
+Use the provider's connection string with the `postgresql+asyncpg://` scheme. A plain `postgres://` or
+`postgresql://` URL is normalised to `postgresql+asyncpg://` automatically, and `sslmode=` is translated to
+asyncpg's `ssl=`. Connection poolers (Supabase pooler, PgBouncer) are detected and handled; see
+[Deployment: managed Postgres](DEPLOYMENT.md#managed-postgres).
 
 ### No database at all
 
-The test suite runs entirely on SQLite:
+The test suite and the calibration harness need no database:
 
 ```bash
-make test
-```
-
-And the dataset generator needs nothing:
-
-```bash
+make test-backend
 make calibrate
 ```
 
 ---
 
-## What gets installed
+## Platform notes
 
-### Backend (`backend/requirements.txt`)
+### macOS
 
-Pinned to the versions the test suite runs against. `pyproject.toml` declares *what* the project depends on; this file pins *which* versions, for installing with pip rather than uv.
+```bash
+brew install python@3.12 node git
+brew install --cask docker
+```
 
-| Package | Purpose |
-| --- | --- |
-| `fastapi`, `uvicorn` | Web framework and server |
-| `pydantic`, `pydantic-settings` | Validation and configuration |
-| `sqlalchemy[asyncio]`, `asyncpg`, `alembic` | ORM, async driver, migrations |
-| `pgvector` | Vector column type |
-| `PyJWT`, `argon2-cffi` | Tokens and password hashing |
-| `httpx`, `tenacity`, `orjson` | HTTP, retries, fast JSON |
-| `groq`, `langgraph`, `langchain-core` | LLM and agent orchestration |
-| `langfuse` | Agent observability |
-| `pgvector` | Agent long-term memory and semantic search (Postgres extension + Python binding) |
-| `pytest`, `pytest-asyncio`, `aiosqlite` | Testing |
-| `ruff`, `mypy` | Lint and types |
+Start Docker Desktop before `make init`.
 
-### Backend optional (`requirements-optional.txt`)
+### Linux (Debian, Ubuntu)
 
-| Package | Purpose | If missing |
-| --- | --- | --- |
-| `logifyx` | Structured logging backend | Built-in JSON logger takes over |
-| `fastembed` | Local ONNX embeddings | Deterministic hash embeddings used |
+```bash
+sudo apt update
+sudo apt install -y python3.12 python3.12-venv nodejs npm make git
+# Docker Engine: https://docs.docker.com/engine/install/
+sudo usermod -aG docker "$USER" && newgrp docker
+```
 
-### Frontend (`frontend/package.json`)
+The Makefile uses `python3` on non-Windows systems.
 
-| Package | Purpose |
-| --- | --- |
-| `next`, `react`, `react-dom` | Framework |
-| `typescript`, `@types/*` | Types |
-| `tailwindcss`, `tailwindcss-animate` | Styling |
-| `@radix-ui/*`, `class-variance-authority` | shadcn/ui primitives |
-| `framer-motion` | Motion |
-| `recharts` | Charts |
-| `@tanstack/react-query` | Server state |
-| `axios` | The single HTTP client |
-| `zustand` | Session state |
-| `react-hook-form`, `zod`, `@hookform/resolvers` | Forms and validation |
-| `lucide-react` | Icons |
-| `sonner` | Toasts |
-| `next-themes` | Dark mode |
-| `@vapi-ai/web` | Voice (lazy-loaded) |
+### Windows
+
+```powershell
+winget install Python.Python.3.12
+winget install OpenJS.NodeJS.LTS
+winget install Git.Git
+winget install Docker.DockerDesktop
+```
+
+Make is optional on Windows: the PowerShell scripts in `scripts\` call the same task runner. If you prefer Make,
+`winget install GnuWin32.Make` or use WSL2. The task runner detects the Windows virtualenv layout
+(`backend\.venv\Scripts\python.exe`) automatically.
 
 ---
 
-## Next steps
+## What gets installed
 
-| | |
+### Backend
+
+[`backend/requirements.txt`](../backend/requirements.txt) pins the versions the test suite runs against;
+[`backend/pyproject.toml`](../backend/pyproject.toml) declares the same dependencies for uv.
+
+| Package | Purpose |
 | --- | --- |
-| [Configuration](CONFIGURATION.md) | Wire up Groq, Langfuse, Vapi, or Supabase |
-| [Demo script](DEMO.md) | Walk the product end to end |
-| [Architecture](ARCHITECTURE.md) | Understand how it is put together |
-| [Troubleshooting](TROUBLESHOOTING.md) | If something above did not work |
+| `fastapi`, `uvicorn` | Web framework and ASGI server |
+| `pydantic`, `pydantic-settings` | Validation and configuration |
+| `sqlalchemy[asyncio]`, `asyncpg`, `alembic` | ORM, async Postgres driver, migrations |
+| `pgvector` | Vector column type for agent memory and review search |
+| `PyJWT`, `argon2-cffi` | Access tokens and password hashing |
+| `httpx`, `tenacity`, `orjson` | HTTP clients, retries, fast JSON |
+| `paypal-server-sdk` | PayPal's APIMatic-generated Server SDK (Orders v2) |
+| `groq`, `langgraph`, `langchain-core` | LLM client and agent orchestration |
+| `langfuse` | Agent tracing |
+| `redis` | Optional shared rate limits, caches and pub/sub |
+| `openpyxl` | Inventory import and Excel export |
+| `google-api-python-client`, `google-auth`, `Jinja2` | Optional Gmail delivery and email templates |
+| `pytest`, `pytest-asyncio`, `aiosqlite`, `fakeredis` | Tests on in-memory SQLite, Redis fakes |
+| `ruff`, `mypy` | Lint and type checks |
+
+[`backend/requirements-optional.txt`](../backend/requirements-optional.txt) adds `logifyx` (structured console
+rendering) and `fastembed` (local ONNX embeddings). Without them, the built-in log renderer and deterministic
+hash embeddings are used.
+
+### Frontend
+
+| Package | Purpose |
+| --- | --- |
+| `next` 15, `react` 19, `typescript` 5.7 | Framework |
+| `tailwindcss`, `@radix-ui/*`, `class-variance-authority` | Styling and shadcn/ui primitives |
+| `@tanstack/react-query`, `axios`, `zustand` | Server state, the single HTTP client, session state |
+| `ag-grid-community`, `ag-grid-react` 36.3 | Data grids |
+| `ag-studio`, `ag-studio-react` | Dashboard Studio |
+| `@bryntum/gantt-react-enterprise`, `@bryntum/scheduler-react-enterprise` 8.0 | Procurement timeline, subscription radar |
+| `recharts`, `framer-motion` | Charts and motion |
+| `react-hook-form`, `zod` | Forms and validation |
+| `@vapi-ai/web` | Voice (lazy-loaded) |
+| `vitest` | Unit tests |
+
+---
+
+## The task runner
+
+Every Make target delegates to [`scripts/tasks.py`](../scripts/tasks.py), a standard-library Python script, so
+the commands behave the same on every platform. `make help` lists them all.
+
+| Target | Does |
+| --- | --- |
+| `make init` | First-time setup (tools, `.env`, dependencies, database, migrations, seed) |
+| `make install` | Backend and frontend dependencies only |
+| `make env` | Create `.env` from `.env.example` if missing |
+| `make check` | Tools, versions, `.env` and integration modes |
+| `make integrations` | One live call each to Channel3 and the PayPal sandbox; prints no secrets |
+| `make dev`, `make dev-backend`, `make dev-frontend` | Run the app (`PORT`, `WEB_PORT` override the ports) |
+| `make docker-up` | Postgres only; `FULL=1` for the whole Compose stack |
+| `make docker-down`, `make docker-logs` | Stop containers (data kept), tail logs |
+| `make migrate`, `make migration MSG="..."` | Apply migrations, autogenerate a new one |
+| `make seed`, `make seed-reset` | Idempotent demo seed, rebuild the demo tenant |
+| `make reset-db CONFIRM=yes` | Destroy and rebuild the local database |
+| `make demo` | Postgres, migrations and a fresh demo seed |
+| `make calibrate` | Print the seeded story's figures without a database |
+| `make test`, `make test-backend`, `make test-frontend` | Test suites |
+| `make lint`, `make format`, `make typecheck`, `make build`, `make verify` | Quality gates |
+| `make clean` | Remove caches and build output (never `.env`, dependencies, data or logs) |
+| `make n8n-build`, `make n8n-import` | Render the n8n workflows; import them into a running n8n |
 
 ---
 
 <div align="center">
 
-[Docs index](README.md) · [Project README](../README.md) ·
-[Configuration](CONFIGURATION.md) · [Deployment](DEPLOYMENT.md)
+[Previous: Quick start](QUICKSTART.md) | [Docs index](README.md) | [Next: Configuration](CONFIGURATION.md)
 
 </div>

@@ -1,0 +1,174 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1140" width="1600" height="1140" font-family="Segoe UI, Inter, Helvetica Neue, Helvetica, Arial, sans-serif">
+<defs><marker id="ah-0b2a6f" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0b2a6f"/></marker><marker id="ah-0aa6e0" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0aa6e0"/></marker><marker id="ah-12805c" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#12805c"/></marker><marker id="ah-003087" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#003087"/></marker><marker id="ah-b45309" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b45309"/></marker></defs>
+<rect width="1600" height="1140" fill="#ffffff"/>
+<text x="48" y="58" font-size="15" font-weight="800" fill="#0aa6e0" text-anchor="start" letter-spacing="2.4">PAYPILOT</text>
+<text x="1552" y="58" font-size="15" font-weight="700" fill="#0b2a6f" text-anchor="end">Team PayFlux</text>
+<text x="48" y="100" font-size="34" font-weight="800" fill="#0b2a6f" text-anchor="start">System architecture</text>
+<text x="48" y="132" font-size="16" font-weight="400" fill="#45577a" text-anchor="start">A modular monolith on FastAPI and Next.js. Agents propose, deterministic code sets every limit, a person approves, PayPal moves the money.</text>
+<text x="48" y="172" font-size="12" font-weight="700" fill="#0aa6e0" text-anchor="start" letter-spacing="1.6">CLIENTS</text>
+<rect x="48.0" y="184" width="254.0" height="92" rx="10" fill="#ffffff" stroke="#d5deec" stroke-width="1.2"/>
+<text x="62.0" y="212" font-size="14" font-weight="700" fill="#1e2b4a" text-anchor="start">Merchant dashboard</text>
+<text x="62.0" y="238.5" font-size="12.5" font-weight="400" fill="#45577a" text-anchor="start">Next.js 15, React 19, TypeScript</text>
+<text x="62.0" y="257.0" font-size="12.5" font-weight="400" fill="#45577a" text-anchor="start">65 pages, AG Grid, Bryntum</text>
+<line x1="175.0" y1="278" x2="175.0" y2="322" stroke="#0b2a6f" stroke-width="2" marker-end="url(#ah-0b2a6f)"/>
+<rect x="318.0" y="184" width="254.0" height="92" rx="10" fill="#ffffff" stroke="#d5deec" stroke-width="1.2"/>
+<text x="332.0" y="212" font-size="14" font-weight="700" fill="#1e2b4a" text-anchor="start">Online store  /shop</text>
+<text x="332.0" y="238.5" font-size="12.5" font-weight="400" fill="#45577a" text-anchor="start">Public PayPal checkout</text>
+<text x="332.0" y="257.0" font-size="12.5" font-weight="400" fill="#45577a" text-anchor="start">Starts the loop from a real sale</text>
+<line x1="445.0" y1="278" x2="445.0" y2="322" stroke="#0b2a6f" stroke-width="2" marker-end="url(#ah-0b2a6f)"/>
+<rect x="588.0" y="184" width="254.0" height="92" rx="10" fill="#ffffff" stroke="#d5deec" stroke-width="1.2"/>
+<text x="602.0" y="212" font-size="14" font-weight="700" fill="#1e2b4a" text-anchor="start">Voice assistant</text>
+<text x="602.0" y="238.5" font-size="12.5" font-weight="400" fill="#45577a" text-anchor="start">Vapi server tools</text>
+<text x="602.0" y="257.0" font-size="12.5" font-weight="400" fill="#45577a" text-anchor="start">Same agents as the web UI</text>
+<line x1="715.0" y1="278" x2="715.0" y2="322" stroke="#0b2a6f" stroke-width="2" marker-end="url(#ah-0b2a6f)"/>
+<rect x="858.0" y="184" width="254.0" height="92" rx="10" fill="#ffffff" stroke="#d5deec" stroke-width="1.2"/>
+<text x="872.0" y="212" font-size="14" font-weight="700" fill="#1e2b4a" text-anchor="start">External agents and SDKs</text>
+<text x="872.0" y="238.5" font-size="12.5" font-weight="400" fill="#45577a" text-anchor="start">Signed inbound agent protocol</text>
+<text x="872.0" y="257.0" font-size="12.5" font-weight="400" fill="#45577a" text-anchor="start">APIMatic SDKs, Postman</text>
+<line x1="985.0" y1="278" x2="985.0" y2="322" stroke="#0b2a6f" stroke-width="2" marker-end="url(#ah-0b2a6f)"/>
+<rect x="48" y="326" width="1064" height="574" rx="16" fill="#fbfcfe" stroke="#0b2a6f" stroke-width="2"/>
+<text x="72" y="358" font-size="15" font-weight="800" fill="#0b2a6f" text-anchor="start" letter-spacing="1.6">FASTAPI BACKEND</text>
+<text x="1088" y="358" font-size="13" font-weight="400" fill="#7b8bab" text-anchor="end">Python 3.12, Pydantic v2, SQLAlchemy 2 async   |   200 operations under /api/v1</text>
+<rect x="72.0" y="376" width="129.71428571428572" height="40" rx="20" fill="#ffffff" stroke="#0b2a6f" stroke-width="1.2"/>
+<text x="136.85714285714286" y="401" font-size="12.5" font-weight="600" fill="#0b2a6f" text-anchor="middle">Request ID</text>
+<line x1="203.71428571428572" y1="396" x2="217.71428571428572" y2="396" stroke="#0aa6e0" stroke-width="1.6" marker-end="url(#ah-0aa6e0)"/>
+<rect x="219.71428571428572" y="376" width="129.71428571428572" height="40" rx="20" fill="#ffffff" stroke="#0b2a6f" stroke-width="1.2"/>
+<text x="284.57142857142856" y="401" font-size="12.5" font-weight="600" fill="#0b2a6f" text-anchor="middle">CORS</text>
+<line x1="351.42857142857144" y1="396" x2="365.42857142857144" y2="396" stroke="#0aa6e0" stroke-width="1.6" marker-end="url(#ah-0aa6e0)"/>
+<rect x="367.42857142857144" y="376" width="129.71428571428572" height="40" rx="20" fill="#ffffff" stroke="#0b2a6f" stroke-width="1.2"/>
+<text x="432.28571428571433" y="401" font-size="12.5" font-weight="600" fill="#0b2a6f" text-anchor="middle">Rate limit</text>
+<line x1="499.14285714285717" y1="396" x2="513.1428571428571" y2="396" stroke="#0aa6e0" stroke-width="1.6" marker-end="url(#ah-0aa6e0)"/>
+<rect x="515.1428571428571" y="376" width="129.71428571428572" height="40" rx="20" fill="#ffffff" stroke="#0b2a6f" stroke-width="1.2"/>
+<text x="580.0" y="401" font-size="12.5" font-weight="600" fill="#0b2a6f" text-anchor="middle">Security headers</text>
+<line x1="646.8571428571429" y1="396" x2="660.8571428571429" y2="396" stroke="#0aa6e0" stroke-width="1.6" marker-end="url(#ah-0aa6e0)"/>
+<rect x="662.8571428571429" y="376" width="129.71428571428572" height="40" rx="20" fill="#ffffff" stroke="#0b2a6f" stroke-width="1.2"/>
+<text x="727.7142857142858" y="401" font-size="12.5" font-weight="600" fill="#0b2a6f" text-anchor="middle">Authenticate JWT</text>
+<line x1="794.5714285714287" y1="396" x2="808.5714285714287" y2="396" stroke="#0aa6e0" stroke-width="1.6" marker-end="url(#ah-0aa6e0)"/>
+<rect x="810.5714285714287" y="376" width="129.71428571428572" height="40" rx="20" fill="#ffffff" stroke="#0b2a6f" stroke-width="1.2"/>
+<text x="875.4285714285716" y="401" font-size="12.5" font-weight="600" fill="#0b2a6f" text-anchor="middle">Resolve merchant</text>
+<line x1="942.2857142857144" y1="396" x2="956.2857142857144" y2="396" stroke="#0aa6e0" stroke-width="1.6" marker-end="url(#ah-0aa6e0)"/>
+<rect x="958.2857142857143" y="376" width="129.71428571428572" height="40" rx="20" fill="#0b2a6f" stroke="#0b2a6f" stroke-width="1.2"/>
+<text x="1023.1428571428572" y="401" font-size="12.5" font-weight="600" fill="#ffffff" text-anchor="middle">require_permission</text>
+<text x="72" y="446" font-size="12" font-weight="700" fill="#0aa6e0" text-anchor="start" letter-spacing="1.6">DOMAIN SERVICES</text>
+<text x="208" y="446" font-size="12.5" font-weight="400" fill="#7b8bab" text-anchor="start">business logic and transactions over tenant-scoped repositories</text>
+<rect x="72.0" y="458" width="159.33333333333334" height="112" rx="10" fill="#f4f7fc" stroke="#d5deec" stroke-width="1.2"/>
+<text x="84.0" y="483.5" font-size="13.5" font-weight="700" fill="#1e2b4a" text-anchor="start">Growth</text>
+<text x="84.0" y="509.5" font-size="12" font-weight="400" fill="#45577a" text-anchor="start">Analytics, Growth Graph</text>
+<text x="84.0" y="527.5" font-size="12" font-weight="400" fill="#45577a" text-anchor="start">Opportunities</text>
+<text x="84.0" y="545.5" font-size="12" font-weight="400" fill="#45577a" text-anchor="start">Campaigns, experiments</text>
+<rect x="243.33333333333334" y="458" width="159.33333333333334" height="112" rx="10" fill="#f4f7fc" stroke="#d5deec" stroke-width="1.2"/>
+<text x="255.33333333333334" y="483.5" font-size="13.5" font-weight="700" fill="#1e2b4a" text-anchor="start">Supply Agents</text>
+<text x="255.33333333333334" y="509.5" font-size="12" font-weight="400" fill="#45577a" text-anchor="start">Buyer + 3 suppliers</text>
+<text x="255.33333333333334" y="527.5" font-size="12" font-weight="400" fill="#45577a" text-anchor="start">Signed HMAC protocol</text>
+<text x="255.33333333333334" y="545.5" font-size="12" font-weight="400" fill="#45577a" text-anchor="start">Negotiation, scoring</text>
+<rect x="414.6666666666667" y="458" width="159.33333333333334" height="112" rx="10" fill="#f4f7fc" stroke="#d5deec" stroke-width="1.2"/>
+<text x="426.6666666666667" y="483.5" font-size="13.5" font-weight="700" fill="#1e2b4a" text-anchor="start">Procure-to-pay</text>
+<text x="426.6666666666667" y="509.5" font-size="12" font-weight="400" fill="#45577a" text-anchor="start">Purchase orders</text>
+<text x="426.6666666666667" y="527.5" font-size="12" font-weight="400" fill="#45577a" text-anchor="start">Receiving, 3-way match</text>
+<text x="426.6666666666667" y="545.5" font-size="12" font-weight="400" fill="#45577a" text-anchor="start">Reconciliation</text>
+<rect x="586.0" y="458" width="159.33333333333334" height="112" rx="10" fill="#f4f7fc" stroke="#d5deec" stroke-width="1.2"/>
+<text x="598.0" y="483.5" font-size="13.5" font-weight="700" fill="#1e2b4a" text-anchor="start">Supply Intelligence</text>
+<text x="598.0" y="509.5" font-size="12" font-weight="400" fill="#45577a" text-anchor="start">Channel3 discovery</text>
+<text x="598.0" y="527.5" font-size="12" font-weight="400" fill="#45577a" text-anchor="start">Recommendations</text>
+<text x="598.0" y="545.5" font-size="12" font-weight="400" fill="#45577a" text-anchor="start">Market pricing</text>
+<rect x="757.3333333333334" y="458" width="159.33333333333334" height="112" rx="10" fill="#f4f7fc" stroke="#d5deec" stroke-width="1.2"/>
+<text x="769.3333333333334" y="483.5" font-size="13.5" font-weight="700" fill="#1e2b4a" text-anchor="start">Finance</text>
+<text x="769.3333333333334" y="509.5" font-size="12" font-weight="400" fill="#45577a" text-anchor="start">PayPal gateway</text>
+<text x="769.3333333333334" y="527.5" font-size="12" font-weight="400" fill="#45577a" text-anchor="start">Sync, webhooks</text>
+<text x="769.3333333333334" y="545.5" font-size="12" font-weight="400" fill="#45577a" text-anchor="start">Invoicing, payouts</text>
+<rect x="928.6666666666667" y="458" width="159.33333333333334" height="112" rx="10" fill="#f4f7fc" stroke="#d5deec" stroke-width="1.2"/>
+<text x="940.6666666666667" y="483.5" font-size="13.5" font-weight="700" fill="#1e2b4a" text-anchor="start">Governance</text>
+<text x="940.6666666666667" y="509.5" font-size="12" font-weight="400" fill="#45577a" text-anchor="start">Approval inbox</text>
+<text x="940.6666666666667" y="527.5" font-size="12" font-weight="400" fill="#45577a" text-anchor="start">Audit log</text>
+<text x="940.6666666666667" y="545.5" font-size="12" font-weight="400" fill="#45577a" text-anchor="start">RBAC, 51 permissions</text>
+<text x="72" y="594" font-size="12" font-weight="700" fill="#0aa6e0" text-anchor="start" letter-spacing="1.6">AGENT LAYER</text>
+<rect x="72.0" y="606" width="316.0" height="126" rx="10" fill="#ffffff" stroke="#0b2a6f" stroke-width="1.2"/>
+<text x="86.0" y="634" font-size="14" font-weight="700" fill="#1e2b4a" text-anchor="start">LangGraph workflows</text>
+<text x="86.0" y="660.5" font-size="12.5" font-weight="400" fill="#45577a" text-anchor="start">Growth investigation</text>
+<text x="86.0" y="679.0" font-size="12.5" font-weight="400" fill="#45577a" text-anchor="start">Procurement autopilot</text>
+<text x="86.0" y="697.5" font-size="12.5" font-weight="400" fill="#45577a" text-anchor="start">Merchant OS: 7 agents</text>
+<text x="86.0" y="716.0" font-size="12.5" font-weight="400" fill="#45577a" text-anchor="start">LLM words, never calculates</text>
+<line x1="391.0" y1="669" x2="419.0" y2="669" stroke="#0b2a6f" stroke-width="2" marker-end="url(#ah-0b2a6f)"/>
+<rect x="422.0" y="606" width="316.0" height="126" rx="10" fill="#ffffff" stroke="#0b2a6f" stroke-width="1.2"/>
+<text x="436.0" y="634" font-size="14" font-weight="700" fill="#1e2b4a" text-anchor="start">Tool registry: 49 tools</text>
+<text x="436.0" y="660.5" font-size="12.5" font-weight="400" fill="#45577a" text-anchor="start">Typed arguments</text>
+<text x="436.0" y="679.0" font-size="12.5" font-weight="400" fill="#45577a" text-anchor="start">Permission-checked, merchant-scoped</text>
+<text x="436.0" y="697.5" font-size="12.5" font-weight="400" fill="#45577a" text-anchor="start">Logged and Langfuse-traced</text>
+<text x="436.0" y="716.0" font-size="12.5" font-weight="400" fill="#45577a" text-anchor="start">Persisted for the trace UI</text>
+<line x1="741.0" y1="669" x2="769.0" y2="669" stroke="#0b2a6f" stroke-width="2" marker-end="url(#ah-0b2a6f)"/>
+<rect x="772.0" y="606" width="316.0" height="126" rx="10" fill="#ffffff" stroke="#0b2a6f" stroke-width="1.2"/>
+<text x="786.0" y="634" font-size="14" font-weight="700" fill="#1e2b4a" text-anchor="start">Deterministic engines</text>
+<text x="786.0" y="660.5" font-size="12.5" font-weight="400" fill="#45577a" text-anchor="start">Decimal price ceiling and budget</text>
+<text x="786.0" y="679.0" font-size="12.5" font-weight="400" fill="#45577a" text-anchor="start">Offer validation and scoring</text>
+<text x="786.0" y="697.5" font-size="12.5" font-weight="400" fill="#45577a" text-anchor="start">Three-way match, revaluation</text>
+<text x="786.0" y="716.0" font-size="12.5" font-weight="400" fill="#45577a" text-anchor="start">Experiment statistics</text>
+<rect x="72" y="750" width="1016" height="56" rx="10" fill="#fff5e9" stroke="#b45309" stroke-width="1.8"/>
+<text x="90" y="784" font-size="14" font-weight="800" fill="#b45309" text-anchor="start" letter-spacing="1.4">APPROVAL GATE</text>
+<text x="240" y="784" font-size="13.5" font-weight="400" fill="#1e2b4a" text-anchor="start">Every workflow stops here. A person approves a SHA-256 of the exact terms; agents request, never approve or pay.</text>
+<rect x="72.0" y="824" width="330.6666666666667" height="52" rx="10" fill="#f4f7fc" stroke="#d5deec" stroke-width="1.5"/>
+<text x="237.33333333333334" y="855" font-size="13" font-weight="600" fill="#1e2b4a" text-anchor="middle">Transactional outbox + relay</text>
+<rect x="414.6666666666667" y="824" width="330.6666666666667" height="52" rx="10" fill="#f4f7fc" stroke="#d5deec" stroke-width="1.5"/>
+<text x="580.0" y="855" font-size="13" font-weight="600" fill="#1e2b4a" text-anchor="middle">Realtime hub: WebSocket + Redis pub/sub</text>
+<rect x="757.3333333333334" y="824" width="330.6666666666667" height="52" rx="10" fill="#f4f7fc" stroke="#d5deec" stroke-width="1.5"/>
+<text x="922.6666666666667" y="855" font-size="13" font-weight="600" fill="#1e2b4a" text-anchor="middle">Structured logs, redaction, traces</text>
+<text x="48" y="934" font-size="12" font-weight="700" fill="#12805c" text-anchor="start" letter-spacing="1.6">DATA</text>
+<rect x="48" y="946" width="640" height="96" rx="10" fill="#eef8f3" stroke="#12805c" stroke-width="1.2"/>
+<text x="62" y="974" font-size="14" font-weight="700" fill="#12805c" text-anchor="start">PostgreSQL 16 + pgvector</text>
+<text x="62" y="1001" font-size="13" font-weight="400" fill="#45577a" text-anchor="start">System of record: 62 tables, Alembic migrations</text>
+<text x="62" y="1020" font-size="13" font-weight="400" fill="#45577a" text-anchor="start">Agent memory: vector(384), HNSW cosine, filtered by merchant</text>
+<rect x="704" y="946" width="408" height="96" rx="10" fill="#eef8f3" stroke="#12805c" stroke-width="1.2"/>
+<text x="718" y="974" font-size="14" font-weight="700" fill="#12805c" text-anchor="start">Redis / Render Key Value (optional)</text>
+<text x="718" y="1001" font-size="13" font-weight="400" fill="#45577a" text-anchor="start">Rate limits, Channel3 caches, realtime pub/sub</text>
+<text x="718" y="1020" font-size="13" font-weight="400" fill="#45577a" text-anchor="start">Never a source of truth; in-process fallback</text>
+<line x1="368" y1="902" x2="368" y2="942" stroke="#12805c" stroke-width="2" marker-end="url(#ah-12805c)" marker-start="url(#ah-12805c)"/>
+<line x1="908.0" y1="902" x2="908.0" y2="942" stroke="#12805c" stroke-width="2" marker-end="url(#ah-12805c)" marker-start="url(#ah-12805c)"/>
+<text x="48" y="1082" font-size="14" font-weight="700" fill="#0b2a6f" text-anchor="start">200 API operations   |   62 tables   |   49 agent tools   |   51 permissions   |   3 LangGraph workflows   |   65 pages</text>
+<text x="48" y="1108" font-size="13" font-weight="400" fill="#7b8bab" text-anchor="start">Without keys, PayPal runs on a labelled simulator (SIM- ids) and every agent node has a deterministic path.</text>
+<text x="1152" y="172" font-size="12" font-weight="700" fill="#0aa6e0" text-anchor="start" letter-spacing="1.6">EXTERNAL SERVICES</text>
+<rect x="1152" y="184" width="400" height="376" rx="14" fill="#003087"/>
+<text x="1174" y="216" font-size="19" font-weight="800" fill="#ffffff" text-anchor="start">PayPal Developer Platform</text>
+<text x="1174" y="238" font-size="13" font-weight="400" fill="#cfdcf5" text-anchor="start">The system of record and the only money rail</text>
+<text x="1174" y="272" font-size="14" font-weight="700" fill="#ffffff" text-anchor="start">Orders v2 on the APIMatic Server SDK</text>
+<text x="1174" y="290" font-size="12.5" font-weight="400" fill="#cfdcf5" text-anchor="start">Store checkout and supplier payments</text>
+<text x="1174" y="316" font-size="14" font-weight="700" fill="#ffffff" text-anchor="start">Transaction Search</text>
+<text x="1174" y="334" font-size="12.5" font-weight="400" fill="#cfdcf5" text-anchor="start">Sales, fees and refunds feed growth analytics</text>
+<text x="1174" y="360" font-size="14" font-weight="700" fill="#ffffff" text-anchor="start">Invoicing v2 and Payouts</text>
+<text x="1174" y="378" font-size="12.5" font-weight="400" fill="#cfdcf5" text-anchor="start">Win-back invoices, approval-gated cashback</text>
+<text x="1174" y="404" font-size="14" font-weight="700" fill="#ffffff" text-anchor="start">Subscriptions</text>
+<text x="1174" y="422" font-size="12.5" font-weight="400" fill="#cfdcf5" text-anchor="start">Revenue radar, failed-payment recovery</text>
+<text x="1174" y="448" font-size="14" font-weight="700" fill="#ffffff" text-anchor="start">Webhooks</text>
+<text x="1174" y="466" font-size="12.5" font-weight="400" fill="#cfdcf5" text-anchor="start">Verified on raw bytes, replay-guarded</text>
+<text x="1174" y="492" font-size="14" font-weight="700" fill="#ffffff" text-anchor="start">Agent Toolkit over MCP</text>
+<text x="1174" y="510" font-size="12.5" font-weight="400" fill="#cfdcf5" text-anchor="start">Read-only: 16 of 46 tools callable</text>
+<rect x="1174" y="530" width="90" height="20" rx="10" fill="none" stroke="#cfdcf5" stroke-width="1"/>
+<text x="1219" y="544" font-size="10.5" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="0.8">SANDBOX</text>
+<rect x="1274" y="530" width="90" height="20" rx="10" fill="none" stroke="#cfdcf5" stroke-width="1"/>
+<text x="1319" y="544" font-size="10.5" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="0.8">LIVE</text>
+<rect x="1374" y="530" width="90" height="20" rx="10" fill="none" stroke="#cfdcf5" stroke-width="1"/>
+<text x="1419" y="544" font-size="10.5" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="0.8">SIMULATED</text>
+<rect x="1152" y="576" width="400" height="80" rx="10" fill="#ffffff" stroke="#d5deec" stroke-width="1.2"/>
+<text x="1166" y="604" font-size="14" font-weight="700" fill="#1e2b4a" text-anchor="start">AI and observability</text>
+<text x="1166" y="630.5" font-size="12.5" font-weight="400" fill="#45577a" text-anchor="start">Groq GPT-OSS-120B (optional)</text>
+<text x="1166" y="649.0" font-size="12.5" font-weight="400" fill="#45577a" text-anchor="start">Langfuse traces, Vapi voice</text>
+<rect x="1152" y="672" width="400" height="80" rx="10" fill="#ffffff" stroke="#d5deec" stroke-width="1.2"/>
+<text x="1166" y="700" font-size="14" font-weight="700" fill="#1e2b4a" text-anchor="start">Channel3 product catalog</text>
+<text x="1166" y="726.5" font-size="12.5" font-weight="400" fill="#45577a" text-anchor="start">Live discovery, comparison, similar items</text>
+<text x="1166" y="745.0" font-size="12.5" font-weight="400" fill="#45577a" text-anchor="start">Shopping agent, market prices</text>
+<rect x="1152" y="768" width="400" height="80" rx="10" fill="#ffffff" stroke="#d5deec" stroke-width="1.2"/>
+<text x="1166" y="796" font-size="14" font-weight="700" fill="#1e2b4a" text-anchor="start">Automation</text>
+<text x="1166" y="822.5" font-size="12.5" font-weight="400" fill="#45577a" text-anchor="start">n8n: outbox events out, signed callbacks in</text>
+<text x="1166" y="841.0" font-size="12.5" font-weight="400" fill="#45577a" text-anchor="start">Zapier: signed business notifications</text>
+<rect x="1152" y="864" width="400" height="80" rx="10" fill="#ffffff" stroke="#d5deec" stroke-width="1.2"/>
+<text x="1166" y="892" font-size="14" font-weight="700" fill="#1e2b4a" text-anchor="start">Search and verification</text>
+<text x="1166" y="918.5" font-size="12.5" font-weight="400" fill="#45577a" text-anchor="start">Elasticsearch: evidence search</text>
+<text x="1166" y="937.0" font-size="12.5" font-weight="400" fill="#45577a" text-anchor="start">Kernel: observe-only supplier browser</text>
+<rect x="1152" y="960" width="400" height="82" rx="10" fill="#f4f7fc" stroke="#7b8bab" stroke-width="1.2"/>
+<text x="1166" y="988" font-size="14" font-weight="700" fill="#1e2b4a" text-anchor="start">Render Blueprint (free plan)</text>
+<text x="1166" y="1014.5" font-size="12.5" font-weight="400" fill="#45577a" text-anchor="start">Web, API, Postgres, Key Value, n8n, docs portal</text>
+<rect x="1152" y="960" width="400" height="82" rx="10" fill="none" stroke="#7b8bab" stroke-width="1.2" stroke-dasharray="5 4"/>
+<line x1="1115" y1="514" x2="1149" y2="514" stroke="#003087" stroke-width="2" marker-end="url(#ah-003087)" marker-start="url(#ah-003087)"/>
+<line x1="1115" y1="616" x2="1149" y2="616" stroke="#0b2a6f" stroke-width="2" marker-end="url(#ah-0b2a6f)" marker-start="url(#ah-0b2a6f)"/>
+<line x1="1115" y1="712" x2="1149" y2="712" stroke="#0b2a6f" stroke-width="2" marker-end="url(#ah-0b2a6f)" marker-start="url(#ah-0b2a6f)"/>
+<line x1="1115" y1="808" x2="1149" y2="808" stroke="#0b2a6f" stroke-width="2" marker-end="url(#ah-0b2a6f)" marker-start="url(#ah-0b2a6f)"/>
+<line x1="1115" y1="884" x2="1149" y2="884" stroke="#0b2a6f" stroke-width="2" marker-end="url(#ah-0b2a6f)" marker-start="url(#ah-0b2a6f)"/>
+</svg>

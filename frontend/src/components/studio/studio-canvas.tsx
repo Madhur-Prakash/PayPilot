@@ -16,7 +16,7 @@
  * the browser, and the agents' tools only touch the dashboard.
  *
  * AG Studio is a commercial product. Without a licence key it runs in evaluation
- * mode (watermark and console warnings); see docs/SPONSORS.md.
+ * mode (watermark and console warnings); see docs/INTEGRATIONS.md.
  */
 
 import { AgStudioAiModule, AgStudioLicenseManager, createAiHarness } from "ag-studio";

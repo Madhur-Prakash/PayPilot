@@ -1,1 +1,1 @@
-"""Services that connect PayPilot to sponsor tools. See docs/SPONSORS.md."""
+"""Services that connect PayPilot to sponsor tools. See docs/INTEGRATIONS.md."""

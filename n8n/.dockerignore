@@ -1,5 +1,4 @@
 deploy/
-README.md
 import.sh
 compose_build.py
 __pycache__/

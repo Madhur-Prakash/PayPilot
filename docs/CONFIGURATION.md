@@ -2,33 +2,38 @@
 
 # Configuration
 
-[![Docs index](https://img.shields.io/badge/-Docs_index-475569?style=flat-square&logo=markdown&logoColor=white)](README.md)
-[![Previous: Installation](https://img.shields.io/badge/-Previous:_Installation-64748b?style=flat-square)](INSTALLATION.md)
-[![Next: Deployment](https://img.shields.io/badge/-Next:_Deployment-2563eb?style=flat-square)](DEPLOYMENT.md)
-[![Agent memory](https://img.shields.io/badge/-Agent_memory-7c3aed?style=flat-square)](MEMORY.md)
-[![Automation](https://img.shields.io/badge/-Automation-b45309?style=flat-square)](../n8n/README.md)
+Every environment variable PayPilot reads, what it does, its default, and how to enable each integration.
+
+[![Docs index](https://img.shields.io/badge/-Docs_index-0b2a6f?style=flat-square)](README.md)
+[![Installation](https://img.shields.io/badge/-Installation-16a34a?style=flat-square)](INSTALLATION.md)
+[![Deployment](https://img.shields.io/badge/-Deployment-46E3B7?style=flat-square)](DEPLOYMENT.md)
+[![Security](https://img.shields.io/badge/-Security-dc2626?style=flat-square)](SECURITY.md)
+[![PayPal](https://img.shields.io/badge/-PayPal-003087?style=flat-square&logo=paypal&logoColor=white)](PAYPAL.md)
 
 </div>
-
-Everything is environment-driven. Nothing is hardcoded — not the model name, not a
-merchant id, not a secret. The full template is
-[`.env.example`](../.env.example).
 
 ---
 
 ## Contents
 
 - [How configuration loads](#how-configuration-loads)
-- [Core application](#core-application)
+- [What runs without keys](#what-runs-without-keys)
+- [Application](#application)
 - [Database](#database)
-- [Authentication and JWT](#authentication-and-jwt)
-- [Groq (LLM)](#groq-llm)
-- [Embeddings](#embeddings)
-- [Langfuse (observability)](#langfuse-observability)
-- [Vapi (voice)](#vapi-voice)
-- [Supabase](#supabase)
-- [External signals](#external-signals)
+- [Authentication](#authentication)
 - [Networking and rate limiting](#networking-and-rate-limiting)
+- [Redis](#redis)
+- [PayPal](#paypal)
+- [LLM (Groq)](#llm-groq)
+- [AG Studio AI assistant](#ag-studio-ai-assistant)
+- [Embeddings and agent memory](#embeddings-and-agent-memory)
+- [Channel3 and product discovery](#channel3-and-product-discovery)
+- [Supply agents and procurement](#supply-agents-and-procurement)
+- [Inventory automation, outbox and n8n](#inventory-automation-outbox-and-n8n)
+- [Optional integrations](#optional-integrations)
+- [Langfuse](#langfuse)
+- [Vapi voice](#vapi-voice)
+- [Email (Gmail API)](#email-gmail-api)
 - [Demo seed](#demo-seed)
 - [Frontend variables](#frontend-variables)
 - [Verifying configuration](#verifying-configuration)
@@ -37,506 +42,389 @@ merchant id, not a secret. The full template is
 
 ## How configuration loads
 
-[`app/core/config.py`](../backend/app/core/config.py) defines a single
-`Settings` object built with `pydantic-settings`. Values are read, in order of
-precedence:
+[`backend/app/core/config.py`](../backend/app/core/config.py) defines one `Settings` object built with
+`pydantic-settings`. Values are read from, in order of precedence:
 
-1. Actual environment variables
-2. `.env` at the repository root
+1. Process environment variables.
+2. The `.env` file at the **repository root**.
 
-There is exactly one `.env`, at the root, and both halves of the project read it.
+There is exactly one `.env` and both halves of the project read it. The frontend's
+[`next.config.ts`](../frontend/next.config.ts) parses the same file before the build. Only variables named
+`NEXT_PUBLIC_*` reach the browser, and they are compiled into the bundle at build time, so a secret must never
+have that prefix.
 
-Everything else imports `settings` from that module. There is no second source of
-truth, and no module reads `os.environ` directly.
+`make env` creates `.env` from [`.env.example`](../.env.example) and never overwrites an existing file. The
+copy works as-is.
 
-The frontend reads the same root `.env` - `frontend/next.config.ts` parses it and
-seeds `process.env` before the build. Only `NEXT_PUBLIC_*` variables reach the
-browser, and those are compiled into the bundle, so **never put a secret behind a
-`NEXT_PUBLIC_` name**.
+A few conveniences are applied to values as they load:
+
+* `DATABASE_URL` starting with `postgres://` or `postgresql://` is rewritten to `postgresql+asyncpg://`, and
+  `sslmode=require` becomes asyncpg's `ssl=require`. Managed providers (Render, Supabase) can be pasted directly.
+* `CORS_ORIGINS` accepts a comma-separated list.
+* Secrets left blank that need a value (`AGENT_PROTOCOL_SECRET`, `ZAPIER_SIGNING_SECRET`,
+  `PAYPAL_SIMULATOR_WEBHOOK_SECRET`) are derived from `JWT_SECRET` with a distinct label per purpose.
 
 ---
 
-## Core application
+## What runs without keys
 
-```dotenv
-APP_ENV=development          # development | test | staging | production
-APP_NAME=paypilot
-APP_VERSION=1.0.0
-DEBUG=true
-LOG_LEVEL=INFO               # DEBUG | INFO | WARNING | ERROR
-LOG_FORMAT=console           # console | json
-LOG_CONSOLE_LOGIFYX=true    # false to use the built-in console renderer
-```
+| Feature | Without its key | With it |
+| --- | --- | --- |
+| PayPal | Deterministic simulator; every id starts `SIM-`; rows and badges say `SIMULATED` | Real sandbox or live calls; rows say `SANDBOX` or `LIVE` |
+| Agents | Every LangGraph node takes its deterministic path; runs are labelled "Deterministic mode" | Groq routes intents and writes the prose; numbers are unchanged |
+| Product Discovery, Supply Intelligence | Routes answer `503 CHANNEL3_NOT_CONFIGURED` with setup steps; no invented products | Live Channel3 catalog |
+| Gear shelf, market reference | Labelled `SIMULATED` reference catalogue | Live Channel3 results |
+| Rate limits, caches, realtime | In-process | Shared through Redis |
+| Evidence search | In-process keyword ranking, labelled "Keyword fallback" | Elasticsearch |
+| Event delivery to n8n | Events recorded, marked `SKIPPED` | Signed delivery to the n8n webhook |
+| Email | Rendered to the log | Sent through the Gmail API |
+| Tracing, voice | Off | Langfuse traces, Vapi assistant |
 
-| Variable | Notes |
-| --- | --- |
-| `APP_ENV` | `production` disables debug detail in error responses and enables HSTS |
-| `DEBUG` | When true and not production, error responses include the exception type. Stack traces never leave the process |
-| `LOG_FORMAT` | `console` gives readable dev output with structured fields; `json` emits one JSON object per line |
-| `LOG_CONSOLE_LOGIFYX` | Render stdout with Logifyx's coloured layout. Set `false` for the built-in renderer. Ignored when Logifyx is absent or `LOG_FORMAT=json` |
+---
 
-> `LOG_FORMAT=json` is what you want in any deployed environment — it is what log
-> aggregators can parse. See [ARCHITECTURE.md](ARCHITECTURE.md#7-observability).
+## Application
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `APP_ENV` | `development` | `development`, `test`, `staging` or `production`. `production` enables HSTS and removes exception detail from error responses |
+| `APP_NAME` | `paypilot` | Service name in logs |
+| `APP_VERSION` | `1.0.0` | Reported by `/health` |
+| `DEBUG` | `true` | When true outside production, error responses include the exception type. Stack traces never leave the process |
+| `LOG_LEVEL` | `INFO` | `DEBUG`, `INFO`, `WARNING`, `ERROR` |
+| `LOG_FORMAT` | `console` | `console` for readable development output, `json` for one JSON object per line (use in any deployment) |
+| `LOG_CONSOLE_LOGIFYX` | `true` | Use Logifyx's coloured console layout when installed; ignored with `LOG_FORMAT=json` |
 
 ---
 
 ## Database
 
-```dotenv
-DATABASE_URL=postgresql+asyncpg://autopilot:autopilot@localhost:5433/autopilot
-DB_ECHO=false
-DB_POOL_SIZE=10
-DB_MAX_OVERFLOW=20
-```
-
-| Variable | Notes |
-| --- | --- |
-| `DATABASE_URL` | Must use the `+asyncpg` driver. Port **5433** for the bundled Docker Postgres |
-| `DB_ECHO` | Logs every SQL statement. Useful once, noisy always |
-| `DB_POOL_SIZE` / `DB_MAX_OVERFLOW` | Ignored when a connection pooler is detected |
-
-### Pooler detection
-
-[`db/session.py`](../backend/app/db/session.py) inspects the URL. If it contains
-`pooler.supabase` or `pgbouncer=true`, it switches to `NullPool` and sets
-`statement_cache_size=0`, because asyncpg's implicit prepared-statement cache is
-incompatible with transaction-pooling mode. You do not need to configure this.
-
----
-
-## Authentication and JWT
-
-```dotenv
-JWT_SECRET=change-me
-JWT_ALGORITHM=HS256
-JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
-JWT_REFRESH_TOKEN_EXPIRE_DAYS=14
-REFRESH_COOKIE_NAME=pga_refresh
-REFRESH_COOKIE_SECURE=false
-REFRESH_COOKIE_SAMESITE=lax
-```
-
-> **Warning.** `JWT_SECRET` is the single most important value here. It signs
-> access tokens **and** keys the HMAC that hashes refresh tokens. Generate one:
->
-> ```bash
-> python -c "import secrets; print(secrets.token_urlsafe(64))"
-> ```
->
-> Rotating it invalidates every existing session, which is the correct behaviour
-> if it is ever exposed.
-
-| Variable | Notes |
-| --- | --- |
-| `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | Short on purpose. The refresh cookie handles continuity |
-| `REFRESH_COOKIE_SECURE` | **Set `true` behind HTTPS.** Without it the cookie travels in plaintext |
-| `REFRESH_COOKIE_SAMESITE` | `lax` suits same-site deployments. Use `none` (with `secure=true`) only if the frontend is on a different site |
-
-Details: [SECURITY.md](SECURITY.md#authentication).
-
----
-
-## Groq (LLM)
-
-```dotenv
-GROQ_API_KEY=
-GROQ_MODEL=openai/gpt-oss-120b
-GROQ_FALLBACK_MODEL=openai/gpt-oss-20b
-GROQ_TIMEOUT_SECONDS=45
-GROQ_MAX_RETRIES=2
-GROQ_TEMPERATURE=0.2
-GROQ_MAX_TOKENS=2048
-```
-
-**Entirely optional.** With no key, every agent node uses its deterministic
-fallback and the product still produces the same figures, the same opportunity and
-the same SCALE/STOP decision. Those runs are flagged `used_fallback: true` and
-badged "Deterministic mode" in the UI.
-
-### Enabling it
-
-1. Get a key from [console.groq.com](https://console.groq.com).
-2. Set `GROQ_API_KEY`.
-3. Restart the backend.
-4. Confirm: `curl -s localhost:8000/api/v1/health` shows `"llm": "configured"`.
-
-### What changes
-
-| | Without a key | With a key |
+| Variable | Default | Notes |
 | --- | --- | --- |
-| Metrics, opportunities, experiments, decisions | Identical | Identical |
-| Intent routing | Keyword heuristic | Model classification |
-| Hypothesis and explanation | Template with real figures | Natural language |
-| Conversational answers | Structured summary | Full prose |
+| `DATABASE_URL` | `postgresql+asyncpg://autopilot:autopilot@localhost:5433/autopilot` | Required. The default is the Compose Postgres on host port 5433 |
+| `DB_ECHO` | `false` | Log every SQL statement |
+| `DB_POOL_SIZE` | `10` | Ignored when a pooler is detected |
+| `DB_MAX_OVERFLOW` | `20` | Ignored when a pooler is detected |
 
-### Model selection
-
-`GROQ_MODEL` is read from configuration everywhere; the name appears in no other
-file. `GROQ_FALLBACK_MODEL` is tried if the primary fails after its retries.
-
-Low `GROQ_TEMPERATURE` (0.2) is deliberate — this is a structured-extraction task,
-not a creative one.
-
-More: [AGENTS.md](AGENTS.md#llm-failure-handling).
+If the URL contains `pooler.supabase` or `pgbouncer=true`,
+[`db/session.py`](../backend/app/db/session.py) switches to `NullPool` and disables asyncpg's prepared-statement
+cache, which transaction-mode poolers do not support.
 
 ---
 
-## Embeddings
+## Authentication
 
-```dotenv
-EMBEDDING_PROVIDER=hash        # hash | fastembed
-EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
-EMBEDDING_DIMENSIONS=384
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `JWT_SECRET` | `insecure-development-secret-change-me` | **Change for anything that is not your laptop.** Signs access tokens and keys the HMAC that stores refresh tokens. Rotating it signs everyone out |
+| `JWT_ALGORITHM` | `HS256` | |
+| `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | `30` | Access tokens are short-lived; the refresh cookie provides continuity |
+| `JWT_REFRESH_TOKEN_EXPIRE_DAYS` | `14` | |
+| `REFRESH_COOKIE_NAME` | `pga_refresh` | |
+| `REFRESH_COOKIE_SECURE` | `false` | Set `true` behind HTTPS |
+| `REFRESH_COOKIE_SAMESITE` | `lax` | `lax` when frontend and API share a site; `none` (with `SECURE=true`) when they do not |
+
+Generate a secret:
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(64))"
 ```
 
-| Provider | Network | Determinism | Quality |
-| --- | --- | --- | --- |
-| `hash` (default) | None | Byte-identical everywhere | Lexical — matches shared vocabulary |
-| `fastembed` | Downloads a model once | Stable after download | Genuine semantics |
-
-The default is a hashed bag-of-ngrams projection with light stemming and
-sub-word features. It is **lexical, not semantic**: it ranks well *within* a
-filtered topic, which is how the agent uses it (`search_reviews` always passes a
-topic), but it will not connect unrelated wordings.
-
-Switch for real semantic search:
-
-```dotenv
-EMBEDDING_PROVIDER=fastembed
-```
-
-Then re-seed so stored vectors match: `make reseed`.
-
-> **Warning.** Changing provider or `EMBEDDING_DIMENSIONS` invalidates every
-> stored vector. `EMBEDDING_DIMENSIONS` also determines the `vector(N)` column
-> width, so changing it requires a migration.
-
----
-
-## Langfuse (observability)
-
-```dotenv
-LANGFUSE_PUBLIC_KEY=
-LANGFUSE_SECRET_KEY=
-LANGFUSE_HOST=https://cloud.langfuse.com
-LANGFUSE_ENABLED=true
-```
-
-Optional. Absent keys produce a no-op tracer, so agent code never branches on
-whether tracing is configured.
-
-### Enabling it
-
-1. Create a project at [cloud.langfuse.com](https://cloud.langfuse.com) (or
-   self-host).
-2. Set both keys.
-3. Restart. `/api/v1/health` shows `"langfuse": "configured"`.
-4. Run an investigation. Each agent run appears as a trace.
-
-### What is captured
-
-```
-trace: growth_investigate
-  |- span    growth_workflow
-  |- generation  intent_classification    model, tokens, latency
-  |- span    tool:get_growth_metrics      arguments, result, duration
-  |- span    tool:get_customer_segments
-  |- generation  growth_recommendation
-  |- event   approval_executed
-  `- output  opportunity, estimated_impact, confidence
-```
-
-Metadata on every trace: `merchant_id`, `user_id`, `agent_name`, `workflow`,
-`environment`, `service`.
-
-Payloads pass through the same redaction as the structured logger, so no secret
-reaches Langfuse. The trace URL is stored on the agent run and surfaced as a link
-in the Agent Trace UI.
-
----
-
-## Vapi (voice)
-
-```dotenv
-VAPI_PUBLIC_KEY=
-VAPI_PRIVATE_KEY=
-VAPI_ASSISTANT_ID=
-VAPI_WEBHOOK_SECRET=
-```
-
-Optional. Without it the "Talk to Growth Scientist" button stays visible and
-explains what is missing rather than disappearing.
-
-### Enabling it
-
-1. Create an assistant at [dashboard.vapi.ai](https://dashboard.vapi.ai).
-2. Set `VAPI_PUBLIC_KEY`, `VAPI_PRIVATE_KEY`, `VAPI_ASSISTANT_ID`.
-3. Fetch the configuration to paste in:
-
-   ```bash
-   curl -s localhost:8000/api/v1/voice/assistant-config \
-     -H "Authorization: Bearer $TOKEN" | python -m json.tool
-   ```
-
-   Returns the system prompt and four tool definitions.
-4. In the Vapi dashboard set the **server URL** to
-   `https://your-host/api/v1/voice/tool` and forward the session token as an
-   `Authorization: Bearer` header.
-5. Set `VAPI_WEBHOOK_SECRET` and configure the same secret in Vapi.
-6. Mirror `VAPI_PUBLIC_KEY` and `VAPI_ASSISTANT_ID` into the root `.env` as
-   `NEXT_PUBLIC_VAPI_*`.
-
-### How the security works
-
-`GET /voice/session` issues a **30-minute scoped token** carrying
-`scope: "voice"`. Vapi presents it on each tool call, so every voice request is
-authenticated and merchant-scoped exactly like a web request. The webhook is
-**rejected when no secret is configured**, rather than trusted.
-
-Voice tools route into the *same* backend agents as the web UI — there is one
-implementation of the business logic. The assistant is explicitly instructed that
-it may recommend but never approve or execute.
-
----
-
-## Supabase
-
-```dotenv
-SUPABASE_URL=
-SUPABASE_ANON_KEY=
-```
-
-Supabase provides **PostgreSQL and pgvector only**. Authentication is implemented
-in FastAPI, per the brief — Supabase Auth is not used as the application's auth
-abstraction.
-
-Setup: [DEPLOYMENT.md](DEPLOYMENT.md#supabase).
-
----
-
-## External signals
-
-```dotenv
-EXTERNAL_SEARCH_PROVIDER=seed    # seed | tavily
-TAVILY_API_KEY=
-```
-
-| Provider | Behaviour |
-| --- | --- |
-| `seed` (default) | Signals come from the merchant's seeded `external_signals`, scored against real revenue exposure |
-| `tavily` | Live web search, when `TAVILY_API_KEY` is set |
-
-With `seed`, the core demo never depends on the network. Either way a signal is
-only surfaced when it ties to the merchant's actual exposure — this is
-deliberately not a news feed.
+Details: [Security: tokens](SECURITY.md#tokens).
 
 ---
 
 ## Networking and rate limiting
 
-```dotenv
-FRONTEND_URL=http://localhost:3000
-BACKEND_URL=http://localhost:8000
-CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
-RATE_LIMIT_ENABLED=true
-RATE_LIMIT_REQUESTS=300
-RATE_LIMIT_WINDOW_SECONDS=60
-```
-
-| Variable | Notes |
-| --- | --- |
-| `CORS_ORIGINS` | Comma-separated. Credentials are allowed, so wildcards are not |
-| `RATE_LIMIT_*` | Per-caller request budget. Shared through Redis when `REDIS_URL` is set, otherwise per-process. See [Redis](#redis) |
-| `BACKEND_URL` | Used to build the Vapi server-tool URL |
-
-### Redis
-
-Optional. Set `REDIS_URL` (on Render the blueprint wires it to the `paypilot-redis`
-Key Value instance) and these move from process memory to Redis:
-
-| What | Where | Why it matters |
+| Variable | Default (`.env.example`) | Notes |
 | --- | --- | --- |
-| HTTP rate-limit counters | [`core/ratelimit.py`](../backend/app/core/ratelimit.py) | One budget across workers and restarts (without Redis, four workers = four times the limit) |
-| Per-merchant Channel3 call budget (40/min) | `services/discovery/service.py` | Survives a restart or deploy |
-| Gear-shelf cache (30 min) and product-detail cache (`DISCOVERY_DETAIL_CACHE_SECONDS`) | [`core/cache.py`](../backend/app/core/cache.py) | Each miss spends Channel3 credits; Render restarts the API on every deploy and after every idle sleep |
-| Realtime events | [`api/realtime.py`](../backend/app/api/realtime.py) | Pub/sub reaches browsers connected to any API process, e.g. both instances during a deploy |
+| `FRONTEND_URL` | `http://localhost:3000` | Used in links the backend generates (PayPal return URLs, emails) |
+| `BACKEND_URL` | `http://localhost:8000` | Public API URL; used to build the Vapi server-tool URL and PayPal webhook hints |
+| `CORS_ORIGINS` | `http://localhost:3000,http://127.0.0.1:3000` | Exact origins. Credentials are allowed, so wildcards are not. Localhost and ngrok origins are also accepted by a fixed pattern for development |
+| `RATE_LIMIT_ENABLED` | `true` | |
+| `RATE_LIMIT_REQUESTS` | `300` | Requests per caller per window |
+| `RATE_LIMIT_WINDOW_SECONDS` | `60` | |
 
-Redis is **never a source of truth** - Postgres holds everything that matters - so it
-needs no persistence (Render's free Key Value plan has none). It is also never a hard
-dependency: with `REDIS_URL` blank, or when Redis is down, each feature falls back to
-the in-process behaviour, and after a failure a circuit breaker skips Redis for
-`REDIS_RETRY_SECONDS` instead of making every request wait out a timeout.
-`GET /api/v1/health` reports `checks.redis` as `ok`, `unreachable` or `not_configured`
-and never degrades `status` for it.
+The limiter keys on the bearer token when present and the client address otherwise. Health probes and CORS
+preflight are exempt. Responses carry `X-RateLimit-Limit` and `X-RateLimit-Remaining`; a `429` carries
+`Retry-After`.
+
+---
+
+## Redis
+
+Optional. With `REDIS_URL` set, four things move from process memory to Redis:
+
+| What | Code | Why it matters |
+| --- | --- | --- |
+| HTTP rate-limit counters | [`core/ratelimit.py`](../backend/app/core/ratelimit.py) | One budget across workers and restarts |
+| Per-merchant Channel3 call budget (40 per minute) | [`services/discovery/service.py`](../backend/app/services/discovery/service.py) | Survives restarts and deploys |
+| Channel3 response caches | [`core/cache.py`](../backend/app/core/cache.py) | Every miss spends Channel3 credits |
+| Realtime events | [`api/realtime.py`](../backend/app/api/realtime.py) | Pub/sub reaches browsers connected to any API instance |
+
+Redis is never a source of truth, so it needs no persistence. It is never a hard dependency either: when it is
+blank or down, every feature falls back to in-process state, and a circuit breaker skips Redis for
+`REDIS_RETRY_SECONDS` after a failure. `GET /api/v1/health` reports `checks.redis` as `ok`, `unreachable` or
+`not_configured` and never degrades `status` for it.
 
 | Variable | Default | Notes |
 | --- | --- | --- |
-| `REDIS_URL` | blank | `redis://` or `rediss://`. Blank = in-process |
+| `REDIS_URL` | blank | `redis://` or `rediss://`. Locally: `redis://localhost:6379/0` after `docker compose up -d redis` |
 | `REDIS_KEY_PREFIX` | `paypilot` | Namespaces keys and channels so environments can share an instance |
-| `REDIS_CONNECT_TIMEOUT_SECONDS` / `REDIS_COMMAND_TIMEOUT_SECONDS` | `2` / `1.5` | Kept short: a slow Redis must not slow requests |
+| `REDIS_CONNECT_TIMEOUT_SECONDS` | `2` | Kept short so a slow Redis cannot slow requests |
+| `REDIS_COMMAND_TIMEOUT_SECONDS` | `1.5` | |
 | `REDIS_RETRY_SECONDS` | `15` | How long to use the fallback after a failure |
 | `REALTIME_REDIS_ENABLED` | `true` | `false` keeps realtime process-local while Redis still serves the rest |
 
-The limiter is a fixed window (one `INCRBY` + `EXPIRE` per caller per window), chosen
-over a sliding window so each caller costs one tiny key on a 25 MB instance; a caller
-can burst up to twice the limit across a window boundary.
+With Redis the limiter is a fixed window (`INCRBY` + `EXPIRE`, one small key per caller); without it, an
+in-process sliding window.
+
+---
+
+## PayPal
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `PAYPAL_ENVIRONMENT` | `sandbox` | `sandbox` or `live` |
+| `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` | blank | Blank = simulator. From developer.paypal.com, Apps and Credentials |
+| `PAYPAL_WEBHOOK_ID` | blank | The id PayPal assigns to `https://<backend>/api/v1/paypal/webhooks`. Without it real webhooks are rejected (fail closed) |
+| `PAYPAL_API_BASE_URL` | blank | Override the API host (proxy or mock). Derived from the environment when blank |
+| `PAYPAL_TIMEOUT_SECONDS` | `30` | |
+| `PAYPAL_MAX_RETRIES` | `2` | Retries on 429, 5xx and transport errors, honouring `Retry-After` |
+| `PAYPAL_ORDERS_VIA_SDK` | `true` | Orders v2 create, get and capture through PayPal's APIMatic-generated Server SDK; `false` uses the hand-written REST client. Ignored when `PAYPAL_API_BASE_URL` is set |
+| `PAYPAL_SIMULATION_ENABLED` | `true` | Allow the simulator when no credentials are set |
+| `PAYPAL_BRAND_NAME` | `PayPilot` | Shown on PayPal approval pages |
+| `DEFAULT_CURRENCY` | `USD` | |
+| `PAYPAL_SIMULATOR_WEBHOOK_SECRET` | blank | Signs simulator webhooks; derived from `JWT_SECRET` when blank |
+| `PAYPAL_SANDBOX_PAYEE_EMAIL` | blank | A sandbox business account the seeded supplier agents use as payee, so supplier payments complete end to end |
+| `PAYPAL_MCP_ENABLED` | `true` | Read-only bridge to PayPal's Agent Toolkit MCP server |
+| `PAYPAL_MCP_URL` | blank | Derived from the environment (`https://mcp.sandbox.paypal.com/sse` or the live host). A URL not ending in `/sse` is treated as Streamable HTTP |
+
+Sandbox setup step by step: [PayPal: using the sandbox](PAYPAL.md#using-the-sandbox).
+
+---
+
+## LLM (Groq)
+
+Optional. Without a key every agent node uses its deterministic path and produces the same figures, the same
+recommendation and the same experiment decision; only the wording is simpler.
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `GROQ_API_KEY` | blank | From console.groq.com |
+| `GROQ_MODEL` | `openai/gpt-oss-120b` | Read from configuration everywhere; the id appears in no other file |
+| `GROQ_FALLBACK_MODEL` | `openai/gpt-oss-20b` | Tried after the primary exhausts its retries |
+| `GROQ_TIMEOUT_SECONDS` | `45` | |
+| `GROQ_MAX_RETRIES` | `2` | Authentication errors are not retried |
+| `GROQ_TEMPERATURE` | `0.2` | Low on purpose: structured extraction, not creative writing |
+| `GROQ_MAX_TOKENS` | `2048` | |
+
+| | Without a key | With a key |
+| --- | --- | --- |
+| Metrics, opportunities, limits, experiment decisions | Identical | Identical |
+| Intent routing | Keyword table | Model classification |
+| Hypotheses and explanations | Templates filled with the computed figures | Natural language |
+| Buyer-agent counter-offers | Deterministic strategy | The model may propose; out-of-bounds proposals are refused |
+
+Confirm with `curl -s localhost:8000/api/v1/health`: `checks.llm` is `configured`. See
+[Agents: LLM failure handling](AGENTS.md#llm-failure-handling).
+
+---
+
+## AG Studio AI assistant
+
+Dashboard Studio's agents run on any OpenAI-compatible chat-completions API, through the backend. The key never
+reaches the browser.
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `STUDIO_AI_ENABLED` | `true` | `false` hides the assistant; the dashboard and editor still work |
+| `STUDIO_AI_BASE_URL` | blank | Blank uses Groq with `GROQ_API_KEY` |
+| `STUDIO_AI_API_KEY` | blank | |
+| `STUDIO_AI_MODEL` | blank | Blank uses `GROQ_MODEL` |
+| `STUDIO_AI_REASONING_EFFORT` | `low` | |
+
+Groq's free tier (about 8,000 tokens per minute) is too small for Studio's delegate agents. Use a paid key or a
+provider such as `https://api.openai.com/v1` or `https://openrouter.ai/api/v1`. See
+[Integrations: AG Studio](INTEGRATIONS.md#ag-grid-and-ag-studio).
+
+---
+
+## Embeddings and agent memory
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `EMBEDDING_PROVIDER` | `hash` | `hash` needs nothing and is byte-identical everywhere (lexical). `fastembed` runs a local ONNX model (semantic) and needs `requirements-optional.txt` |
+| `EMBEDDING_MODEL` | `BAAI/bge-small-en-v1.5` | Used by `fastembed` |
+| `EMBEDDING_DIMENSIONS` | `384` | Also the width of the `vector(N)` columns; changing it needs a migration |
+| `MEMORY_ENABLED` | `true` | pgvector agent memory in `agent_memories`; no extra service |
+| `MEMORY_RECALL_TOP_K` | `6` | |
+| `MEMORY_RECALL_TIMEOUT_SECONDS` | `5` | Recall returns empty on timeout; memory never delays an answer |
+
+Changing the provider changes the vector space. Re-seed (`make seed-reset`) so stored vectors match. See
+[Agent memory](MEMORY.md).
+
+---
+
+## Channel3 and product discovery
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `CHANNEL3_API_KEY` | blank | Free key at trychannel3.com/developers. Server side only; never logged or returned |
+| `CHANNEL3_BASE_URL` | `https://api.trychannel3.com` | |
+| `CHANNEL3_TIMEOUT_SECONDS` | `30` | |
+| `CHANNEL3_MAX_RETRIES` | `2` | 429, 5xx and network errors only; 4xx never retried; conversation turns never retried |
+| `CHANNEL3_CURRENCY` | `USD` | Channel3 prices in USD, CAD, AUD, GBP, EUR, SEK, CZK, RON |
+| `CHANNEL3_COUNTRY` | `US` | |
+| `DISCOVERY_FX_PER_USD` | `INR:88,JPY:150,CNY:7.2,SGD:1.35,AED:3.67` | Reference rates for budgets in currencies Channel3 does not price in; every converted search is labelled |
+| `DISCOVERY_DETAIL_CACHE_SECONDS` | `600` | How long a fetched product detail is reused |
+
+Verify the key with `make integrations`. See [Supply Intelligence](SUPPLY_INTELLIGENCE.md).
+
+---
+
+## Supply agents and procurement
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `AGENT_PROTOCOL_SECRET` | blank | HMAC root key for agent-to-agent messages; derived from `JWT_SECRET` when blank. Per-agent keys are derived from it |
+| `PROCUREMENT_MAX_NEGOTIATION_ROUNDS` | `4` | |
+| `PROCUREMENT_QUOTE_TTL_HOURS` | `48` | |
+| `PROCUREMENT_DEFAULT_TARGET_MARGIN` | `0.40` | Sets the price ceiling: `selling price x (1 - margin)` |
+| `PROCUREMENT_PRICE_TOLERANCE_PCT` | `0.02` | Three-way match unit-price tolerance |
+| `PROCUREMENT_TOTAL_TOLERANCE_AMOUNT` | `1.00` | Three-way match total tolerance (USD) |
+
+See [Supply Agents](SUPPLY_AGENTS.md).
+
+---
+
+## Inventory automation, outbox and n8n
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `INVENTORY_AUTOMATION_ENABLED` | `true` | |
+| `INVENTORY_DRY_RUN` | `false` | Decide but do not raise purchase orders |
+| `INVENTORY_APPROVAL_THRESHOLD` | `500` | Automatic reorders at or above this value (USD) wait for a human |
+| `INVENTORY_DISPATCH_INTERVAL_SECONDS` | `15` | How often the outbox relay delivers events |
+| `OUTBOX_RELAY_IN_PROCESS` | `true` | `true`: the API process runs the relays. `false`: run `python -m app.worker` |
+| `N8N_INVENTORY_WEBHOOK_URL` | blank | Where the backend posts events, for example `http://localhost:5678/webhook/pga-inventory-event`. Blank = events recorded and marked `SKIPPED` |
+| `N8N_WEBHOOK_SECRET` | blank | Shared HMAC secret, both directions. Blank = inbound automation fails closed |
+| `N8N_BASE_URL` | `http://localhost:5678` | For "open in n8n" links |
+| `N8N_API_KEY` | blank | |
+| `N8N_BACKEND_URL_FOR_N8N` | `http://host.docker.internal:8000` | How n8n reaches the backend (read by the workflow builder) |
+| `PGA_MERCHANT_ID` | blank | The merchant the scheduled sweeps run for (read by the workflow builder) |
+
+Docker Compose sets the n8n values for you. See [Automation](AUTOMATION.md).
+
+---
+
+## Optional integrations
+
+Blank means a labelled fallback, never a silent one. Details: [Integrations](INTEGRATIONS.md).
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `KERNEL_API_KEY`, `KERNEL_BASE_URL` | blank, `https://api.onkernel.com` | Observe-only supplier-page browser sessions |
+| `ELASTIC_URL`, `ELASTIC_API_KEY`, `ELASTIC_INDEX_PREFIX` | blank, blank, `paypilot` | Evidence search. Local node: `docker compose --profile search up -d elasticsearch` |
+| `ZAPIER_WEBHOOK_URL` | blank | A Webhooks by Zapier Catch Hook URL; treat it as a secret |
+| `ZAPIER_SIGNING_SECRET` | blank | Signs Zapier deliveries; derived from `JWT_SECRET` when blank |
+| `EXTERNAL_SEARCH_PROVIDER` | `seed` | `seed` uses the seeded external signals; `tavily` uses live web search |
+| `TAVILY_API_KEY` | blank | Needed for `tavily` |
+| `SUPABASE_URL`, `SUPABASE_ANON_KEY` | blank | Unused by default; Supabase is supported as a Postgres host only |
+| `APIMATIC_API_KEY` | blank | Used only by `scripts/apimatic.*` and the Render docs site, never by the app. See [API portal and SDKs](APIMATIC.md) |
+
+---
+
+## Langfuse
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY` | blank | Both needed |
+| `LANGFUSE_BASE_URL` | `https://cloud.langfuse.com` | Must match your keys' region (US: `https://us.cloud.langfuse.com`). Overrides `LANGFUSE_HOST` |
+| `LANGFUSE_ENABLED` | `true` | |
+
+With keys set, each agent run becomes a trace with spans for graph nodes, generations for LLM calls (with token
+usage) and spans for tool calls. Payloads pass through the same redaction as the logger. Without keys the tracer
+is a no-op, so agent code never branches on it.
+
+---
+
+## Vapi voice
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `VAPI_PUBLIC_KEY`, `VAPI_PRIVATE_KEY`, `VAPI_ASSISTANT_ID` | blank | From dashboard.vapi.ai |
+| `VAPI_WEBHOOK_SECRET` | blank | Shared secret Vapi presents on server-URL requests. Without it the webhook is rejected |
+| `VAPI_SIGNATURE_HEADER` | `x-vapi-signature` | |
+| `VAPI_SIGNATURE_ALGORITHM` | `sha256` | |
+
+Setup:
+
+1. Create an assistant in Vapi and set the keys above.
+2. `GET /api/v1/voice/assistant-config` (needs `settings:manage`) returns the system prompt and tool
+   definitions; `POST /api/v1/voice/sync` pushes them.
+3. Set the assistant's server URL to `https://<backend>/api/v1/voice/tool`.
+4. Mirror the public key and assistant id into `NEXT_PUBLIC_VAPI_PUBLIC_KEY` and `NEXT_PUBLIC_VAPI_ASSISTANT_ID`.
+
+`GET /api/v1/voice/session` issues a 30-minute token scoped to voice, so every voice tool call is authenticated
+and merchant-scoped like a web request. Voice tools call the same agents as the web UI and can never approve or
+execute.
+
+---
+
+## Email (Gmail API)
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `GMAIL_CREDENTIALS_B64` | blank | Base64 OAuth credential. Mint it with `python backend/scripts/mint_gmail_token.py` |
+| `GMAIL_SENDER` | blank | |
+| `EMAIL_FROM_NAME` | `PayPilot` | |
+
+Without credentials, invitations and vendor purchase-order emails are rendered to the log, and the purchase
+order's "Notify vendor" step shows as declined. `POST /api/v1/settings/email/test` sends a test message.
 
 ---
 
 ## Demo seed
 
-```dotenv
-SEED_RANDOM_SEED=20240917
-DEMO_OWNER_EMAIL=owner@juniperoak.com
-DEMO_OWNER_PASSWORD=Autopilot@2024
-DEMO_MERCHANT_NAME=Juniper & Oak Coffee
-```
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `SEED_RANDOM_SEED` | `20240917` | Every figure in these docs is measured at this seed |
+| `DEMO_OWNER_EMAIL` | `owner@juniperoak.com` | |
+| `DEMO_OWNER_PASSWORD` | `Autopilot@2024` | |
+| `DEMO_MERCHANT_NAME` | `Juniper & Oak Coffee` | |
 
-Changing `SEED_RANDOM_SEED` produces a different but equally valid dataset. The
-tuned figures documented in [DATA.md](DATA.md#what-comes-out) apply to `20240917`.
-
-> Verify any change with `make calibrate` before re-seeding — it measures the
-> generated dataset in about three seconds, against roughly a minute for a seed.
+Run `make calibrate` before re-seeding after any change; see [Data](DATA.md#calibration).
 
 ---
 
 ## Frontend variables
 
-the root `.env`:
+All compiled into the browser bundle at build time. Changing one requires a rebuild (or a dev server restart).
 
-```dotenv
-NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
-NEXT_PUBLIC_APP_NAME=PayPilot
-NEXT_PUBLIC_DEMO_EMAIL=owner@juniperoak.com
-NEXT_PUBLIC_DEMO_PASSWORD=Autopilot@2024
-NEXT_PUBLIC_VAPI_PUBLIC_KEY=
-NEXT_PUBLIC_VAPI_ASSISTANT_ID=
-```
-
-| Variable | Notes |
-| --- | --- |
-| `NEXT_PUBLIC_API_URL` | Must include `/api/v1`. Change it if you moved the backend port |
-| `NEXT_PUBLIC_DEMO_*` | Prefills the login form so a reviewer is not hunting for credentials. Remove for any real deployment |
-
-> **Warning.** `NEXT_PUBLIC_*` values are **compiled into the browser bundle**.
-> Never put a private key, a secret, or a database URL here. The Vapi *public*
-> key is designed to be public; the private key is not and stays server-side.
-
-`make env` writes this file if it is missing, matching whatever `PORT` you use.
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `NEXT_PUBLIC_API_URL` | `http://localhost:8000/api/v1` | Must include `/api/v1` |
+| `NEXT_PUBLIC_APP_NAME` | `PayPilot` | |
+| `NEXT_PUBLIC_DEMO_EMAIL`, `NEXT_PUBLIC_DEMO_PASSWORD` | demo Owner | Prefill the login form. Remove for any real deployment |
+| `NEXT_PUBLIC_VAPI_PUBLIC_KEY`, `NEXT_PUBLIC_VAPI_ASSISTANT_ID` | blank | The Vapi public key is designed to be public |
+| `NEXT_PUBLIC_AG_STUDIO_LICENSE_KEY` | blank | Removes AG Studio's evaluation watermark |
+| `NEXT_PUBLIC_BRYNTUM_LICENSE_KEY` | blank | Blank runs Bryntum's 14-day trial; a trial key runs to its end date; a purchased key removes the badge |
 
 ---
 
 ## Verifying configuration
 
-### Health endpoint
-
-```bash
-curl -s localhost:8000/api/v1/health | python -m json.tool
-```
-
-`checks` reports each integration as `configured` or `not_configured`.
-
-### Settings screen
-
-Sign in as Owner and open **Settings -> Integrations** for the same information,
-plus the active embedding provider and logging backend.
-
-### From Python
-
-```bash
-cd backend && ./.venv/Scripts/python.exe -c "
-from app.core.config import settings
-print('env      :', settings.app_env)
-print('database :', settings.database_url.split('@')[-1])
-print('llm      :', settings.llm_enabled, settings.groq_model)
-print('langfuse :', settings.langfuse_active)
-print('vapi     :', settings.vapi_active)
-print('embedding:', settings.embedding_provider, settings.embedding_dimensions)
-print('cors     :', settings.cors_origins)
-"
-```
-
----
-
-## PayPal MCP and sponsor integrations
-
-All optional; blank means a labelled fallback (never a silent one). Details and verification
-status for each: [SPONSORS.md](SPONSORS.md).
-
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| `PAYPAL_MCP_ENABLED` | `true` | Read-only bridge to PayPal's MCP server. Set `false` to disable it entirely |
-| `PAYPAL_MCP_URL` | derived | Blank derives `https://mcp.sandbox.paypal.com/sse` (or `mcp.paypal.com` when `PAYPAL_ENVIRONMENT=live`). A URL not ending in `/sse` is treated as Streamable HTTP |
-| `CHANNEL3_API_KEY` / `CHANNEL3_BASE_URL` | blank / `https://api.trychannel3.com` | Product Discovery, Supply Intelligence, the shopping assistant (blank = those routes answer 503 with setup steps, never fake products); also the gear shelf and market price reference (blank = labelled `SIMULATED` reference catalogue) |
-| `CHANNEL3_TIMEOUT_SECONDS` / `CHANNEL3_MAX_RETRIES` | `30` / `2` | Catalog client timeout and bounded retries (429 / 5xx / network; 4xx never retried) |
-| `CHANNEL3_CURRENCY` / `CHANNEL3_COUNTRY` | `USD` / `US` | Locale offers are priced in (Channel3: USD, CAD, AUD, GBP, EUR, SEK, CZK, RON) |
-| `DISCOVERY_FX_PER_USD` | `INR:88,JPY:150,CNY:7.2,SGD:1.35,AED:3.67` | Reference rates (units per USD) to translate budgets in other currencies; every converted search is labelled |
-| `DISCOVERY_DETAIL_CACHE_SECONDS` | `600` | How long a fetched product detail is reused |
-| `KERNEL_API_KEY` / `KERNEL_BASE_URL` | blank / `https://api.onkernel.com` | Supplier-portal browser sessions. Blank = no browser is started |
-| `ELASTIC_URL` / `ELASTIC_API_KEY` / `ELASTIC_INDEX_PREFIX` | blank / blank / `paypilot` | Evidence search. Blank URL = in-process keyword fallback |
-| `ZAPIER_WEBHOOK_URL` / `ZAPIER_SIGNING_SECRET` | blank | Catch Hook for signed event notifications (the URL is a secret). Blank = off |
-
-## Full variable reference
-
-| Variable | Default | Required | Section |
-| --- | --- | :--: | --- |
-| `APP_ENV` | `development` | | [Core](#core-application) |
-| `APP_NAME` | `paypilot` | | [Core](#core-application) |
-| `APP_VERSION` | `1.0.0` | | [Core](#core-application) |
-| `DEBUG` | `true` | | [Core](#core-application) |
-| `LOG_LEVEL` | `INFO` | | [Core](#core-application) |
-| `LOG_FORMAT` | `console` | | [Core](#core-application) |
-| `LOG_CONSOLE_LOGIFYX` | `true` | | [Core](#core-application) |
-| `DATABASE_URL` | local Docker | **yes** | [Database](#database) |
-| `DB_ECHO` | `false` | | [Database](#database) |
-| `DB_POOL_SIZE` | `10` | | [Database](#database) |
-| `DB_MAX_OVERFLOW` | `20` | | [Database](#database) |
-| `JWT_SECRET` | placeholder | **yes** | [Auth](#authentication-and-jwt) |
-| `JWT_ALGORITHM` | `HS256` | | [Auth](#authentication-and-jwt) |
-| `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | `30` | | [Auth](#authentication-and-jwt) |
-| `JWT_REFRESH_TOKEN_EXPIRE_DAYS` | `14` | | [Auth](#authentication-and-jwt) |
-| `REFRESH_COOKIE_NAME` | `pga_refresh` | | [Auth](#authentication-and-jwt) |
-| `REFRESH_COOKIE_SECURE` | `false` | | [Auth](#authentication-and-jwt) |
-| `REFRESH_COOKIE_SAMESITE` | `lax` | | [Auth](#authentication-and-jwt) |
-| `GROQ_API_KEY` | empty | | [Groq](#groq-llm) |
-| `GROQ_MODEL` | `openai/gpt-oss-120b` | | [Groq](#groq-llm) |
-| `GROQ_FALLBACK_MODEL` | `openai/gpt-oss-20b` | | [Groq](#groq-llm) |
-| `GROQ_TIMEOUT_SECONDS` | `45` | | [Groq](#groq-llm) |
-| `GROQ_MAX_RETRIES` | `2` | | [Groq](#groq-llm) |
-| `GROQ_TEMPERATURE` | `0.2` | | [Groq](#groq-llm) |
-| `GROQ_MAX_TOKENS` | `2048` | | [Groq](#groq-llm) |
-| `EMBEDDING_PROVIDER` | `hash` | | [Embeddings](#embeddings) |
-| `EMBEDDING_MODEL` | `BAAI/bge-small-en-v1.5` | | [Embeddings](#embeddings) |
-| `EMBEDDING_DIMENSIONS` | `384` | | [Embeddings](#embeddings) |
-| `LANGFUSE_PUBLIC_KEY` | empty | | [Langfuse](#langfuse-observability) |
-| `LANGFUSE_SECRET_KEY` | empty | | [Langfuse](#langfuse-observability) |
-| `LANGFUSE_HOST` | cloud | | [Langfuse](#langfuse-observability) |
-| `LANGFUSE_ENABLED` | `true` | | [Langfuse](#langfuse-observability) |
-| `VAPI_PUBLIC_KEY` | empty | | [Vapi](#vapi-voice) |
-| `VAPI_PRIVATE_KEY` | empty | | [Vapi](#vapi-voice) |
-| `VAPI_ASSISTANT_ID` | empty | | [Vapi](#vapi-voice) |
-| `VAPI_WEBHOOK_SECRET` | empty | | [Vapi](#vapi-voice) |
-| `SUPABASE_URL` | empty | | [Supabase](#supabase) |
-| `SUPABASE_ANON_KEY` | empty | | [Supabase](#supabase) |
-| `EXTERNAL_SEARCH_PROVIDER` | `seed` | | [Signals](#external-signals) |
-| `TAVILY_API_KEY` | empty | | [Signals](#external-signals) |
-| `FRONTEND_URL` | `localhost:3000` | | [Networking](#networking-and-rate-limiting) |
-| `BACKEND_URL` | `localhost:8000` | | [Networking](#networking-and-rate-limiting) |
-| `CORS_ORIGINS` | localhost | **yes** | [Networking](#networking-and-rate-limiting) |
-| `RATE_LIMIT_ENABLED` | `true` | | [Networking](#networking-and-rate-limiting) |
-| `RATE_LIMIT_REQUESTS` | `300` | | [Networking](#networking-and-rate-limiting) |
-| `RATE_LIMIT_WINDOW_SECONDS` | `60` | | [Networking](#networking-and-rate-limiting) |
-| `SEED_RANDOM_SEED` | `20240917` | | [Seed](#demo-seed) |
-| `DEMO_OWNER_EMAIL` | `owner@juniperoak.com` | | [Seed](#demo-seed) |
-| `DEMO_OWNER_PASSWORD` | `Autopilot@2024` | | [Seed](#demo-seed) |
-| `DEMO_MERCHANT_NAME` | `Juniper & Oak Coffee` | | [Seed](#demo-seed) |
+| Check | Command |
+| --- | --- |
+| Tools, `.env`, PayPal mode, Groq and Channel3 keys | `make check` |
+| Live Channel3 and PayPal sandbox credentials (no secrets printed) | `make integrations` |
+| What the running API has wired | `curl -s localhost:8000/api/v1/health` |
+| Which sponsor integrations are live and which are fallbacks | `GET /api/v1/integrations/status` or the `/integrations` page |
 
 ---
 
 <div align="center">
 
-[Docs index](README.md) · [Installation](INSTALLATION.md) ·
-[Deployment](DEPLOYMENT.md) · [Security](SECURITY.md) ·
-[Troubleshooting](TROUBLESHOOTING.md)
+[Previous: Installation](INSTALLATION.md) | [Docs index](README.md) | [Next: Deployment](DEPLOYMENT.md)
 
 </div>

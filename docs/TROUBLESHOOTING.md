@@ -2,698 +2,247 @@
 
 # Troubleshooting
 
-[![Docs index](https://img.shields.io/badge/-Docs_index-475569?style=flat-square&logo=markdown&logoColor=white)](README.md)
-[![Installation](https://img.shields.io/badge/-Installation-64748b?style=flat-square)](INSTALLATION.md)
+Symptom, cause and fix, grouped by where the problem shows up.
+
+[![Docs index](https://img.shields.io/badge/-Docs_index-0b2a6f?style=flat-square)](README.md)
+[![Installation](https://img.shields.io/badge/-Installation-16a34a?style=flat-square)](INSTALLATION.md)
 [![Configuration](https://img.shields.io/badge/-Configuration-2563eb?style=flat-square)](CONFIGURATION.md)
-[![Deployment](https://img.shields.io/badge/-Deployment-16a34a?style=flat-square)](DEPLOYMENT.md)
-[![Automation](https://img.shields.io/badge/-Automation-b45309?style=flat-square)](../n8n/README.md)
+[![Deployment](https://img.shields.io/badge/-Deployment-46E3B7?style=flat-square)](DEPLOYMENT.md)
 
 </div>
-
-Symptom, cause, fix. Everything below was hit during development, not imagined.
 
 ---
 
 ## Contents
 
 - [Start here](#start-here)
-- [Installation and setup](#installation-and-setup)
-- [Database](#database)
-- [Migrations](#migrations)
-- [Seeding](#seeding)
+- [Setup](#setup)
+- [Database and migrations](#database-and-migrations)
+- [Seed data](#seed-data)
 - [Backend runtime](#backend-runtime)
 - [Authentication](#authentication)
 - [Frontend](#frontend)
 - [Agents and LLM](#agents-and-llm)
-- [Tests](#tests)
+- [PayPal](#paypal)
+- [Channel3 and other integrations](#channel3-and-other-integrations)
+- [Redis](#redis)
+- [n8n automation](#n8n-automation)
 - [Docker](#docker)
+- [Render](#render)
 - [Windows](#windows)
-- [Still stuck](#still-stuck)
+- [Tests](#tests)
 
 ---
 
 ## Start here
 
-Four commands that identify most problems in under a minute.
+Four checks identify most problems in under a minute:
 
 ```bash
-curl -s http://localhost:8000/api/v1/health | python -m json.tool   # is it up, what is wired
-make seed-stats                                                     # is there data
-make test                                                           # is the code sane
-make calibrate                                                      # is the dataset right
+make check                                                           # tools, .env, modes
+curl -s http://localhost:8000/api/v1/health | python -m json.tool    # is it up, what is wired
+make test-backend                                                    # is the code sane (no DB needed)
+make calibrate                                                       # is the demo dataset right
 ```
 
-The health response tells you a great deal:
-
-```json
-{
-  "checks": {
-    "database": "ok",
-    "llm": "not_configured",
-    "langfuse": "not_configured",
-    "vapi": "not_configured",
-    "embeddings": "hash",
-    "logging_backend": "logifyx"
-  }
-}
-```
-
-`not_configured` is not a fault. The product is built to run that way.
+In the health response, `not_configured` is not a fault; every integration has a documented behaviour without its
+key. `status: degraded` means the database is unreachable.
 
 ---
 
-## Installation and setup
+## Setup
 
-### `make: command not found`
-
-`make` is not installed. Install it, use WSL2, or run the expanded commands in the
-[Installation fast path](INSTALLATION.md#fast-path).
-
-```bash
-# macOS
-brew install make
-# Debian / Ubuntu
-sudo apt install make
-# Windows
-winget install GnuWin32.Make
-```
-
-### `python: command not found` but `python3` works
-
-The Makefile uses `python` inside the venv, where it always exists. Only the
-initial venv creation uses the system interpreter:
-
-```bash
-make install PYTHON=python3
-```
-
-### `ERROR: Could not find a version that satisfies the requirement ...`
-
-Python is older than 3.11. Check with `python --version`. The codebase uses
-`StrEnum`, `datetime.UTC` and PEP 604 unions throughout.
-
-### `logifyx` or `fastembed` fails to install
-
-Expected on some platforms, and harmless. Both are in
-`requirements-optional.txt` and installed on a best-effort basis. Without them the
-built-in JSON logger and deterministic hash embeddings take over; the health
-endpoint reports which is active.
-
-### `npm install` fails with peer dependency errors
-
-```bash
-cd frontend
-rm -rf node_modules package-lock.json
-npm install
-```
-
-If it persists, check `node --version` is 20 or newer.
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `make: command not found` | Make is not installed | Use `scripts\setup.ps1` / `scripts\dev.ps1` on Windows, `sh scripts/setup.sh` / `sh scripts/dev.sh` elsewhere, or install Make |
+| `Python 3.11+ is required` | Older Python on `PATH` | Install Python 3.11-3.14; check `python --version` (or `python3` on macOS and Linux) |
+| `Missing required tools: node` | Node.js not installed | Install Node 20+ |
+| Optional extras failed to install | `fastembed` or `logifyx` has no wheel for your platform | Harmless: hash embeddings and the built-in log renderer are used |
+| `npm ci` fails | Lockfile or Node version mismatch | Check `node --version` is 20+, then `cd frontend && rm -rf node_modules && npm ci` |
+| `make init` says "No database available" | Docker is not running and `DATABASE_URL` is unreachable | Start Docker Desktop and run `make docker-up migrate seed`, or point `DATABASE_URL` at a Postgres with `vector` |
 
 ---
 
-## Database
+## Database and migrations
 
-### `connection refused` on port 5433
-
-Postgres is not running:
-
-```bash
-make db
-make wait-db
-```
-
-`wait-db` blocks until the container accepts connections. Starting the API before
-that point is the most common cause of a failed first run.
-
-### Port 5433 is already allocated
-
-Something else holds it. Either free it, or pick another port in `.env`:
-
-```dotenv
-POSTGRES_PORT=5434
-DATABASE_URL=postgresql+asyncpg://autopilot:autopilot@localhost:5434/autopilot
-```
-
-Both lines must change. The compose file reads `POSTGRES_PORT`; the application
-reads `DATABASE_URL`.
-
-> Port 5433 rather than 5432 is deliberate — so the project never collides with a
-> Postgres you already had.
-
-### `type "vector" does not exist`
-
-The pgvector extension is missing. On the Docker image it is created automatically
-by [`docker/postgres/init/01-extensions.sql`](../docker/postgres/init/01-extensions.sql),
-which only runs on a **fresh volume**. If you pointed the project at a pre-existing
-database:
-
-```bash
-psql -d autopilot -c 'CREATE EXTENSION IF NOT EXISTS "vector";'
-psql -d autopilot -c 'CREATE EXTENSION IF NOT EXISTS "pgcrypto";'
-```
-
-On Supabase, enable `vector` in **Database -> Extensions**.
-
-### `password authentication failed for user "autopilot"`
-
-The volume was created with different credentials than `.env` now specifies.
-Postgres only reads `POSTGRES_PASSWORD` when initialising an empty data directory.
-
-```bash
-make db-reset      # destroys the volume and recreates it
-make migrate seed
-```
-
-Destructive. Local demo data only.
-
-### `prepared statement "__asyncpg_stmt_1__" already exists`
-
-You are behind a transaction-mode connection pooler — typically Supabase on port
-6543 — which multiplexes connections in a way asyncpg's statement cache cannot
-survive.
-
-The engine detects `pooler.supabase.com` and disables the cache automatically. If
-you are on a different pooler, use the **session** connection string (port 5432),
-or add it to the detection in
-[`app/db/session.py`](../backend/app/db/session.py).
-
-Details: [DEPLOYMENT.md](DEPLOYMENT.md#supabase).
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `connection refused` on port 5433 | Postgres is not running | `make docker-up` (waits until `pg_isready`) |
+| Port 5433 already allocated | Another service holds it | Stop it, or change the host port in `docker-compose.yml` (`"5434:5432"`) **and** `DATABASE_URL` |
+| `type "vector" does not exist` | pgvector missing; the init script only runs on a fresh volume | `CREATE EXTENSION IF NOT EXISTS vector; CREATE EXTENSION IF NOT EXISTS pgcrypto;` or enable `vector` in your provider's dashboard |
+| `password authentication failed for user "autopilot"` | The volume was created with other credentials | `make reset-db CONFIRM=yes` (destroys local data) |
+| `prepared statement "__asyncpg_stmt_..." already exists` | A transaction-mode pooler not recognised by the detection | Use the session pooler, or add `pgbouncer=true` to the URL so [`db/session.py`](../backend/app/db/session.py) disables the statement cache |
+| `Target database is not up to date` | Pending migrations | `make migrate` |
+| `Can't locate revision identified by ...` | `alembic_version` names a revision from another branch | `cd backend && python -m alembic history` and `current`; for a local demo database, `make reset-db CONFIRM=yes` is faster |
+| Autogenerate wants to drop and recreate columns | Type-decorator comparison noise | Read the generated file; delete it if spurious. Never apply an unread autogenerated migration |
 
 ---
 
-## Migrations
+## Seed data
 
-### `Target database is not up to date`
-
-```bash
-make migrate
-```
-
-### `Can't locate revision identified by '...'`
-
-The `alembic_version` table names a revision that no longer exists in
-`migrations/versions/`, usually after switching branches.
-
-```bash
-cd backend
-python -m alembic history          # what exists
-python -m alembic current          # what the database believes
-python -m alembic stamp head       # only if you are certain the schema matches
-```
-
-For a local demo database, `make db-reset && make migrate && make seed` is faster
-and safer than reconciling by hand.
-
-### `NameError: name 'pga_types' is not defined` in a generated migration
-
-Alembic autogenerate renders the custom column types as `app.db.types.GUID()`,
-but an aliased import produces a name that does not match.
-
-The template in `migrations/script.py.mako` uses a plain import:
-
-```python
-import app.db.types
-```
-
-If you edited it to an alias, either revert, or fix the generated file's import to
-match the rendered names. Both must agree.
-
-### Autogenerate wants to drop and recreate every column
-
-Usually a type-decorator mismatch — SQLAlchemy comparing `UTCDateTime` against
-what it reflects from the database. Inspect the diff before accepting it:
-
-```bash
-cd backend
-python -m alembic revision --autogenerate -m "check"
-# read the file, then delete it if it is spurious
-```
-
-Never apply an autogenerated migration without reading it.
-
----
-
-## Seeding
-
-### `make seed` says data already exists
-
-By design — it is idempotent. To rebuild:
-
-```bash
-make reseed
-```
-
-### Seeding takes over two minutes
-
-Normal range is 45 to 70 seconds. Slower usually means embeddings are being
-computed by `fastembed` on first run, which downloads and initialises an ONNX
-model. Subsequent runs are faster.
-
-To skip real embeddings entirely:
-
-```dotenv
-EMBEDDING_BACKEND=hash
-```
-
-Deterministic hash embeddings are sufficient for the demo; semantic search quality
-drops but nothing breaks.
-
-### `StringDataRightTruncation`
-
-A column is narrower than the value being written. This happened for real:
-`agent_runs.decision` was `VARCHAR(48)` and received a full sentence. Fixed by
-migration `0002_widen_agent_decision.py`, which widens it to `Text`.
-
-If you hit it on a new column, widen it with a migration rather than truncating
-the value.
-
-### The numbers do not match the docs
-
-```bash
-make calibrate
-```
-
-Expect revenue around -12%, evening revenue around -32%. If they differ, either
-`SEED_RANDOM_SEED` changed, or a generator constant in
-`app/seed/generators/dataset.py` was edited.
-
-The seed is `20240917`. Any other value produces a valid but different business.
-
-### The dashboard shows growth rather than decline
-
-The date anchor has drifted. `default_anchor()` pins to the most recent Sunday, so
-the comparison windows stay aligned to whole weeks. If the system clock is far
-from real time, or a fixed anchor was hardcoded, the windows land in the wrong
-place.
-
-```bash
-make reseed
-```
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `make seed` does nothing | It is idempotent and the demo merchant exists | `make seed-reset` to rebuild the demo tenant |
+| Seeding is slow | `EMBEDDING_PROVIDER=fastembed` downloads and initialises a model on first run, or the database is remote | Use `EMBEDDING_PROVIDER=hash`, or wait; the seed can be re-run safely |
+| Figures differ from the docs | `SEED_RANDOM_SEED` changed or a generator constant was edited | `make calibrate`; the documented figures are for seed `20240917` |
+| Dashboard shows growth instead of decline | The date anchor drifted (system clock far from real time) | `make seed-reset` |
 
 ---
 
 ## Backend runtime
 
-### `[Errno 10048] error while attempting to bind on address ('0.0.0.0', 8000)`
-
-Port 8000 is in use. Every target accepts an override:
-
-```bash
-make backend PORT=8010
-```
-
-Then point the frontend at it:
-
-```dotenv
-# the root .env
-NEXT_PUBLIC_API_URL=http://localhost:8010/api/v1
-```
-
-Find the culprit:
-
-```bash
-# macOS / Linux
-lsof -i :8000
-# Windows
-netstat -ano | findstr :8000
-```
-
-### `SettingsError: error parsing value for field "cors_origins"`
-
-`pydantic-settings` tries to JSON-decode list-typed fields before validators run,
-so a comma-separated value fails.
-
-Already handled with `Annotated[list[str], NoDecode]` in
-[`app/core/config.py`](../backend/app/core/config.py). If you add a new list
-setting, apply the same annotation — or write the value as a JSON array in `.env`.
-
-### `ValueError: JWT_SECRET must be at least 32 characters`
-
-Working as intended.
-
-```bash
-python -c "import secrets; print(secrets.token_urlsafe(64))"
-```
-
-### `AssertionError: Query default value cannot be set in Annotated`
-
-FastAPI requires the default outside the annotation:
-
-```python
-# wrong
-q: Annotated[str | None, Query(default=None)]
-# right
-q: Annotated[str | None, Query()] = None
-```
-
-### `MissingGreenlet: greenlet_spawn has not been called`
-
-Async SQLAlchemy hit a lazy load outside an await context. Two forms:
-
-**Reading a relationship that was not eagerly loaded.** Load it explicitly:
-
-```python
-stmt = select(AgentRun).options(selectinload(AgentRun.steps)).where(...)
-```
-
-**Assigning to a lazy-loaded collection.** Pass it to the constructor instead:
-
-```python
-# wrong
-role.permissions = granted
-# right
-role = RoleModel(name=..., permissions=granted)
-```
-
-Both were hit during development — the first in the agent trace endpoints, the
-second in `seed_rbac`.
-
-### `TypeError: can't compare offset-naive and offset-aware datetimes`
-
-SQLite returns naive datetimes; Postgres returns aware ones.
-
-Solved structurally by the `UTCDateTime` type decorator in
-[`app/db/types.py`](../backend/app/db/types.py), which guarantees timezone-aware
-UTC on the way out of either engine. If you add a timestamp column, use
-`UTCDateTime`, not `DateTime`.
-
-### 500 with `INTERNAL_ERROR` and no detail
-
-By design in production. The `request_id` in the response correlates to a full
-structured log line:
-
-```bash
-grep '"request_id":"<id>"' backend/logs/*.log
-```
-
-Locally, set `DEBUG=true` for tracebacks in the response.
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `error while attempting to bind on address ('0.0.0.0', 8000)` | Port 8000 in use | `make dev PORT=8010`, then set `NEXT_PUBLIC_API_URL=http://localhost:8010/api/v1`. Find the process with `lsof -i :8000` or `netstat -ano \| findstr :8000` |
+| `SettingsError` parsing a list setting | pydantic-settings JSON-decodes list fields | Existing list settings use `NoDecode`; do the same for new ones, or write the value as a JSON array |
+| `MissingGreenlet: greenlet_spawn has not been called` | A lazy load outside an await context | Load relationships eagerly (`selectinload`) and pass collections to constructors instead of assigning them later |
+| `can't compare offset-naive and offset-aware datetimes` | A timestamp column declared as `DateTime` | Use `UTCDateTime` from `app.db.types` |
+| `500 INTERNAL_ERROR` with no detail | Production hides exception detail | Find the `request_id` from the response in the logs; locally set `DEBUG=true` |
+| `PayPalNotConfiguredError` | No PayPal credentials and `PAYPAL_SIMULATION_ENABLED=false` | Set credentials, or re-enable the simulator |
 
 ---
 
 ## Authentication
 
-### Login succeeds, the next request is 401
-
-The access token is not reaching the API. Check the `Authorization` header in the
-Network tab. The token lives in memory only — a hard reload drops it, and the
-client should silently refresh from the cookie.
-
-### Refresh fails, you are signed out on every reload
-
-The refresh cookie is not being sent. Usually one of:
-
-| Cause | Fix |
-| --- | --- |
-| API origin not in `CORS_ORIGINS` | Add the exact origin, scheme and port included |
-| `withCredentials` missing | Already set on the shared client; check nothing bypasses it |
-| `COOKIE_SECURE=true` over plain HTTP | Set `false` for local development |
-| Frontend and API on different sites | `COOKIE_SAMESITE=none` **and** `COOKIE_SECURE=true` |
-
-### Every request is 401 after restarting the backend
-
-`JWT_SECRET` changed — likely regenerated by `make env`. All existing tokens are
-invalid, including refresh digests, which are HMAC-keyed with it. Sign in again.
-
-### Account locked
-
-Eight consecutive failures. Either wait for the lockout window, or clear it
-locally:
-
-```sql
-UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE email = 'owner@juniperoak.com';
-```
-
-### 403 `PERMISSION_DENIED` when you expect access
-
-Check the role you signed in as. The demo users are:
-
-| Email | Role |
-| --- | --- |
-| `owner@juniperoak.com` | OWNER |
-| `admin@juniperoak.com` | ADMIN |
-| `analyst@juniperoak.com` | ANALYST |
-| `staff@juniperoak.com` | STAFF |
-| `viewer@juniperoak.com` | VIEWER |
-
-All use `Autopilot@2024`. The denial is also in the security event log:
-
-```
-GET /api/v1/admin/security-events
-```
-
-ANALYST cannot approve or execute — that is the
-[approval gate](SECURITY.md#the-approval-gate), not a bug.
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| Login succeeds, next request is `401` | The access token is not being sent | Check the `Authorization` header in the network tab; a hard reload drops the in-memory token and the client should refresh from the cookie |
+| Signed out on every reload | The refresh cookie is not sent | Add the exact frontend origin to `CORS_ORIGINS`; locally keep `REFRESH_COOKIE_SECURE=false`; cross-site deployments need `REFRESH_COOKIE_SAMESITE=none` and `REFRESH_COOKIE_SECURE=true` |
+| Every request `401` after a restart | `JWT_SECRET` changed | Expected: tokens and refresh digests are keyed with it. Sign in again |
+| `ACCOUNT_LOCKED` | 8 consecutive failures; locked for 15 minutes | Wait, or locally: `UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE email = 'owner@juniperoak.com';` |
+| `403 PERMISSION_DENIED` | The signed-in role lacks the permission | Check the role ([permission matrix](API.md#permission-matrix)). An Analyst cannot approve or pay by design. Denials are in `GET /audit-logs` |
+| `403 MERCHANT_SCOPE_VIOLATION` | A `merchant_id` or `X-Merchant-ID` for a merchant you are not a member of | Remove it; the merchant comes from your membership |
 
 ---
 
 ## Frontend
 
-### `Network Error` on every request
-
-The API is not running, or `NEXT_PUBLIC_API_URL` is wrong.
-
-```bash
-curl http://localhost:8000/api/v1/health
-```
-
-`NEXT_PUBLIC_*` variables are inlined at build time. Changing one requires a dev
-server restart.
-
-### CORS error in the console
-
-The browser origin is not in the backend allow-list.
-
-```dotenv
-CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
-```
-
-`localhost` and `127.0.0.1` are different origins to a browser. If you open the
-app on one, the allow-list must contain that one.
-
-### Port 3000 in use
-
-```bash
-make frontend WEB_PORT=3001
-```
-
-Then add `http://localhost:3001` to `CORS_ORIGINS`.
-
-### `Hydration failed` warnings
-
-Usually a value that differs between server and client render — `Date.now()`, a
-random id, or `localStorage`. Theme handling is already guarded with `mounted`
-state; new components that read browser state need the same.
-
-### Charts render empty
-
-Recharts needs a sized container. The wrappers use `ResponsiveContainer` inside a
-parent with an explicit height. A new chart in a parent with `height: auto` will
-render nothing and report no error.
-
-### Type error: `Type '() => Role | null' is not assignable to ReactNode`
-
-A Zustand selector returned the method rather than the value:
-
-```tsx
-// wrong
-const role = useAuthStore((s) => s.role);
-// right
-const role = useAuthStore((s) => s.user?.role ?? null);
-```
-
-### `npm run build` fails but `npm run dev` works
-
-The production build type-checks every route. Run `npm run typecheck` for the full
-list of errors at once.
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `Network Error` on every request | API down or `NEXT_PUBLIC_API_URL` wrong | `curl http://localhost:8000/api/v1/health`; `NEXT_PUBLIC_*` changes need a dev-server restart or rebuild |
+| CORS error in the console | Origin not allowed | Add it to `CORS_ORIGINS`. `localhost` and `127.0.0.1` are different origins |
+| Port 3000 in use | Another process | `make dev WEB_PORT=3001` and add `http://localhost:3001` to `CORS_ORIGINS` |
+| `Hydration failed` warnings | Values that differ between server and client render | Guard browser-only state (dates, random ids, storage) behind a mounted check |
+| Charts render empty | A Recharts container without height | Give the parent an explicit height |
+| Dashboard Studio canvas is blank, `theme.withPart must be a Theming API part object` | Two copies of `ag-grid-community` | Pin AG Grid to the version AG Studio requires (`36.3.0`) and reinstall |
+| Gantt throws `Invalid type name "timeRanges"` | `@bryntum/scheduler-enterprise` not loaded | Keep its side-effect import in the Gantt component |
+| Bryntum shows a Trial badge or is masked | No licence or a trial key | Set `NEXT_PUBLIC_BRYNTUM_LICENSE_KEY` and rebuild; only a purchased key removes the badge |
+| `npm run build` fails but `npm run dev` works | The production build type-checks every page | `npm run typecheck` lists all errors at once |
 
 ---
 
 ## Agents and LLM
 
-### Every run says "Deterministic mode"
-
-`GROQ_API_KEY` is not set, or the key is invalid. Check:
-
-```bash
-curl -s http://localhost:8000/api/v1/health | grep llm
-```
-
-This is a fully supported mode, not a degraded one — the recommendation, its
-evidence and its numbers are all still produced. Only the prose differs.
-
-### `LLM_ERROR` after a long wait
-
-Groq is slow or unreachable. Tunables:
-
-```dotenv
-GROQ_TIMEOUT_SECONDS=45
-GROQ_MAX_RETRIES=2
-GROQ_FALLBACK_MODEL=openai/gpt-oss-20b
-```
-
-The client tries the primary model twice, then the fallback twice, then returns a
-deterministic result. It never raises into a handler.
-
-### `model_not_found` or `model_decommissioned`
-
-Groq retires models. Set a current one:
-
-```dotenv
-GROQ_MODEL=openai/gpt-oss-120b
-```
-
-The model id is never hardcoded — it is read from the environment in one place.
-
-### The agent recommends something nonsensical
-
-Check whether `used_fallback` is true on the run. If the LLM is active and the
-output is odd, the *numbers* are still trustworthy — they come from the detector,
-and the orchestrator overwrites whatever the model produced for impact and
-confidence. The prose is the only part the model owns.
-
-### A trace shows 70 steps instead of 7
-
-The LangGraph state reducers and the node return values have drifted out of
-agreement. Channels are last-value-wins and nodes return the whole state; adding
-`Annotated[list, operator.add]` without also changing nodes to return only their
-delta appends the accumulated list to itself at every node.
-
-See the warning in [`app/agents/state.py`](../backend/app/agents/state.py) and
-[AGENTS.md](AGENTS.md#state).
-
-### Langfuse shows nothing
-
-Check the host matches the region of your keys — `https://cloud.langfuse.com` for
-EU, `https://us.cloud.langfuse.com` for US. Tracing is entirely non-fatal by
-design: if it is misconfigured, nothing raises and nothing appears.
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| Every run says "Deterministic mode" | `GROQ_API_KEY` unset or invalid | Check `checks.llm` in `/health`. Deterministic mode is fully supported: numbers and recommendations are unchanged |
+| `LLM_ERROR` or slow answers | Groq slow or rate limited | Tune `GROQ_TIMEOUT_SECONDS`, `GROQ_MAX_RETRIES`, `GROQ_FALLBACK_MODEL`; workflows fall back instead of failing |
+| `model_not_found` or `model_decommissioned` | Groq retired the model | Set a current `GROQ_MODEL`; the id is read from configuration only |
+| A trace shows 70 steps instead of 7 | Graph state reducers and node return values disagree | See [Agents: graph state](AGENTS.md#graph-state) |
+| Langfuse shows nothing | Keys and host region mismatch | `LANGFUSE_BASE_URL` must match the keys' region (`https://us.cloud.langfuse.com` for US). Tracing never raises |
+| Studio AI assistant never finishes | Provider quota too small (Groq free tier) | Point `STUDIO_AI_*` at a provider with more quota, or set `STUDIO_AI_ENABLED=false` |
 
 ---
 
-## Tests
+## PayPal
 
-### `make test` fails with a database error
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| Everything says `SIMULATED` | No PayPal credentials | Set `PAYPAL_CLIENT_ID` and `PAYPAL_CLIENT_SECRET`; verify with `make integrations` |
+| `401` from PayPal | Wrong credentials or environment | Sandbox credentials need `PAYPAL_ENVIRONMENT=sandbox`; the SDK path surfaces the real status |
+| Webhook events stored as `REJECTED` | `PAYPAL_WEBHOOK_ID` missing or wrong, or signature invalid | Register `https://<backend>/api/v1/paypal/webhooks` and set its id; locally use a tunnel |
+| Capture refused | The payer has not approved the order | Open the approve link and sign in with a sandbox personal account, then capture |
+| Supplier payment fails with a payee error | The seeded payee is not a sandbox business account | Set `PAYPAL_SANDBOX_PAYEE_EMAIL` to a sandbox business account and `make seed-reset` |
+| Simulated orders disappear after restart | The simulator keeps PayPal-side objects in memory | Expected; PayPilot's own rows persist |
+| MCP tools return `Unsupported cache mode: default` | PayPal sandbox MCP runtime issue | Reported as an error by design; nothing to fix on this side |
 
-It should not touch Postgres at all. If it does, `DATABASE_URL` is leaking into
-the test environment. The fixtures build their own SQLite engine; check nothing in
-`conftest.py` was changed to read settings directly.
+---
 
-### `RuntimeError: Event loop is closed`
+## Channel3 and other integrations
 
-A fixture scope mismatch. The engine is session-scoped, sessions are
-function-scoped, and `asyncio_default_fixture_loop_scope = "function"` in
-`pyproject.toml` ties them together. Changing one without the others produces this.
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| Discovery returns `503 CHANNEL3_NOT_CONFIGURED` | No `CHANNEL3_API_KEY` | Set a key (free at trychannel3.com/developers); `details.setup` explains |
+| Discovery returns `429` | 40 Channel3 calls per minute per merchant exceeded | Wait for the window; results are cached |
+| A market price says "no consistent market price" | Results do not agree on one category | Expected: averaging unrelated listings would be meaningless |
+| Evidence search says "Keyword fallback" | No `ELASTIC_URL` | `docker compose --profile search up -d elasticsearch`, set `ELASTIC_URL`, press *Re-index* |
+| Kernel session refused with `400` | Not an `https` URL on a public hostname | Use a public `https` supplier page |
+| Zapier shows off | No `ZAPIER_WEBHOOK_URL` | Set a Catch Hook URL; `POST /integrations/zapier/test` sends a test event |
 
-### Tests pass but the app is wrong
+---
 
-Then it is a calibration problem, not a correctness problem:
+## Redis
 
-```bash
-make calibrate
-```
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `checks.redis: unreachable` | `REDIS_URL` set but Redis down | The app keeps working on in-process state; start Redis (`docker compose up -d redis`) |
+| Rate limits seem multiplied | Several workers without Redis | Set `REDIS_URL` so workers share one budget |
+| Realtime updates missing on some tabs | Several processes without Redis pub/sub | Set `REDIS_URL` and keep `REALTIME_REDIS_ENABLED=true` |
 
-See [TESTING.md](TESTING.md#what-tests-could-not-catch) — this happened, and it
-was the most consequential bug in the project.
+---
+
+## n8n automation
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| Events marked `SKIPPED` | No `N8N_INVENTORY_WEBHOOK_URL` | Set it; Compose sets it for you |
+| Webhook returns `404` | Workflow not active | Re-run `./n8n/import.sh` (it restarts n8n, which reads activation only at boot) |
+| Webhook returns `401` | Signature mismatch | Use the same `N8N_WEBHOOK_SECRET` on both sides; regenerate workflows after changing it |
+| Scheduled sweeps refuse to run | `PGA_MERCHANT_ID` missing or stale after a re-seed | `docker compose up -d --force-recreate n8n-build n8n-import n8n`, or set the id from `GET /merchants/current` |
+| n8n cannot reach the backend | `localhost` inside a container | Use `http://host.docker.internal:8000` (or `http://backend:8000` in Compose) |
+
+More: [Automation: checking it works](AUTOMATION.md#checking-it-works).
 
 ---
 
 ## Docker
 
-### `make docker-up` starts nothing
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `make docker-up` starts only Postgres | By design, for `make dev` | `make docker-up FULL=1` or `docker compose up -d --build` for the whole stack |
+| Backend container cannot reach the database | `localhost` inside the network | Use `postgres:5432` (5433 is only the host mapping); Compose sets this |
+| Backend unhealthy on first start | Migrations and the seed are still running | Wait; the health check allows a 180-second start period. Follow `docker compose logs -f backend` |
+| Code changes do not appear | Images are cached | `docker compose up -d --build` |
+| Frontend still calls the old API URL | `NEXT_PUBLIC_API_URL` is a build arg | Change it in `docker-compose.yml` and `docker compose build frontend` |
+| Out of disk | Old images and volumes | `docker system prune` (add `-a --volumes` only if you accept losing all local Docker data) |
 
-The backend and frontend services are behind a profile:
+---
 
-```bash
-docker compose --profile full up -d
-```
+## Render
 
-`make db` alone starts only Postgres, which is what local development wants.
-
-### The container cannot reach the database
-
-Inside compose, the host is the service name, not `localhost`:
-
-```dotenv
-DATABASE_URL=postgresql+asyncpg://autopilot:autopilot@postgres:5432/autopilot
-```
-
-Note port 5432 inside the network — 5433 is only the host-side mapping.
-
-### Changes do not appear
-
-```bash
-docker compose build --no-cache backend
-docker compose --profile full up -d
-```
-
-### Out of disk
-
-```bash
-docker system prune -a --volumes    # destroys all local Docker data
-```
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| First request takes about a minute | Free services sleep after about 15 idle minutes | Open the site before a demo |
+| Signed out on every reload | Web and API on different `onrender.com` subdomains | `REFRESH_COOKIE_SAMESITE=none`, `REFRESH_COOKIE_SECURE=true` (the Blueprint sets both) |
+| Web app calls the wrong API | `NEXT_PUBLIC_API_URL` baked in at build | Update it and redeploy the web service |
+| Docs portal build fails | No `APIMATIC_API_KEY` | Set it on `paypilot-docs`, or ignore; nothing else depends on it |
+| Database gone after a month | Free Postgres expires after 30 days | Recreate it; the API re-migrates and re-seeds on start |
 
 ---
 
 ## Windows
 
-### The Makefile does not run
-
-Use **Git Bash** or **WSL2**. The Makefile is POSIX shell. PowerShell will not
-parse it.
-
-### Venv path errors
-
-Windows venvs put the interpreter in `Scripts/`, not `bin/`. The Makefile detects
-both; if you are invoking directly:
-
-```powershell
-backend\.venv\Scripts\python.exe -m pytest
-```
-
-### Line ending warnings on shell scripts
-
-```bash
-git config --global core.autocrlf input
-```
-
-A `.sh` file with CRLF endings fails with a confusing `bad interpreter` error.
-
-### `docker compose` cannot find the daemon
-
-Docker Desktop is not running, or WSL integration is off for your distro. Check
-**Settings -> Resources -> WSL Integration**.
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| Scripts blocked | Execution policy | `powershell -ExecutionPolicy Bypass -File scripts\setup.ps1` |
+| Virtualenv path errors | Windows uses `Scripts\` not `bin/` | The task runner detects both; when invoking directly use `backend\.venv\Scripts\python.exe` |
+| `bad interpreter` on a `.sh` file | CRLF line endings | `git config --global core.autocrlf input` and re-checkout |
+| `docker compose` cannot find the daemon | Docker Desktop not running or WSL integration off | Start Docker Desktop; enable WSL integration in its settings |
 
 ---
 
-## Still stuck
+## Tests
 
-Collect this before asking anyone:
-
-```bash
-python --version
-node --version
-docker --version
-curl -s http://localhost:8000/api/v1/health
-make seed-stats
-make test
-tail -50 backend/logs/*.log
-```
-
-And when in doubt, the reset that fixes most local corruption:
-
-```bash
-make db-reset
-make migrate
-make seed
-```
-
-Local demo data only — it destroys the database volume.
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| Tests try to reach Postgres | A fixture reads `DATABASE_URL` | The fixtures build their own SQLite engine; do not read settings for the test engine |
+| `RuntimeError: Event loop is closed` | Fixture scope mismatch | The engine is session-scoped and `asyncio_default_fixture_loop_scope = "session"`; keep them aligned |
+| Tests pass but the dashboard story is wrong | A calibration problem, not a correctness one | `make calibrate`; see [Data: calibration](DATA.md#calibration) |
 
 ---
 
 <div align="center">
 
-[Docs index](README.md) · [Installation](INSTALLATION.md) ·
-[Configuration](CONFIGURATION.md) · [Deployment](DEPLOYMENT.md) ·
-[Testing](TESTING.md)
+[Previous: Contributing](CONTRIBUTING.md) | [Docs index](README.md) | [Back to Quick start](QUICKSTART.md)
 
 </div>

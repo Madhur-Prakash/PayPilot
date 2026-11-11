@@ -2,87 +2,55 @@
 
 # Contributing
 
-[![Docs index](https://img.shields.io/badge/-Docs_index-475569?style=flat-square&logo=markdown&logoColor=white)](README.md)
-[![Architecture](https://img.shields.io/badge/-Architecture-64748b?style=flat-square)](ARCHITECTURE.md)
-[![Testing](https://img.shields.io/badge/-Testing-2563eb?style=flat-square)](TESTING.md)
-[![API](https://img.shields.io/badge/-API_reference-16a34a?style=flat-square)](API.md)
+The rules the codebase follows, where code goes, and how to add a feature end to end.
+
+[![Docs index](https://img.shields.io/badge/-Docs_index-0b2a6f?style=flat-square)](README.md)
+[![Architecture](https://img.shields.io/badge/-Architecture-003087?style=flat-square)](ARCHITECTURE.md)
+[![Testing](https://img.shields.io/badge/-Testing-16a34a?style=flat-square)](TESTING.md)
+[![Security](https://img.shields.io/badge/-Security-dc2626?style=flat-square)](SECURITY.md)
+[![Ruff](https://img.shields.io/badge/lint-ruff-D7FF64?style=flat-square&logo=ruff&logoColor=black)](https://docs.astral.sh/ruff/)
 
 </div>
-
-How to work in this codebase without breaking the things that make it defensible.
 
 ---
 
 ## Contents
 
 - [Setup](#setup)
-- [The five rules](#the-five-rules)
+- [Project rules](#project-rules)
 - [Where code goes](#where-code-goes)
 - [Backend conventions](#backend-conventions)
 - [Frontend conventions](#frontend-conventions)
 - [Adding a feature end to end](#adding-a-feature-end-to-end)
 - [Database changes](#database-changes)
-- [Changing the seeded dataset](#changing-the-seeded-dataset)
-- [Before you commit](#before-you-commit)
-- [Writing style](#writing-style)
+- [Changing the demo dataset](#changing-the-demo-dataset)
+- [Before you open a pull request](#before-you-open-a-pull-request)
 
 ---
 
 ## Setup
 
 ```bash
-make setup      # env -> dependencies -> database -> migrations -> seed
-make dev        # backend :8000, frontend :3000
+make init      # tools, .env, dependencies, Postgres, migrations, seed
+make dev       # backend :8000 with reload, frontend :3000
 ```
 
-Detail: [INSTALLATION.md](INSTALLATION.md).
+Details: [Installation](INSTALLATION.md).
 
 ---
 
-## The five rules
+## Project rules
 
-These are not preferences. Each is enforced by a test, and breaking one changes
-what the product is allowed to claim.
+These are enforced by code review and by tests. A change that breaks one is a bug, whatever else it fixes.
 
-### 1. The LLM never calculates a business number
-
-Every figure a merchant sees is computed in Python or SQL. The model reads
-already-computed metrics and chooses words.
-
-If you need a new number, it goes in a service. Not in a prompt.
-
-### 2. No causal language without a controlled experiment
-
-The vocabulary is **signal**, **correlation**, **evidence**, **hypothesis**. An
-experiment with a held-out control is what turns a hypothesis into a finding.
-
-`test_the_growth_graph_never_claims_causation` walks every edge and asserts its
-type is `decomposes_into`, `correlates_with` or `evidenced_by`. Adding a `causes`
-edge fails the suite.
-
-### 3. Financial actions require human approval
-
-An agent may recommend. A human approves. The graph terminates at
-`approval_gate`, and there is no compiled edge from it to execution.
-
-If you add an action that spends money, changes pricing, or contacts customers, it
-must be created `PENDING_APPROVAL` and executed only from an authenticated
-endpoint with an explicit permission.
-
-### 4. The backend enforces all authorization
-
-Never trust a frontend permission check, a merchant id from the client, or a
-resource id in a URL. Frontend gating exists so the UI does not offer buttons that
-would fail — it is not a control.
-
-### 5. No fake claims
-
-Nothing here touches real money, real PayPal systems, real customer messaging, or
-real competitor platforms. Simulated data is labelled "Demo Simulation" wherever
-it appears, and the health endpoint reports honestly which integrations are wired.
-
-If you add an integration, label it correctly in both directions: do not claim it
-when it is absent, and do not hide it when it is present.
+| Rule | In practice |
+| --- | --- |
+| **The LLM never calculates a business number** | Compute amounts, limits, scores and statistics in SQL or `Decimal` code. Give the model computed facts; reset any number it returns to the computed value |
+| **Money moves only after a human approval bound to exact terms** | Any new money-moving action raises an `approval_requests` row with canonical terms and a hash, is executed by a person through a permission-checked endpoint, and derives its idempotency key from the approval. Agent tools may request, never approve or pay |
+| **The backend enforces all authorization** | Every route declares `require_permission(...)`. Frontend checks only hide controls |
+| **Tenant isolation is structural** | Services take the merchant at construction; repositories extend `MerchantScopedRepository` |
+| **No fake claims** | Simulated data and fallbacks are labelled. PayPal rows store their mode. Nothing invents products, prices or payments |
+| **No causal language without an experiment** | Use "correlates with", "moved in step with". The Growth Graph has no causal edge type |
 
 ---
 
@@ -90,49 +58,43 @@ when it is absent, and do not hide it when it is present.
 
 ```
 backend/app/
-  api/v1/           route handlers only     - no queries, no business logic
-  services/         business logic          - owns all computation
-  repositories/     data access             - owns all queries
-  db/models/        SQLAlchemy models
-  schemas/          Pydantic wire contracts
-  agents/           LangGraph nodes, graph, prompts, orchestrator
-  tools/            the agent tool registry
-  integrations/     external clients        - Groq, Langfuse, Vapi, embeddings
-  core/             config, security, permissions, logging, middleware
-  seed/             the deterministic dataset generator
+  api/v1/          route handlers only       no queries, no business logic
+  services/        business logic            owns computation and transactions
+  repositories/    data access               owns queries; tenant-scoped
+  db/models/       SQLAlchemy models
+  schemas/         Pydantic wire contracts
+  agents/          LangGraph workflows, nodes, prompts, orchestrators
+  tools/           the agent tool registry and allow-lists
+  integrations/    external clients          PayPal, Channel3, Groq, Langfuse, Vapi, ...
+  core/            config, security, permissions, middleware, logging, Redis
+  seed/            deterministic demo data
 ```
 
-The dependency direction is strictly one way:
+Dependencies point one way:
 
 ```
 api  ->  services  ->  repositories  ->  database
-          ^
-        tools
+            ^
+          tools  <-  agents
 ```
-
-Services never import from `api`. Repositories never import services. Tools sit
-above services and never reach past them into repositories.
-
-### The rules that keep this honest
 
 | Never | Instead |
 | --- | --- |
 | A query in a route handler | A repository method |
 | Business logic in a repository | A service method |
 | A service importing `Request` or `Depends` | Pass plain values in |
-| A model imported into `api/` for a query | Call the service |
 | `merchant_id` as a service method argument | Pass it once, to the constructor |
+| A direct SDK or HTTP call to an external service from a service | A client in `app/integrations/` |
+| An agent reaching a service directly | A registered tool |
 
 ---
 
 ## Backend conventions
 
-### Async everywhere
+**Async everywhere.** `async def` all the way down. A blocking SDK (the PayPal Server SDK uses `requests`) runs in
+`asyncio.to_thread`.
 
-`async def` all the way down. A blocking call in an async handler stalls the event
-loop for every concurrent request.
-
-### Services take the merchant at construction
+**Services take the merchant at construction.**
 
 ```python
 class AnalyticsService:
@@ -141,65 +103,46 @@ class AnalyticsService:
         self.merchant_id = merchant_id
 ```
 
-No method accepts a merchant id. There is no argument to get wrong.
-
-### Repositories inherit the scoped base
+**Repositories inherit the scoped base.** `get`, `list_all`, `count`, `exists` and `create` are already filtered. For
+a custom query, start from `self.scoped()`; never `select(Model)` directly in a scoped repository.
 
 ```python
-class CampaignRepository(MerchantScopedRepository[CampaignModel]):
-    model = CampaignModel
+class CampaignRepository(MerchantScopedRepository[Campaign]):
+    model = Campaign
+
+    async def pending_approval(self) -> list[Campaign]:
+        stmt = self.scoped().where(Campaign.status == CampaignStatus.PENDING_APPROVAL)
+        return list((await self.session.scalars(stmt)).all())
 ```
 
-`get`, `list_all`, `count`, `exists` and `create` are already merchant-filtered. If
-you write a custom query, start from `self.scoped()`:
+**Handlers declare permissions and return the envelope.**
 
 ```python
-async def active_for_segment(self, segment_id: uuid.UUID) -> list[CampaignModel]:
-    stmt = self.scoped().where(CampaignModel.segment_id == segment_id)
-    return list((await self.session.scalars(stmt)).all())
-```
-
-Never `select(Model)` directly in a scoped repository. That is how a tenant leak
-gets written.
-
-### Handlers declare permissions
-
-```python
-@router.post("/{campaign_id}/execute", response_model=ApiResponse[CampaignDetail])
+@router.post("/campaigns/{campaign_id}/execute")
 async def execute_campaign(
     campaign_id: uuid.UUID,
-    principal: Annotated[Principal, Depends(require_permission(Permission.CAMPAIGN_EXECUTE))],
     session: DbSession,
-) -> ApiResponse[CampaignDetail]:
+    principal: Principal = Depends(require_permission(Permission.CAMPAIGN_EXECUTE)),
+) -> APIResponse[CampaignDetail]:
     service = CampaignService(session, principal.merchant_id)
-    return ok(await service.execute(campaign_id, actor=principal))
+    return APIResponse(data=await service.execute(campaign_id, actor=principal))
 ```
 
-Never compare role strings in a handler. Declare the permission.
+Errors are raised as `AppError` subclasses from [`core/exceptions.py`](../backend/app/core/exceptions.py) and
+rendered by the registered handlers; never build an error response by hand.
 
-### Everything returns an envelope
+**Timestamps use `UTCDateTime`**, not `DateTime`, so values are timezone-aware on both Postgres and SQLite.
 
-```json
-{ "success": true, "data": { ... }, "request_id": "..." }
-```
+**Money uses `Decimal`.** Never `float` for an amount, and never sum different currencies.
 
-Use `ok(...)` from `app/schemas/common.py`. Errors are raised as `AppError`
-subclasses and formatted by the registered handlers — never constructed by hand in
-a handler.
+**Settings come from `settings`.** No module reads `os.environ`. A new setting goes in
+[`core/config.py`](../backend/app/core/config.py) and [`.env.example`](../.env.example), and in
+[Configuration](CONFIGURATION.md).
 
-### Timestamps use `UTCDateTime`
+**Typing.** Full annotations; `X | None`, `StrEnum`, `Literal` for closed sets.
 
-```python
-created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
-```
-
-Not `DateTime`. The decorator guarantees timezone-aware UTC out of both Postgres
-and SQLite, which is what lets the suite run without a database.
-
-### Typing
-
-Full annotations. `mypy app` must stay clean. Prefer `X | None` over
-`Optional[X]`, `StrEnum` over bare strings, and `Literal` for closed sets.
+**Comments explain why.** A comment states the constraint or the bug that made the code this way, not what the next
+line does.
 
 ---
 
@@ -207,176 +150,53 @@ Full annotations. `mypy app` must stay clean. Prefer `X | None` over
 
 ```
 frontend/src/
-  app/              Next.js App Router routes
-  components/ui/    shadcn primitives + motion helpers
+  app/              App Router pages: (auth), (dashboard), shop
+  components/ui/    shadcn/ui primitives and motion helpers
   components/*/     feature components by domain
-  features/         composed feature blocks
   hooks/            TanStack Query hooks
   lib/api/          the single Axios client and endpoint wrappers
-  schemas/          Zod form schemas
-  stores/           Zustand - session only
+  stores/           Zustand: session and small UI state
   types/            wire types mirroring the backend schemas
 ```
 
-### One HTTP client
+**One HTTP client.** Everything goes through [`lib/api/client.ts`](../frontend/src/lib/api/client.ts), which owns
+the base URL, the envelope unwrap, the in-memory access token, and a shared refresh-once-then-retry so concurrent
+401s produce one refresh. Do not call `fetch` directly or create a second Axios instance.
 
-Everything goes through [`lib/api/client.ts`](../frontend/src/lib/api/client.ts).
-It owns the base URL, the envelope unwrap, the in-memory access token, and the
-refresh-once-then-retry behaviour with a shared promise so concurrent 401s produce
-one refresh rather than a stampede.
+**Server state is TanStack Query; session state is Zustand.** Anything from the API belongs in a query hook with a
+consistent key.
 
-Do not call `fetch` directly. Do not create a second Axios instance.
+**The access token never touches storage.** Not `localStorage`, not `sessionStorage`, not a readable cookie.
 
-### Server state is TanStack Query, session state is Zustand
+**Permission gating is a courtesy.** `useAuthStore().can("payment:execute")` hides a button the backend would refuse
+anyway.
 
-Zustand holds the user, the role and the access token. Nothing else. Anything that
-comes from the API belongs in a query hook, keyed consistently:
+**Motion respects the user.** Animation helpers in [`components/ui/motion.tsx`](../frontend/src/components/ui/motion.tsx)
+check `useReducedMotion`; use them rather than `framer-motion` directly.
 
-```ts
-export function useGrowthMetrics(days = 30) {
-  return useQuery({
-    queryKey: ["growth", "metrics", days],
-    queryFn: () => growthApi.metrics(days),
-    staleTime: 60_000,
-  });
-}
-```
-
-### The access token never touches storage
-
-Module-scoped variable only. Not `localStorage`, not `sessionStorage`, not a
-non-`HttpOnly` cookie. A page reload losing it is the intended behaviour — the
-refresh cookie mints a new one.
-
-### Motion respects the user
-
-Every animation helper in
-[`components/ui/motion.tsx`](../frontend/src/components/ui/motion.tsx) checks
-`useReducedMotion`. New animated components use those helpers rather than reaching
-for `framer-motion` directly.
-
-### Permission gating is a courtesy
-
-```tsx
-{can("campaign:execute") && <ExecuteButton />}
-```
-
-This exists so the UI does not offer a button that would 403. The backend check is
-the real one, and it runs regardless.
+**Pinned component versions.** AG Grid must match the version AG Studio requires, and every `@bryntum/*` package must
+share one exact version and tier. See [Integrations](INTEGRATIONS.md).
 
 ---
 
 ## Adding a feature end to end
 
-Worked example: surfacing per-hour revenue.
+Worked example: exposing a new metric.
 
-### 1. Repository — the query
-
-```python
-# app/repositories/transactions.py
-async def revenue_by_hour(self, start: datetime, end: datetime) -> list[tuple[int, float]]:
-    stmt = (
-        self.scoped(select(func.extract("hour", TransactionModel.occurred_at), func.sum(...)))
-        .where(TransactionModel.occurred_at.between(start, end))
-        .group_by(func.extract("hour", TransactionModel.occurred_at))
-    )
-    return [(int(h), float(v)) for h, v in (await self.session.execute(stmt)).all()]
-```
-
-### 2. Service — the computation
-
-```python
-# app/services/analytics/service.py
-async def hourly_revenue(self, days: int = 30) -> HourlyRevenue:
-    start, end = window(days)
-    rows = await self.transactions.revenue_by_hour(start, end)
-    ...
-    return HourlyRevenue(points=points, peak_hour=peak, quiet_hour=quiet)
-```
-
-All arithmetic lives here. Not in the handler, not in a prompt.
-
-### 3. Schema — the contract
-
-```python
-# app/schemas/analytics.py
-class HourlyRevenuePoint(SchemaBase):
-    hour: int
-    revenue: float
-    orders: int
-
-class HourlyRevenue(SchemaBase):
-    points: list[HourlyRevenuePoint]
-    peak_hour: int
-    quiet_hour: int
-```
-
-### 4. Route — thin
-
-```python
-# app/api/v1/dashboard.py
-@router.get("/hourly-revenue", response_model=ApiResponse[HourlyRevenue])
-async def hourly_revenue(
-    principal: Annotated[Principal, Depends(require_permission(Permission.DASHBOARD_READ))],
-    session: DbSession,
-    days: Annotated[int, Query(ge=7, le=180)] = 30,
-) -> ApiResponse[HourlyRevenue]:
-    return ok(await AnalyticsService(session, principal.merchant_id).hourly_revenue(days))
-```
-
-Four lines. Resolve, delegate, wrap.
-
-### 5. Tool — if an agent should see it
-
-```python
-@registry.register(
-    "get_hourly_revenue",
-    description="Revenue by hour of day, with the peak and quiet hours identified.",
-    args_model=WindowArgs,
-    permission=Permission.DASHBOARD_READ,
-)
-async def get_hourly_revenue(ctx: ToolContext, args: WindowArgs) -> tuple[dict, str]:
-    data = await AnalyticsService(ctx.session, ctx.merchant_id).hourly_revenue(args.days)
-    payload = data.model_dump()
-    return payload, f"Peak hour {data.peak_hour}:00, quiet hour {data.quiet_hour}:00."
-```
-
-Then add it to the relevant allow-list in `app/tools/__init__.py`.
-
-### 6. Types and hook
-
-```ts
-// src/types/api.ts
-export interface HourlyRevenue {
-  points: { hour: number; revenue: number; orders: number }[];
-  peak_hour: number;
-  quiet_hour: number;
-}
-
-// src/hooks/use-dashboard.ts
-export function useHourlyRevenue(days = 30) {
-  return useQuery({
-    queryKey: ["dashboard", "hourly-revenue", days],
-    queryFn: () => dashboardApi.hourlyRevenue(days),
-  });
-}
-```
-
-### 7. Tests
-
-```python
-async def test_hourly_revenue_sums_to_the_daily_total(self, client, owner_headers):
-    ...
-
-async def test_hourly_revenue_requires_dashboard_read(self, client, outsider_headers):
-    ...
-
-async def test_the_hourly_tool_is_denied_without_the_permission(self, session, seeded):
-    ...
-```
-
-Three tests: the arithmetic is consistent, the endpoint is scoped, the tool is
-gated. Every new capability gets all three.
+1. **Repository:** the scoped query in `app/repositories/`.
+2. **Service:** the computation in `app/services/<domain>/`, taking the merchant at construction. If it produces a
+   number a merchant may act on, it is computed here, not by a model.
+3. **Schema:** the response model in `app/schemas/`.
+4. **Route:** a thin handler in `app/api/v1/` with `require_permission(...)`. Use an existing permission if one fits;
+   a new one goes in [`core/permissions.py`](../backend/app/core/permissions.py) with a description and role grants
+   (a test fails if a permission belongs to no role).
+5. **Tool (if an agent should see it):** register it in `app/tools/` with a permission and add it to the right
+   allow-list. See [Agents: extending the agent layer](AGENTS.md#extending-the-agent-layer).
+6. **Frontend:** a type in `types/`, an endpoint wrapper in `lib/api/`, a query hook in `hooks/`, then the component.
+7. **Tests:** a permission test, an isolation test with `outsider_headers`, and a tool-authorization test if you
+   added a tool. See [Testing: writing tests](TESTING.md#writing-tests).
+8. **Spec:** `python scripts/export_openapi.py` to refresh [`docs/openapi.json`](openapi.json), and update
+   [API reference](API.md).
 
 ---
 
@@ -384,138 +204,52 @@ gated. Every new capability gets all three.
 
 ```bash
 # 1. Edit the model in app/db/models/
-# 2. Generate
-make migration MSG="add hourly revenue index"
-# 3. READ the generated file
-# 4. Apply
-make migrate
-# 5. Verify a round trip
-make downgrade && make migrate
+make migration MSG="add supplier ratings"     # 2. autogenerate
+# 3. Read the generated file in backend/alembic/versions/
+make migrate                                   # 4. apply
+make test-backend                              # 5. the suite builds the schema from the models
 ```
 
-Step 3 is not optional. Autogenerate does not understand the custom type
-decorators perfectly and will occasionally propose dropping and recreating columns
-it should leave alone.
-
-Rules:
-
-- Never edit an applied migration. Write a new one.
-- Every migration has a working `downgrade()`.
-- New timestamps use `UTCDateTime`.
-- New tenant-owned tables get `merchant_id` with an index, and a repository that
-  inherits `MerchantScopedRepository`.
+Autogenerate is a first draft: it misses data migrations, can mis-detect renames and occasionally proposes a drop.
+Use the portable types from `app.db.types`, guard Postgres-only statements (extensions, HNSW indexes) by dialect, and
+keep migrations additive where possible.
 
 ---
 
-## Changing the seeded dataset
+## Changing the demo dataset
 
-The dataset carries the entire demo narrative. Changing a constant changes the
-story, and the test suite will not notice.
+After any edit under `app/seed/generators/`:
 
 ```bash
-# after any edit under app/seed/generators/
-make calibrate
+make calibrate        # read the figures before re-seeding
+make seed-reset       # rebuild the demo tenant
 ```
 
-Expect roughly:
-
-```
-  Revenue              -12.20%
-  Orders                -4.85%
-  AOV                   -7.72%
-  Repeat rate           -7.65%
-  Evening revenue      -31.85%
-  Evening service time +24.50%
-```
-
-Two constraints that must survive any change:
-
-**The story must be discoverable, never announced.** The analytics layer surfaces
-the signals; nothing hardcodes the conclusion. There is no string anywhere saying
-"the answer is waiting time" — the evening decline, the service-time drift and the
-complaint rate are separate measured facts that happen to line up.
-
-**The dataset must be reproducible.** Everything derives from a seeded `Random`.
-Same seed, same numbers, on any machine. No `datetime.now()` inside a generator,
-no unseeded randomness, no set iteration order affecting output.
-
-Background: [DATA.md](DATA.md) and
-[TESTING.md](TESTING.md#what-tests-could-not-catch).
+Tests check correctness; calibration checks that the dataset still tells the intended story. See
+[Data: calibration](DATA.md#calibration).
 
 ---
 
-## Before you commit
+## Before you open a pull request
 
 ```bash
-make check          # lint + typecheck + backend tests + frontend typecheck
-make calibrate      # if you touched app/seed/
+make verify           # ruff + next lint, tsc (+ advisory mypy), pytest + vitest
+make build            # backend import check + next build
 ```
 
-Or the full CI-equivalent:
+* The project rules above still hold.
+* New settings are in `config.py`, `.env.example` and [Configuration](CONFIGURATION.md).
+* New endpoints have a permission, a test, and a row in [API reference](API.md).
+* New integrations have a labelled fallback and appear in `GET /integrations/status` and [Integrations](INTEGRATIONS.md).
+* Docs that describe the change are updated in the same pull request.
 
-```bash
-./scripts/verify.sh
-```
-
-Checklist:
-
-- [ ] `make check` passes
-- [ ] New endpoints declare a permission
-- [ ] New repositories inherit `MerchantScopedRepository`
-- [ ] New tools have a denial test
-- [ ] New timestamps use `UTCDateTime`
-- [ ] No secrets, no hardcoded merchant ids
-- [ ] No new causal language
-- [ ] Simulated data is labelled
-- [ ] `make calibrate` still tells the right story, if the seed changed
-- [ ] Docs updated if behaviour changed
-
-### Commit messages
-
-Imperative mood, one line, the reason if it is not obvious:
-
-```
-Add hourly revenue breakdown to the dashboard
-Fix audit rows being lost when the request rolls back
-Widen agent_runs.decision to Text - it was truncating sentences
-```
-
----
-
-## Writing style
-
-Applies to code comments, docstrings and documentation alike.
-
-**Comments explain why, not what.** The code says what.
-
-```python
-# Written on its own connection: this request is about to raise, and the
-# request session will be rolled back.
-await record_security_event(...)
-```
-
-**Name the assumption.** Every modelling constant carries its reasoning:
-
-```python
-RECOVERY_RATE = 0.35   # share of lapsed customers a win-back realistically recovers
-```
-
-A merchant may act on a number this produces. The assumption behind it should be
-visible to whoever reads the code next.
-
-**Flag limits rather than papering over them.** The rate limiter is per-process unless
-`REDIS_URL` is set, and says so. The experiment simulation is labelled. Where the brief's own figures were
-internally inconsistent, the deviation is documented in
-[DATA.md](DATA.md) rather than quietly resolved.
-
-**No emojis** in code, comments, commits or documentation. Icons and badges where
-a visual marker helps.
+Commit messages: imperative subject under about 72 characters (`feat: add supplier delivery delays`), with a body that
+explains why when it is not obvious.
 
 ---
 
 <div align="center">
 
-[Docs index](README.md) · [Architecture](ARCHITECTURE.md) ·
-[Testing](TESTING.md) · [Security](SECURITY.md) · [API reference](API.md)
+[Previous: Testing](TESTING.md) | [Docs index](README.md) | [Next: Troubleshooting](TROUBLESHOOTING.md)
 
 </div>
