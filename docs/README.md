@@ -27,6 +27,7 @@ New to the project? Read in this order.
 | 2 | [Demo script](DEMO.md) | 3 min | The signature scenario, end to end |
 | 3 | [Hackathon notes](HACKATHON.md) | 5 min | What was built for the PayPal AI Hackathon, tools used, judge testing |
 | 3b | [Devpost draft](DEVPOST.md) | 5 min | Ready-to-paste submission text, section by section |
+| 3c | [Video script](VIDEO_SCRIPT.md) | 5 min | The 3-minute demo video, shot by shot, with narration, the numbers to expect and a recording checklist |
 | 4 | [Supply Agents](SUPPLY_AGENTS.md) | 15 min | The agent-to-agent procurement network and its controls |
 | 5 | [PayPal](PAYPAL.md) | 10 min | Every PayPal API used, modes, webhooks, sandbox setup |
 | 5b | [Sponsor tools](SPONSORS.md) | 10 min | What each sponsor tool is used for, what is live vs a labelled fallback, how it was verified |

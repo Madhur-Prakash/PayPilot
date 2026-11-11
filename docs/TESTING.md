@@ -5,19 +5,19 @@
 [![Docs index](https://img.shields.io/badge/-Docs_index-475569?style=flat-square&logo=markdown&logoColor=white)](README.md)
 [![Contributing](https://img.shields.io/badge/-Contributing-64748b?style=flat-square)](CONTRIBUTING.md)
 [![Architecture](https://img.shields.io/badge/-Architecture-2563eb?style=flat-square)](ARCHITECTURE.md)
-[![Tests](https://img.shields.io/badge/tests-515_passing-16a34a?style=flat-square&logo=pytest&logoColor=white)](#the-suite)
+[![Tests](https://img.shields.io/badge/tests-535_passing-16a34a?style=flat-square&logo=pytest&logoColor=white)](#the-suite)
 [![Agent memory](https://img.shields.io/badge/-Agent_memory-7c3aed?style=flat-square)](MEMORY.md)
 
 </div>
 
-515 backend tests, no Docker required.
+535 backend tests, no Docker required.
 
 ```bash
 make test
 ```
 
 ```
-515 passed
+535 passed
 ```
 
 ---
@@ -88,7 +88,7 @@ addopts = "-q --disable-warnings"
 ## The suite
 
 ```
-tests/                                    515 tests
+tests/                                    535 tests
   conftest.py                             engine, session, seeded data, role clients
   unit/
     test_agent_memory.py                  27   pgvector memory, tenant isolation
@@ -117,6 +117,7 @@ tests/                                    515 tests
     test_inventory_import.py               8
     test_outbox_relay.py                  16
     test_seed_rerun.py                     1
+    test_shop.py                          20   customer PayPal checkout, webhook/return idempotency
     test_supply_agents.py                  6   end-to-end procurement lifecycle
     test_supply_intelligence.py           20
     test_supply_sponsors.py               31

@@ -2,6 +2,8 @@
 
 [Back to docs](README.md)
 
+![Architecture: PayPal is the data source and the only rail money moves on](architecture.svg)
+
 What PayPilot is, why PayPal is central to it, how every sponsor tool is used, and what is verified - in the order an evaluator will want it. Each claim links to the
 code or document that backs it, and says whether it ran against the real service or a
 labelled stand-in. If anything here disagrees with the running app, the app wins -
@@ -12,7 +14,7 @@ labelled stand-in. If anything here disagrees with the running app, the app wins
 | **Live demo** | <https://paypilot-web-0lqv.onrender.com> - `owner@juniperoak.com` / `Autopilot@2024` (other roles in [DEMO.md](DEMO.md)). Free plan: **the first load can take about a minute** while Render wakes the services |
 | **Demo video** | `<YouTube URL>` (under 3 minutes) |
 | **Code** | <https://github.com/Madhur-Prakash/PayPilot> - MIT, [LICENSE](../LICENSE) |
-| **API (Swagger)** | <https://paypilot-api-bjn2.onrender.com/docs> - 197 operations |
+| **API (Swagger)** | <https://paypilot-api-bjn2.onrender.com/docs> - 200 operations |
 | **API portal (APIMatic)** | <https://paypilot-docs.onrender.com> |
 | **Run it yourself** | [Section 9](#9-run-it-yourself) - no keys needed |
 | **Three-minute walkthrough** | [DEMO.md](DEMO.md) |
@@ -32,7 +34,7 @@ A small merchant is the growth analyst, the buyer and the accountant at once. Pa
 already holds the data that says *what is selling and what is about to run out* - and it
 is the only place the money can move. PayPilot closes that loop with AI agents:
 
-> PayPal sales data **->** growth agent finds a demand spike **->** inventory agent sees the
+> A customer **pays with PayPal** on the online store **->** the sale lands and stock drops **->** growth agent finds a demand spike **->** inventory agent sees the
 > stock will run out in 3.5 days **->** a buyer agent negotiates with three supplier
 > agents over signed messages **->** a human approves the exact terms **->** goods are
 > received and three-way matched **->** **PayPal pays the supplier** **->** the payment is
@@ -41,7 +43,7 @@ is the only place the money can move. PayPilot closes that loop with AI agents:
 **Agents negotiate and recommend. They can never pay.** A person approves every dollar,
 and the approval is bound to a hash of the exact terms.
 
-The concrete numbers in the demo (Juniper & Oak Coffee, Portland): demand **+71%**
+The concrete numbers in the seeded demo (Juniper & Oak Coffee, Portland; after a customer buys 2 bags at the online store they become 160 bags, $1,552.00, $262.69 saved and margin 35.6% to 44.0%, see [DEMO.md](DEMO.md)): demand **+71%**
 (7 -> 12 bags/day), **3.5 days** of cover, a deterministic ceiling of `$18.00 x (1 - 40%) =
 $10.80` per bag, a negotiated order of **$1,455.00** that is **$248.77** below the best
 opening quote, and a product margin that moves **35.6% -> 43.8%**.
@@ -56,6 +58,7 @@ over and no way to act. It appears at every stage of the loop:
 
 | Stage of the loop | PayPal capability | What it does for the merchant | Code | Screen |
 | --- | --- | --- | --- | --- |
+| **Start** the loop | **Orders v2** checkout + **verified webhook** | A customer buys the shop's beans with PayPal. The browser return *and* PayPal's `PAYMENT.CAPTURE.COMPLETED` webhook both record the sale, idempotently, so a customer who closes the tab after paying is still recorded. The sale becomes a transaction, drops stock through the stock engine and raises the low-stock event - **the loop starts from a real PayPal sale, not a seeded one** | [`services/shop.py`](../backend/app/services/shop.py), [`api/v1/shop.py`](../backend/app/api/v1/shop.py) | `/shop`, `/shop/return` |
 | **See** the business | **Transaction Search** (`/v1/reporting/transactions`) | Gross/net, fees, refunds, failures, AOV, repeat payers feed growth analytics and the Growth Scientist. Synced incrementally in <=31-day windows with checkpoints | [`services/paypal/sync.py`](../backend/app/services/paypal/sync.py) | `/finance/transactions` |
 | **Pay a supplier** | **Orders v2** (create -> buyer approves -> capture) on PayPal's **APIMatic-generated Server SDK** | The step that moves money: supplier is the payee, the invoice and approval ids travel in `invoice_id` / `custom_id`, and capture only happens after goods are received and matched | [`integrations/paypal/server_sdk.py`](../backend/app/integrations/paypal/server_sdk.py), [`services/paypal/orders.py`](../backend/app/services/paypal/orders.py) | `/finance/payments` |
 | **Bill customers** | **Invoicing v2** | Win-back offers and wholesale invoices with reminders and cancellation | [`services/paypal/finance.py`](../backend/app/services/paypal/finance.py) | `/finance/invoices` |
@@ -130,6 +133,7 @@ mode*. The hosted demo has the LLM configured.
 
 | # | Feature | Why it stands out | See it |
 | :-: | --- | --- | --- |
+| 0 | **A real PayPal sale starts the loop** | A customer pays at the online store; the sale is recorded, stock drops, a low-stock event fires, and the Reorder screen shows the new cover - all from a PayPal capture | `/shop` -> `/supply/reorder` |
 | 1 | **Agent-to-agent negotiation** | Three independent supplier agents and a buyer agent negotiate over several rounds; every message is a persisted, HMAC-verified protocol message and every offer carries the backend's verdict | `/supply/negotiations/{id}` -> *Agent conversation* |
 | 2 | **Limits computed before any agent speaks** | `price x (1 - margin)` ceiling and a budget, from a deterministic engine | `/supply/reorder` -> *Policy...* |
 | 3 | **Human approval bound to exact terms** | 403 for an Analyst; the Owner approves a hash; any change voids it | `/approvals` |
@@ -140,7 +144,7 @@ mode*. The hosted demo has the LLM configured.
 | 8 | **Subscription revenue radar** | Every PayPal subscriber on one timeline: collected, failed, retried, at-risk, one-click recovery | `/finance/subscriptions/radar` |
 | 9 | **Live product intelligence** | Natural-language product discovery and a gear shelf of real Channel3 products with affiliate links and an honest commission estimate | `/discovery`, `/shelf` |
 | 10 | **Always-on automation** | Inventory events flow through a transactional outbox to n8n (HMAC both ways) and back; a daily growth scan runs with no LLM tokens | [n8n/README.md](../n8n/README.md) |
-| 11 | **Honest by construction** | Mode badges on every PayPal row, labelled simulators, and a live integrations status endpoint | `/settings` -> *Integrations* -> *System health*; `GET /api/v1/integrations/status` |
+| 11 | **Honest by construction** | Mode badges on every PayPal row, labelled simulators, and a live integrations status endpoint | `/integrations`; `GET /api/v1/integrations/status` |
 
 ---
 
@@ -148,7 +152,7 @@ mode*. The hosted demo has the LLM configured.
 
 | Criterion | The case | Evidence |
 | --- | --- | --- |
-| **Technological implementation** | Deep, non-trivial PayPal and AI use: 8 PayPal capabilities, the official Server SDK, idempotency keys, raw-body webhook verification, a gated MCP bridge; LangGraph workflows, a signed agent protocol, pgvector memory | 197 API operations, 62 tables, 49 agent tools, 51 permissions, **515 backend tests** (unit, API, integration - including the full procurement lifecycle through the real API) plus frontend tests; [ARCHITECTURE.md](ARCHITECTURE.md), [SECURITY.md](SECURITY.md), [TESTING.md](TESTING.md) |
+| **Technological implementation** | Deep, non-trivial PayPal and AI use: 8 PayPal capabilities, the official Server SDK, idempotency keys, raw-body webhook verification, a gated MCP bridge; LangGraph workflows, a signed agent protocol, pgvector memory | 200 API operations, 62 tables, 49 agent tools, 51 permissions, **535 backend tests** (unit, API, integration - including the full procurement lifecycle through the real API) plus frontend tests; [ARCHITECTURE.md](ARCHITECTURE.md), [SECURITY.md](SECURITY.md), [TESTING.md](TESTING.md) |
 | **Design** | One coherent product, not a technical demo: role-based navigation (Command / Growth / Supply / Agents / Finance / Governance), a design system with light and dark themes, 50+ screens, live status badges, empty states that explain themselves | Open the app; [DEMO.md](DEMO.md) |
 | **Potential impact** | A named persona with a specific, measurable pain: a coffee shop that finds out it is out of stock after the fact and pays a quote it never negotiated. The demo quantifies it - $248.77 saved on one order, margin +8.2 points, 3.5 days of stock risk caught | [Section 1](#1-the-idea-in-thirty-seconds); [DATA.md](DATA.md) says exactly what is seeded vs synced |
 | **Innovation / idea** | Agents that negotiate with each other on a signed protocol, inside deterministic limits, with humans approving hash-bound terms and PayPal settling only after a three-way match - a safe pattern for *agentic commerce* | [SUPPLY_AGENTS.md](SUPPLY_AGENTS.md), [Section 2](#what-is-unique-about-the-paypal-use) |
@@ -167,7 +171,7 @@ mode*. The hosted demo has the LLM configured.
 | **Best Use of AG Grid** | Every dense table, themed in light and dark - plus AG Studio dashboards | [AG Grid and AG Studio](#ag-grid-and-ag-studio) |
 | **Best Use of APIMatic** | Supplier payments run on the APIMatic-generated PayPal SDK, written with the Context Plugin - and PayPilot's own API is published through APIMatic | [APIMatic](#apimatic) |
 | **Best Use of Bryntum** | A procurement Gantt with baselines and agent-driven rescheduling, and a Scheduler-based revenue radar | [Bryntum](#bryntum) |
-| **Most Impactful / Most Creative / Best Demo** | [Section 5](#5-judging-criteria---where-to-look); [DEMO.md](DEMO.md) | |
+| **Most Impactful / Most Creative / Best Demo** | [Section 5](#5-criteria---where-to-look); [DEMO.md](DEMO.md) | |
 
 ---
 
@@ -267,6 +271,7 @@ returns `403`, an unsafe portal URL returns `400`, and responses never contain s
 
 ## 8. Evaluate it in three minutes
 
+0. **Customer view** `/shop` (no sign-in): buy two bags with PayPal. The return page shows the sale landing and the stock drop.
 1. Sign in as **Owner** at the live demo (allow a minute for the first load). **Command
    Center** `/command`: revenue, stockout risk, the **PayPal mode badge**, the event stream.
 2. **Opportunities** `/opportunities`: the demand spike with its evidence.
@@ -276,7 +281,7 @@ returns `403`, an unsafe portal URL returns `400`, and responses never contain s
 6. **Receiving** `/supply/receiving`: receive 100 of 150 - payment holds. Receive the rest - it releases.
 7. **Payments** `/finance/payments`: *Pay with PayPal* -> **Approve in PayPal** (a sandbox personal account) -> **Capture**.
 8. **Reconciliation** and `/command`: everything agrees to the cent; margin moved.
-9. **Settings** `/settings` -> *Integrations* -> *System health* (Owner): LLM, tracing, PayPal and Redis state; and `GET /api/v1/integrations/status` for every sponsor tool's mode, honestly labelled.
+9. **Integrations** `/integrations`: every tool, whether it is running against the real service or a labelled stand-in, plus the system checks (LLM, tracing, PayPal, Redis). The same facts as `GET /api/v1/integrations/status`.
 
 Full script with timings and the exact numbers to expect: [DEMO.md](DEMO.md).
 

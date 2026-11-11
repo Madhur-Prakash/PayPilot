@@ -263,7 +263,7 @@ with explicit cascades, composite indexes on the real access paths
 | `Vector` | `vector(384)` | JSON `TEXT` |
 | `UTCDateTime` | `TIMESTAMPTZ` | `DATETIME`, coerced to aware UTC on read |
 
-This is why `make test` runs 515 tests with no Docker.
+This is why `make test` runs 535 tests with no Docker.
 
 `UTCDateTime` exists because of a real bug: Postgres round-trips aware datetimes,
 SQLite drops the offset, and comparing the two raises `TypeError`. Fixing it in

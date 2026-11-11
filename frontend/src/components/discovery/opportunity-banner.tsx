@@ -23,7 +23,7 @@ function Banner() {
     <Card className="overflow-hidden border-primary/30 bg-primary/[0.04]">
       <CardContent className="flex flex-wrap items-center gap-4 p-4">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground"><Compass className="h-5 w-5" /></span>
-        <div className="min-w-0 flex-1">
+        <div className="min-w-[14rem] flex-1">
           <p className="text-2xs font-semibold uppercase tracking-widest text-primary">Supply Intelligence · expansion opportunity</p>
           <p className="text-sm font-semibold">
             {top.anchor.buyers} customers bought {top.anchor.name}{growth != null && growth > 0 ? ` (demand +${growth.toFixed(0)}%)` : ""} - they also need {top.slot.label.toLowerCase()}, which you don&apos;t stock.

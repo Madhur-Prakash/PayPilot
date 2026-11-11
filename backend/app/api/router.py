@@ -18,6 +18,7 @@ from app.api.v1 import (
     memory,
     payments,
     paypal,
+    shop,
     supply,
     supply_intel,
     voice,
@@ -38,6 +39,7 @@ api_router.include_router(supply.router)
 api_router.include_router(supply_intel.router)
 api_router.include_router(approvals.router)
 api_router.include_router(paypal.router)
+api_router.include_router(shop.router)
 api_router.include_router(payments.router)
 api_router.include_router(memory.router)
 api_router.include_router(integrations.router)

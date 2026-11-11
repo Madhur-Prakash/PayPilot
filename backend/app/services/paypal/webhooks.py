@@ -208,6 +208,8 @@ class WebhookService:
 
     # ------------------------------------------------------------------ handlers
     async def _capture_completed(self, row: PayPalWebhookEvent, resource: dict[str, Any]) -> str:
+        if str(resource.get("custom_id") or "").endswith("|shop"):
+            return await self._shop_sale(row, resource)
         execution = await self._execution(resource)
         if execution is None:
             return "No matching payment execution - recorded only."
@@ -230,6 +232,21 @@ class WebhookService:
             return "Capture recorded."
         await lifecycle._settled(execution, invoice, str(resource.get("id") or ""))
         return "Payment settled from webhook."
+
+    async def _shop_sale(self, row: PayPalWebhookEvent, resource: dict[str, Any]) -> str:
+        """A customer paid at the online store: record the sale (idempotent with the browser return)."""
+        from app.db.models.merchant import Merchant
+        from app.integrations.paypal import get_paypal_gateway
+        from app.services.shop import ShopService
+
+        order_id = str(((resource.get("supplementary_data") or {}).get("related_ids") or {}).get("order_id") or "")
+        merchant = await self.session.get(Merchant, row.merchant_id) if row.merchant_id else None
+        if not order_id or merchant is None:
+            return "Online-store capture without an order or merchant - recorded only."
+        order = await get_paypal_gateway().get_order(order_id)
+        result = await ShopService(self.session, merchant).record_paid_order(
+            order, str(resource.get("id") or ""), source="webhook")
+        return "Online sale recorded from webhook." if result["recorded_now"] else "Online sale already recorded - no change."
 
     async def _capture_failed(self, row: PayPalWebhookEvent, resource: dict[str, Any]) -> str:
         execution = await self._execution(resource)

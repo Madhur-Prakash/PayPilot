@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 940" width="1600" height="940" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs>
+<marker id="ah-0aa6e0" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0aa6e0"/></marker>
+<marker id="ah-0b2a6f" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0b2a6f"/></marker>
+<marker id="ah-003087" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#003087"/></marker>
+<marker id="ah-12805c" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#12805c"/></marker>
+<marker id="ah-b45309" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b45309"/></marker>
+</defs>
+<rect width="1600" height="940" fill="#ffffff"/>
+<text x="48" y="52" font-size="16" font-weight="700" fill="#0aa6e0" text-anchor="start" letter-spacing="2">PAYPILOT</text>
+<text x="48" y="92" font-size="32" font-weight="800" fill="#0b2a6f" text-anchor="start">PayPal is the data source and the only rail money moves on</text>
+<text x="48" y="122" font-size="16" font-weight="400" fill="#5b6b8c" text-anchor="start">AI agents negotiate and recommend. Deterministic code sets every limit. A person approves every dollar. PayPal moves it.</text>
+<text x="1552" y="52" font-size="16" font-weight="700" fill="#0b2a6f" text-anchor="end">Team PayFlux</text>
+<rect x="48" y="160" width="232" height="168" rx="14" fill="#ffffff" stroke="#0aa6e0" stroke-width="2.5"/>
+<circle cx="78" cy="192" r="17" fill="#0aa6e0"/>
+<text x="78" y="198" font-size="17" font-weight="800" fill="#ffffff" text-anchor="middle">1</text>
+<text x="106" y="198" font-size="19" font-weight="800" fill="#122a5c" text-anchor="start">Customer pays</text>
+<text x="66" y="234" font-size="14.5" font-weight="400" fill="#5b6b8c" text-anchor="start">PayPal checkout (Orders v2)</text>
+<text x="66" y="256" font-size="14.5" font-weight="400" fill="#5b6b8c" text-anchor="start">on the online store</text>
+<line x1="283" y1="244.0" x2="301" y2="244.0" stroke="#0aa6e0" stroke-width="3" marker-end="url(#ah-0aa6e0)"/>
+<rect x="304" y="160" width="232" height="168" rx="14" fill="#ffffff" stroke="#0aa6e0" stroke-width="2.5"/>
+<circle cx="334" cy="192" r="17" fill="#0aa6e0"/>
+<text x="334" y="198" font-size="17" font-weight="800" fill="#ffffff" text-anchor="middle">2</text>
+<text x="362" y="198" font-size="19" font-weight="800" fill="#122a5c" text-anchor="start">Sale lands</text>
+<text x="322" y="234" font-size="14.5" font-weight="400" fill="#5b6b8c" text-anchor="start">Verified webhook or return</text>
+<text x="322" y="256" font-size="14.5" font-weight="400" fill="#5b6b8c" text-anchor="start">records it; stock drops;</text>
+<text x="322" y="278" font-size="14.5" font-weight="400" fill="#5b6b8c" text-anchor="start">low-stock event</text>
+<line x1="539" y1="244.0" x2="557" y2="244.0" stroke="#0aa6e0" stroke-width="3" marker-end="url(#ah-0aa6e0)"/>
+<rect x="560" y="160" width="232" height="168" rx="14" fill="#ffffff" stroke="#0b2a6f" stroke-width="2.5"/>
+<circle cx="590" cy="192" r="17" fill="#0b2a6f"/>
+<text x="590" y="198" font-size="17" font-weight="800" fill="#ffffff" text-anchor="middle">3</text>
+<text x="618" y="198" font-size="19" font-weight="800" fill="#122a5c" text-anchor="start">Agents negotiate</text>
+<text x="578" y="234" font-size="14.5" font-weight="400" fill="#5b6b8c" text-anchor="start">Buyer agent vs 3 supplier</text>
+<text x="578" y="256" font-size="14.5" font-weight="400" fill="#5b6b8c" text-anchor="start">agents over signed messages,</text>
+<text x="578" y="278" font-size="14.5" font-weight="400" fill="#5b6b8c" text-anchor="start">inside a computed limit</text>
+<line x1="795" y1="244.0" x2="813" y2="244.0" stroke="#0b2a6f" stroke-width="3" marker-end="url(#ah-0b2a6f)"/>
+<rect x="816" y="160" width="232" height="168" rx="14" fill="#ffffff" stroke="#b45309" stroke-width="2.5"/>
+<circle cx="846" cy="192" r="17" fill="#b45309"/>
+<text x="846" y="198" font-size="17" font-weight="800" fill="#ffffff" text-anchor="middle">4</text>
+<text x="874" y="198" font-size="19" font-weight="800" fill="#122a5c" text-anchor="start">Human approves</text>
+<text x="834" y="234" font-size="14.5" font-weight="400" fill="#5b6b8c" text-anchor="start">Exact terms bound to a hash.</text>
+<text x="834" y="256" font-size="14.5" font-weight="400" fill="#5b6b8c" text-anchor="start">An Analyst gets 403; the</text>
+<text x="834" y="278" font-size="14.5" font-weight="400" fill="#5b6b8c" text-anchor="start">Owner approves</text>
+<line x1="1051" y1="244.0" x2="1069" y2="244.0" stroke="#0b2a6f" stroke-width="3" marker-end="url(#ah-0b2a6f)"/>
+<rect x="1072" y="160" width="232" height="168" rx="14" fill="#ffffff" stroke="#003087" stroke-width="2.5"/>
+<circle cx="1102" cy="192" r="17" fill="#003087"/>
+<text x="1102" y="198" font-size="17" font-weight="800" fill="#ffffff" text-anchor="middle">5</text>
+<text x="1130" y="198" font-size="19" font-weight="800" fill="#122a5c" text-anchor="start">PayPal pays</text>
+<text x="1090" y="234" font-size="14.5" font-weight="400" fill="#5b6b8c" text-anchor="start">Only after goods are received</text>
+<text x="1090" y="256" font-size="14.5" font-weight="400" fill="#5b6b8c" text-anchor="start">and three-way matched.</text>
+<text x="1090" y="278" font-size="14.5" font-weight="400" fill="#5b6b8c" text-anchor="start">Idempotent</text>
+<line x1="1307" y1="244.0" x2="1325" y2="244.0" stroke="#003087" stroke-width="3" marker-end="url(#ah-003087)"/>
+<rect x="1328" y="160" width="232" height="168" rx="14" fill="#ffffff" stroke="#12805c" stroke-width="2.5"/>
+<circle cx="1358" cy="192" r="17" fill="#12805c"/>
+<text x="1358" y="198" font-size="17" font-weight="800" fill="#ffffff" text-anchor="middle">6</text>
+<text x="1386" y="198" font-size="19" font-weight="800" fill="#122a5c" text-anchor="start">Reconcile &amp; learn</text>
+<text x="1346" y="234" font-size="14.5" font-weight="400" fill="#5b6b8c" text-anchor="start">PO x receipt x invoice x</text>
+<text x="1346" y="256" font-size="14.5" font-weight="400" fill="#5b6b8c" text-anchor="start">capture agree to the cent;</text>
+<text x="1346" y="278" font-size="14.5" font-weight="400" fill="#5b6b8c" text-anchor="start">margin updates</text>
+<rect x="48" y="372" width="1504" height="162" rx="14" fill="#f3f7ff" stroke="#003087" stroke-width="3"/>
+<text x="72" y="406" font-size="15" font-weight="800" fill="#003087" text-anchor="start" letter-spacing="1.5">PAYPAL DEVELOPER PLATFORM</text>
+<text x="72" y="430" font-size="13.5" font-weight="400" fill="#5b6b8c" text-anchor="start">Sandbox on the hosted demo. Every row stores its mode (SANDBOX / LIVE / SIMULATED) and is badged in the UI.</text>
+<text x="72.0" y="464" font-size="15" font-weight="800" fill="#122a5c" text-anchor="start">Transaction Search</text>
+<text x="72.0" y="486" font-size="12.5" font-weight="400" fill="#5b6b8c" text-anchor="start">sales, fees, refunds feed</text>
+<text x="72.0" y="503" font-size="12.5" font-weight="400" fill="#5b6b8c" text-anchor="start">the Growth Scientist</text>
+<text x="314.66666666666663" y="464" font-size="15" font-weight="800" fill="#122a5c" text-anchor="start">Orders v2</text>
+<text x="314.66666666666663" y="486" font-size="12.5" font-weight="400" fill="#5b6b8c" text-anchor="start">checkout and supplier</text>
+<text x="314.66666666666663" y="503" font-size="12.5" font-weight="400" fill="#5b6b8c" text-anchor="start">payment, on the APIMatic</text>
+<text x="314.66666666666663" y="520" font-size="12.5" font-weight="400" fill="#5b6b8c" text-anchor="start">SDK</text>
+<text x="557.3333333333333" y="464" font-size="15" font-weight="800" fill="#122a5c" text-anchor="start">Webhooks</text>
+<text x="557.3333333333333" y="486" font-size="12.5" font-weight="400" fill="#5b6b8c" text-anchor="start">raw-body verified,</text>
+<text x="557.3333333333333" y="503" font-size="12.5" font-weight="400" fill="#5b6b8c" text-anchor="start">replay-guarded, idempotent</text>
+<text x="800.0" y="464" font-size="15" font-weight="800" fill="#122a5c" text-anchor="start">Invoicing + Payouts</text>
+<text x="800.0" y="486" font-size="12.5" font-weight="400" fill="#5b6b8c" text-anchor="start">win-back invoices;</text>
+<text x="800.0" y="503" font-size="12.5" font-weight="400" fill="#5b6b8c" text-anchor="start">approval-gated cashback</text>
+<text x="1042.6666666666665" y="464" font-size="15" font-weight="800" fill="#122a5c" text-anchor="start">Subscriptions</text>
+<text x="1042.6666666666665" y="486" font-size="12.5" font-weight="400" fill="#5b6b8c" text-anchor="start">revenue radar, one-click</text>
+<text x="1042.6666666666665" y="503" font-size="12.5" font-weight="400" fill="#5b6b8c" text-anchor="start">failed-payment recovery</text>
+<text x="1285.3333333333333" y="464" font-size="15" font-weight="800" fill="#122a5c" text-anchor="start">Agent Toolkit (MCP)</text>
+<text x="1285.3333333333333" y="486" font-size="12.5" font-weight="400" fill="#5b6b8c" text-anchor="start">read-only: 16 of 46 tools;</text>
+<text x="1285.3333333333333" y="503" font-size="12.5" font-weight="400" fill="#5b6b8c" text-anchor="start">30 blocked in code</text>
+<line x1="164.0" y1="332" x2="164.0" y2="368" stroke="#003087" stroke-width="2.5" marker-end="url(#ah-003087)"/>
+<line x1="420.0" y1="332" x2="420.0" y2="368" stroke="#003087" stroke-width="2.5" marker-end="url(#ah-003087)"/>
+<line x1="1188.0" y1="332" x2="1188.0" y2="368" stroke="#003087" stroke-width="2.5" marker-end="url(#ah-003087)"/>
+<text x="932.0" y="352" font-size="13" font-weight="700" fill="#b45309" text-anchor="middle">no agent ever calls a money-moving PayPal API</text>
+<rect x="48" y="568" width="500" height="150" rx="14" fill="#eef3fb" stroke="#c9d6ee" stroke-width="1.5"/>
+<text x="70" y="600" font-size="14" font-weight="800" fill="#0aa6e0" text-anchor="start" letter-spacing="1.5">AI LAYER</text>
+<text x="70" y="630" font-size="14" font-weight="400" fill="#122a5c" text-anchor="start">LangGraph: growth + procurement workflows, 7 agents</text>
+<text x="70" y="654" font-size="14" font-weight="400" fill="#122a5c" text-anchor="start">Groq GPT-OSS: narration, intent, bounded negotiation strategy</text>
+<text x="70" y="678" font-size="14" font-weight="400" fill="#122a5c" text-anchor="start">pgvector memory; 49 permission-checked tools</text>
+<text x="70" y="702" font-size="14" font-weight="400" fill="#122a5c" text-anchor="start">Numbers are never AI: Decimal engine + SQL</text>
+<rect x="572" y="568" width="480" height="150" rx="14" fill="#eef3fb" stroke="#c9d6ee" stroke-width="1.5"/>
+<text x="594" y="600" font-size="14" font-weight="800" fill="#0aa6e0" text-anchor="start" letter-spacing="1.5">SPONSOR TOOLS</text>
+<text x="594" y="630" font-size="14" font-weight="400" fill="#122a5c" text-anchor="start">Channel3: discovery, shopping agent, gear shelf (live)</text>
+<text x="594" y="654" font-size="14" font-weight="400" fill="#122a5c" text-anchor="start">AG Grid + AG Studio: every table, dashboards</text>
+<text x="594" y="678" font-size="14" font-weight="400" fill="#122a5c" text-anchor="start">Bryntum: procurement Gantt, revenue radar</text>
+<text x="594" y="702" font-size="14" font-weight="400" fill="#122a5c" text-anchor="start">APIMatic: PayPal SDK + PayPilot's own API portal</text>
+<rect x="1076" y="568" width="476" height="150" rx="14" fill="#ffffff" stroke="#0b2a6f" stroke-width="2.5"/>
+<text x="1098" y="600" font-size="14" font-weight="800" fill="#0b2a6f" text-anchor="start" letter-spacing="1.2">RENDER (free plan, one Blueprint)</text>
+<text x="1098" y="630" font-size="14" font-weight="400" fill="#122a5c" text-anchor="start">Web + Docker API + docs portal</text>
+<text x="1098" y="654" font-size="14" font-weight="400" fill="#122a5c" text-anchor="start">Postgres 16 + pgvector (system of record)</text>
+<text x="1098" y="678" font-size="14" font-weight="400" fill="#122a5c" text-anchor="start">Key Value: rate limits, Channel3 caches, realtime pub/sub</text>
+<text x="1098" y="702" font-size="14" font-weight="400" fill="#122a5c" text-anchor="start">n8n: signed event automation + health URL</text>
+<rect x="48" y="742" width="1504" height="120" rx="14" fill="#ffffff" stroke="#c9d6ee" stroke-width="1.5"/>
+<text x="72" y="774" font-size="14" font-weight="800" fill="#0aa6e0" text-anchor="start" letter-spacing="1.5">WHY IT CAN BE TRUSTED WITH MONEY</text>
+<text x="72.0" y="806" font-size="15" font-weight="800" fill="#122a5c" text-anchor="start">Limits first</text>
+<text x="72.0" y="828" font-size="12.5" font-weight="400" fill="#5b6b8c" text-anchor="start">price x (1 - margin) computed</text>
+<text x="72.0" y="845" font-size="12.5" font-weight="400" fill="#5b6b8c" text-anchor="start">before any agent speaks</text>
+<text x="363.2" y="806" font-size="15" font-weight="800" fill="#122a5c" text-anchor="start">Signed agents</text>
+<text x="363.2" y="828" font-size="12.5" font-weight="400" fill="#5b6b8c" text-anchor="start">typed messages, per-agent</text>
+<text x="363.2" y="845" font-size="12.5" font-weight="400" fill="#5b6b8c" text-anchor="start">HMAC, replay protection</text>
+<text x="654.4" y="806" font-size="15" font-weight="800" fill="#122a5c" text-anchor="start">Hash-bound approval</text>
+<text x="654.4" y="828" font-size="12.5" font-weight="400" fill="#5b6b8c" text-anchor="start">any change to the terms voids</text>
+<text x="654.4" y="845" font-size="12.5" font-weight="400" fill="#5b6b8c" text-anchor="start">it</text>
+<text x="945.5999999999999" y="806" font-size="15" font-weight="800" fill="#122a5c" text-anchor="start">Retry-safe payments</text>
+<text x="945.5999999999999" y="828" font-size="12.5" font-weight="400" fill="#5b6b8c" text-anchor="start">PayPal-Request-Id derived from</text>
+<text x="945.5999999999999" y="845" font-size="12.5" font-weight="400" fill="#5b6b8c" text-anchor="start">the business action</text>
+<text x="1236.8" y="806" font-size="15" font-weight="800" fill="#122a5c" text-anchor="start">Honest modes</text>
+<text x="1236.8" y="828" font-size="12.5" font-weight="400" fill="#5b6b8c" text-anchor="start">nothing simulated is shown as</text>
+<text x="1236.8" y="845" font-size="12.5" font-weight="400" fill="#5b6b8c" text-anchor="start">real</text>
+<text x="48" y="900" font-size="14" font-weight="600" fill="#0b2a6f" text-anchor="start">Juniper &amp; Oak Coffee (Portland): demand +71%, 3.5 days of cover, $248.77 saved on a $1,455.00 order, margin 35.6% to 43.8%.</text>
+<text x="48" y="922" font-size="12.5" font-weight="400" fill="#5b6b8c" text-anchor="start">Analytics run on a seeded demo dataset (labelled). The online-store sale and the supplier payment run on the PayPal sandbox; supplier agents are simulated policy engines (labelled).</text>
+</svg>

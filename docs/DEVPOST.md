@@ -27,6 +27,12 @@ do that work end to end, without ever being trusted with the money.
 
 PayPilot runs a merchant's business loop on top of PayPal:
 
+![Architecture](architecture.png)
+
+* **It starts with a real PayPal sale.** Juniper & Oak's online store takes a PayPal checkout; a verified
+  webhook (or the customer's return) records the sale, stock drops, and the low-stock event fires - the
+  loop below starts from that, not from a seeded dataset.
+
 * **Growth:** a Growth Scientist reads PayPal transactions, finds opportunities
   (for example *capture rising demand for whole-bean coffee: 7 -> 12 bags/day*),
   and measures campaigns with controlled experiments.
@@ -123,7 +129,7 @@ Full mapping, with code and screens: [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md).
 * A complete purchase-to-pay loop where every figure is reproducible and every
   money movement has a named human approver.
 * Agent-to-agent negotiation with real, persisted, verified protocol messages.
-* 515 backend tests (unit, API and integration - including the full procurement
+* 535 backend tests (unit, API and integration - including the full procurement
   lifecycle through the real API) plus frontend unit tests, all passing.
 
 ## What we learned
@@ -157,8 +163,8 @@ shelf updates itself when a retailer changes a price or runs out.
 
 ## Testing instructions for judges
 
-**Hosted:** open the live demo above (allow a minute for the free plan to wake) and
-follow [DEMO.md](DEMO.md) (three minutes). It runs against the **PayPal sandbox**, with
+**Hosted:** open the live demo above (allow a minute for the free plan to wake). Try the customer view at
+`/shop` (no sign-in), then follow [DEMO.md](DEMO.md) (three minutes). It runs against the **PayPal sandbox**, with
 Channel3 live and an LLM configured; `GET /api/v1/integrations/status` lists every
 integration's mode.
 

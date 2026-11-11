@@ -37,6 +37,7 @@ gateway interface ([`gateway.py`](../backend/app/integrations/paypal/gateway.py)
 | Payouts | `POST /v1/payments/payouts`, `GET …/{batch_id}` | Cashback rewards only |
 | Catalog + Subscriptions | `POST /v1/catalogs/products`, `POST/GET /v1/billing/plans`, `GET /v1/billing/subscriptions/{id}`, `…/suspend`, `…/activate`, `…/cancel`, `…/revise` | Subscription plans, lifecycle, failed-payment recovery |
 | Webhooks | `POST /v1/notifications/verify-webhook-signature` | Verifying every inbound event before it is trusted |
+| Orders v2 (customer checkout) | `POST /v2/checkout/orders` with `items` + `custom_id`, `GET …/{id}`, `POST …/{id}/capture` | The online store: a customer pays the merchant; see [Customer checkout](#customer-checkout) |
 
 ### Why these choices
 
@@ -49,6 +50,31 @@ gateway interface ([`gateway.py`](../backend/app/integrations/paypal/gateway.py)
 * **Invoicing is merchant -> customer.** A simulated supplier has no PayPal
   account to invoice from; supplier invoices are recorded from the supplier
   agent's `INVOICE_ISSUED` message and paid with Orders v2.
+
+## Customer checkout
+
+`/shop` is the customer's side of the loop: a public page (no sign-in) where someone buys
+the shop's online beans with PayPal. Code: [`services/shop.py`](../backend/app/services/shop.py),
+[`api/v1/shop.py`](../backend/app/api/v1/shop.py).
+
+1. `POST /api/v1/shop/{slug}/orders` - the browser sends product ids and quantities, **never amounts**;
+   the server prices the cart from the catalog, checks stock, and creates the PayPal order with the
+   cart in `items` and `custom_id = "<merchant id>|shop"`. A client key makes a retried click return the
+   same order.
+2. The customer approves on PayPal and returns to `/shop/return`, which calls
+   `POST /api/v1/shop/{slug}/orders/{id}/capture`.
+3. **Two ways in, one result.** The return and PayPal's verified `PAYMENT.CAPTURE.COMPLETED` webhook both call
+   the same idempotent recorder (`order_ref = PP-<order id>`, serialised per order with a Postgres advisory
+   lock), so whichever arrives second changes nothing - and a customer who closes the tab after paying is
+   still recorded by the webhook.
+4. The sale becomes a `transactions` row (channel `online_store`), a stock-engine `SALE` movement (the low-stock
+   event fires on a reorder-point crossing), and a business event on the Command Center stream. If stock ran
+   out between order and capture, the sale is still recorded and flagged `oversold` - a paid customer is never
+   lost.
+
+There is **no new table**: PayPal holds the cart, and the sale is rebuilt from the order. Only merchants
+flagged `is_demo` sell publicly, and order creation is rate limited per client address. Nothing here moves
+money out - the payee is the merchant's own PayPal account.
 
 ## Reliability
 

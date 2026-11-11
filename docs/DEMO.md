@@ -7,6 +7,15 @@ in simulation (every PayPal object is labelled *Simulated* and its id starts
 `SIM-`). With sandbox credentials configured the same flow runs against the
 PayPal sandbox.
 
+> **Starting from the customer checkout changes the numbers slightly.** The figures below are the seeded
+> scenario (42 bags, a 150-bag reorder). If you first buy 2 bags at `/shop` (stock 42 -> 40), the same
+> deterministic engine now sees **40 bags, 3.3 days of cover, demand +73%** and suggests **160 bags**, so the
+> negotiation lands at **$1,552.00 landed** (Cascadia, $9.70/bag), **$262.69** below the best opening quote,
+> the partial receipt is **110 of 160**, inventory revalues to **$10.08/bag** and margin moves
+> **35.6% -> 44.0%**. The limit (`$18.00 x (1 - 40%) = $10.80`) and the $1,620 budget do not change.
+> A live sale is booked onto the dataset's current trading day, so one purchase does not push the seeded
+> history out of the analytics windows.
+
 **Before you start:** `make init` (or `make docker-up migrate seed-reset`), then
 `make dev`, and open <http://localhost:3000>. Log in as the **Analyst** in one
 browser and the **Owner** in another (private window).

@@ -196,6 +196,17 @@ class SimulatedPayPal:
             )
         unit: dict[str, Any] = {
             "reference_id": state["reference_id"],
+            "custom_id": state.get("custom_id", ""),
+            # Real PayPal echoes the purchase unit's items and custom_id on GET order.
+            "items": [
+                {
+                    "name": i["name"],
+                    "sku": i.get("sku", ""),
+                    "quantity": str(i["quantity"]),
+                    "unit_amount": {"currency_code": state["currency"], "value": str(i["unit_amount"])},
+                }
+                for i in state.get("items", [])
+            ],
             "amount": Money(currency_code=state["currency"], value=state["amount"]).wire(),
             "payee": {"email_address": state["payee_email"]} if state["payee_email"] else {},
             "payments": {
@@ -234,6 +245,7 @@ class SimulatedPayPal:
                 "description": description,
                 "invoice_id": invoice_id or "",
                 "custom_id": custom_id or "",
+                "items": [i.model_dump(mode="json") for i in (items or [])],
                 "payee_email": payee_email or "",
                 # Simulated payers approve instantly - see the module docstring.
                 "status": "APPROVED",

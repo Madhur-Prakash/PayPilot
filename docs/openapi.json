@@ -1480,6 +1480,31 @@
         "title": "AgentStepOut",
         "type": "object"
       },
+      "AgentsExecuteRequest": {
+        "properties": {
+          "agent": {
+            "description": "Force a specialist; omit to let the Orchestrator Agent decide.",
+            "nullable": true,
+            "pattern": "^(business_intelligence|product_discovery|supply_intelligence|pricing_intelligence|growth_strategy|paypal_transaction)$",
+            "type": "string"
+          },
+          "message": {
+            "maxLength": 2000,
+            "minLength": 2,
+            "type": "string"
+          },
+          "params": {
+            "additionalProperties": true,
+            "description": "Optional structured inputs, e.g. product_ids.",
+            "type": "object"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "title": "AgentsExecuteRequest",
+        "type": "object"
+      },
       "AllocationSnapshotOut": {
         "description": "Where the growth budget has actually gone, by surface - for the Command\nCenter's Growth Allocation widget.",
         "properties": {
@@ -1520,6 +1545,25 @@
           "has_data"
         ],
         "title": "AllocationSnapshotOut",
+        "type": "object"
+      },
+      "AlternativesRequest": {
+        "properties": {
+          "limit": {
+            "default": 8,
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "type": "integer"
+          },
+          "product_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "product_id"
+        ],
+        "title": "AlternativesRequest",
         "type": "object"
       },
       "Anomaly": {
@@ -1729,6 +1773,25 @@
         "title": "ArbitrageFindingOut",
         "type": "object"
       },
+      "AssistantTurn": {
+        "properties": {
+          "conversation_id": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "message": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "title": "AssistantTurn",
+        "type": "object"
+      },
       "AuthSession": {
         "properties": {
           "tokens": {
@@ -1743,30 +1806,6 @@
           "user"
         ],
         "title": "AuthSession",
-        "type": "object"
-      },
-      "AutopilotRequest": {
-        "properties": {
-          "inventory_item_id": {
-            "format": "uuid",
-            "nullable": true,
-            "type": "string"
-          },
-          "quantity": {
-            "anyOf": [
-              {
-                "minimum": 0.0,
-                "type": "number"
-              },
-              {
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
-                "type": "string"
-              }
-            ],
-            "nullable": true
-          }
-        },
-        "title": "AutopilotRequest",
         "type": "object"
       },
       "BenchmarkRequest": {
@@ -2475,6 +2514,38 @@
         "title": "CampaignOut",
         "type": "object"
       },
+      "CaptureRequest": {
+        "properties": {
+          "execution_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "execution_id"
+        ],
+        "title": "CaptureRequest",
+        "type": "object"
+      },
+      "CartLine": {
+        "properties": {
+          "product_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "quantity": {
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "product_id",
+          "quantity"
+        ],
+        "title": "CartLine",
+        "type": "object"
+      },
       "CashbackRecipient": {
         "properties": {
           "amount": {
@@ -2564,6 +2635,30 @@
           "role"
         ],
         "title": "ChangeRoleRequest",
+        "type": "object"
+      },
+      "CompareRequest": {
+        "properties": {
+          "features": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 8,
+            "type": "array"
+          },
+          "product_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 4,
+            "minItems": 2,
+            "type": "array"
+          }
+        },
+        "required": [
+          "product_ids"
+        ],
+        "title": "CompareRequest",
         "type": "object"
       },
       "CompetitorIntelligence": {
@@ -2689,6 +2784,42 @@
           "data_source"
         ],
         "title": "CompetitorOut",
+        "type": "object"
+      },
+      "CreateOrderBody": {
+        "properties": {
+          "client_key": {
+            "maxLength": 64,
+            "nullable": true,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CartLine"
+            },
+            "maxItems": 5,
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "CreateOrderBody",
+        "type": "object"
+      },
+      "CreateOrderRequest": {
+        "properties": {
+          "approval_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "approval_id"
+        ],
+        "title": "CreateOrderRequest",
         "type": "object"
       },
       "CurrentUser": {
@@ -3116,6 +3247,17 @@
         "title": "Decision",
         "type": "object"
       },
+      "DecisionRequest": {
+        "properties": {
+          "note": {
+            "default": "",
+            "maxLength": 1000,
+            "type": "string"
+          }
+        },
+        "title": "DecisionRequest",
+        "type": "object"
+      },
       "DeliveryDelayRequest": {
         "properties": {
           "days": {
@@ -3167,6 +3309,20 @@
           "reasoning"
         ],
         "title": "DontDiscountOut",
+        "type": "object"
+      },
+      "EnrichRequest": {
+        "properties": {
+          "url": {
+            "maxLength": 2000,
+            "minLength": 10,
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "EnrichRequest",
         "type": "object"
       },
       "EvidenceItem": {
@@ -3784,6 +3940,28 @@
           }
         },
         "title": "ForgetRequest",
+        "type": "object"
+      },
+      "GenerateRequest": {
+        "properties": {
+          "days": {
+            "default": 30,
+            "maximum": 120.0,
+            "minimum": 7.0,
+            "type": "integer"
+          },
+          "include_pricing": {
+            "default": true,
+            "type": "boolean"
+          },
+          "max_recommendations": {
+            "default": 4,
+            "maximum": 6.0,
+            "minimum": 1.0,
+            "type": "integer"
+          }
+        },
+        "title": "GenerateRequest",
         "type": "object"
       },
       "GraphEdge": {
@@ -5554,6 +5732,26 @@
         "title": "PortalRequest",
         "type": "object"
       },
+      "PricingRequest": {
+        "properties": {
+          "limit": {
+            "default": 3,
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "type": "integer"
+          },
+          "product_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 5,
+            "type": "array"
+          }
+        },
+        "title": "PricingRequest",
+        "type": "object"
+      },
       "ProcurementCreate": {
         "properties": {
           "auto_negotiate": {
@@ -5849,6 +6047,48 @@
           }
         },
         "title": "ProvenanceMeta",
+        "type": "object"
+      },
+      "PurchaseRequest": {
+        "properties": {
+          "currency": {
+            "maxLength": 3,
+            "minLength": 3,
+            "nullable": true,
+            "type": "string"
+          },
+          "payee_email": {
+            "description": "The supplier's PayPal email.",
+            "maxLength": 255,
+            "minLength": 3,
+            "type": "string"
+          },
+          "quantity": {
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "type": "integer"
+          },
+          "unit_cost": {
+            "anyOf": [
+              {
+                "maximum": 100000.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "description": "The supplier's unit cost (not a retail price)."
+          }
+        },
+        "required": [
+          "quantity",
+          "unit_cost",
+          "payee_email"
+        ],
+        "title": "PurchaseRequest",
         "type": "object"
       },
       "RefreshRequest": {
@@ -6237,6 +6477,102 @@
         "title": "SalesSummary",
         "type": "object"
       },
+      "SaveAlternativeRequest": {
+        "properties": {
+          "channel3_product_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 1000,
+            "type": "string"
+          },
+          "product_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "product_id",
+          "channel3_product_id"
+        ],
+        "title": "SaveAlternativeRequest",
+        "type": "object"
+      },
+      "SearchRequest": {
+        "properties": {
+          "brands": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 5,
+            "type": "array"
+          },
+          "category": {
+            "description": "A Channel3 category slug.",
+            "maxLength": 80,
+            "nullable": true,
+            "pattern": "^[a-z0-9-]+$",
+            "type": "string"
+          },
+          "include_out_of_stock": {
+            "nullable": true,
+            "type": "boolean"
+          },
+          "limit": {
+            "default": 12,
+            "maximum": 30.0,
+            "minimum": 1.0,
+            "type": "integer"
+          },
+          "max_price": {
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "nullable": true,
+            "type": "number"
+          },
+          "min_price": {
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "nullable": true,
+            "type": "number"
+          },
+          "mode": {
+            "default": "default",
+            "pattern": "^(default|agentic)$",
+            "type": "string"
+          },
+          "on_sale": {
+            "nullable": true,
+            "type": "boolean"
+          },
+          "page_token": {
+            "maxLength": 500,
+            "nullable": true,
+            "type": "string"
+          },
+          "query": {
+            "description": "Natural language, e.g. 'office chairs under ₹15,000'.",
+            "maxLength": 500,
+            "minLength": 2,
+            "type": "string"
+          },
+          "retailers": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 5,
+            "type": "array"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "SearchRequest",
+        "type": "object"
+      },
       "SegmentDefinition": {
         "description": "The filter used to materialise an audience. Validated server-side.",
         "properties": {
@@ -6391,6 +6727,16 @@
         "title": "SentimentBreakdown",
         "type": "object"
       },
+      "ShortlistRequest": {
+        "properties": {
+          "value": {
+            "default": true,
+            "type": "boolean"
+          }
+        },
+        "title": "ShortlistRequest",
+        "type": "object"
+      },
       "SignalFeed": {
         "properties": {
           "generated_at": {
@@ -6504,6 +6850,40 @@
           "observed_on"
         ],
         "title": "SignalOut",
+        "type": "object"
+      },
+      "SimilarRequest": {
+        "properties": {
+          "limit": {
+            "default": 12,
+            "maximum": 30.0,
+            "minimum": 1.0,
+            "type": "integer"
+          },
+          "max_price": {
+            "minimum": 0.0,
+            "nullable": true,
+            "type": "number"
+          },
+          "min_price": {
+            "minimum": 0.0,
+            "nullable": true,
+            "type": "number"
+          },
+          "product_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "same_brand": {
+            "nullable": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "product_id"
+        ],
+        "title": "SimilarRequest",
         "type": "object"
       },
       "SimulatedWebhook": {
@@ -6625,6 +7005,68 @@
           "action"
         ],
         "title": "SubscriptionAction",
+        "type": "object"
+      },
+      "SupplyAutopilotRequest": {
+        "properties": {
+          "inventory_item_id": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "nullable": true
+          }
+        },
+        "title": "SupplyAutopilotRequest",
+        "type": "object"
+      },
+      "SupplyIntelAutopilotRequest": {
+        "properties": {
+          "days": {
+            "default": 30,
+            "maximum": 120.0,
+            "minimum": 7.0,
+            "type": "integer"
+          },
+          "max_recommendations": {
+            "default": 4,
+            "maximum": 6.0,
+            "minimum": 1.0,
+            "type": "integer"
+          }
+        },
+        "title": "SupplyIntelAutopilotRequest",
+        "type": "object"
+      },
+      "SupplyIntelExecuteRequest": {
+        "properties": {
+          "retail_price": {
+            "anyOf": [
+              {
+                "maximum": 1000000.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "nullable": true
+          }
+        },
+        "title": "SupplyIntelExecuteRequest",
         "type": "object"
       },
       "SupplyReceiveLine": {
@@ -7303,6 +7745,97 @@
         ]
       }
     },
+    "/api/v1/agents/activity": {
+      "get": {
+        "description": "Agent activity: agent, task, trigger, tools invoked, status, results and errors.",
+        "operationId": "activity",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 40,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "agent_name",
+            "required": false,
+            "schema": {
+              "maxLength": 48,
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "maxLength": 24,
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Agent activity",
+        "tags": [
+          "agents"
+        ]
+      }
+    },
     "/api/v1/agents/ask": {
       "post": {
         "description": "Runs the LangGraph workflow: intent analysis, deterministic metric gathering, specialist fan-out, evidence synthesis and a structured recommendation. Works without an LLM key - the figures and the recommendation are deterministic either way, only the prose is simpler.",
@@ -7368,6 +7901,136 @@
           }
         ],
         "summary": "Ask the Growth Scientist",
+        "tags": [
+          "agents"
+        ]
+      }
+    },
+    "/api/v1/agents/catalogue": {
+      "get": {
+        "description": "The Merchant OS agents, what each does, and its tools.",
+        "operationId": "catalogue",
+        "parameters": [
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseListDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The Merchant OS agents, what each does, and its tools",
+        "tags": [
+          "agents"
+        ]
+      }
+    },
+    "/api/v1/agents/execute": {
+      "post": {
+        "description": "The Orchestrator Agent routes the request to Business Intelligence, Product Discovery, Supply Intelligence, Pricing Intelligence, Growth Strategy or the PayPal Transaction Agent. Every tool call is permission-checked, traced and recorded. Nothing that moves money happens without a human approval.",
+        "operationId": "execute",
+        "parameters": [
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentsExecuteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Ask the Merchant OS (Orchestrator -> specialist agent -> approval gate)",
         "tags": [
           "agents"
         ]
@@ -10344,6 +11007,136 @@
         "summary": "Growth arbitrage",
         "tags": [
           "growth"
+        ]
+      }
+    },
+    "/api/v1/growth/autopilot": {
+      "get": {
+        "description": "The latest autopilot run and the recommendation pipeline.",
+        "operationId": "autopilot_state",
+        "parameters": [
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The latest autopilot run and the recommendation pipeline",
+        "tags": [
+          "supply-intelligence"
+        ]
+      }
+    },
+    "/api/v1/growth/autopilot/run": {
+      "post": {
+        "description": "Run the Merchant Growth Autopilot up to the approval gate.",
+        "operationId": "run_autopilot",
+        "parameters": [
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupplyIntelAutopilotRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Run the Merchant Growth Autopilot up to the approval gate",
+        "tags": [
+          "supply-intelligence"
         ]
       }
     },
@@ -13703,6 +14496,326 @@
         ]
       }
     },
+    "/api/v1/payments/capture": {
+      "post": {
+        "description": "Capture a payer-approved PayPal order.",
+        "operationId": "capture",
+        "parameters": [
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaptureRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseUnionDictStrAnyNoneType"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Capture a payer-approved PayPal order",
+        "tags": [
+          "payments"
+        ]
+      }
+    },
+    "/api/v1/payments/history": {
+      "get": {
+        "description": "Payment history, status counts and open approvals.",
+        "operationId": "history",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "maxLength": 32,
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 200,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Payment history, status counts and open approvals",
+        "tags": [
+          "payments"
+        ]
+      }
+    },
+    "/api/v1/payments/orders": {
+      "post": {
+        "description": "Create the PayPal order for an approved purchase (human only, idempotent).",
+        "operationId": "payments_create_order",
+        "parameters": [
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "maxLength": 128,
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseUnionDictStrAnyNoneType"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create the PayPal order for an approved purchase (human only, idempotent)",
+        "tags": [
+          "payments"
+        ]
+      }
+    },
+    "/api/v1/payments/orders/{execution_id}": {
+      "get": {
+        "description": "Order details, refreshed from PayPal.",
+        "operationId": "order_details",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "execution_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Order details, refreshed from PayPal",
+        "tags": [
+          "payments"
+        ]
+      }
+    },
+    "/api/v1/payments/webhooks/paypal": {
+      "post": {
+        "description": "PayPal webhook receiver (verified, idempotent) - alias of /paypal/webhooks.",
+        "operationId": "paypal_webhook",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "PayPal webhook receiver (verified, idempotent) - alias of /paypal/webhooks",
+        "tags": [
+          "payments"
+        ]
+      }
+    },
     "/api/v1/payments/{execution_id}/capture": {
       "post": {
         "description": "Capture a payer-approved PayPal order.",
@@ -15288,7 +16401,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AutopilotRequest"
+                "$ref": "#/components/schemas/SupplyAutopilotRequest"
               }
             }
           },
@@ -16959,6 +18072,154 @@
         ]
       }
     },
+    "/api/v1/shop/{slug}": {
+      "get": {
+        "description": "The online store's catalog (public).",
+        "operationId": "catalog",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-z0-9][a-z0-9-]{1,80}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "The online store's catalog (public)",
+        "tags": [
+          "shop"
+        ]
+      }
+    },
+    "/api/v1/shop/{slug}/orders": {
+      "post": {
+        "description": "Start a PayPal checkout (public).",
+        "operationId": "shop_create_order",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-z0-9][a-z0-9-]{1,80}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrderBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start a PayPal checkout (public)",
+        "tags": [
+          "shop"
+        ]
+      }
+    },
+    "/api/v1/shop/{slug}/orders/{order_id}/capture": {
+      "post": {
+        "description": "Capture an approved PayPal order and record the sale (public).",
+        "operationId": "capture_order",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-z0-9][a-z0-9-]{1,80}$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9_-]{6,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Capture an approved PayPal order and record the sale (public)",
+        "tags": [
+          "shop"
+        ]
+      }
+    },
     "/api/v1/signals": {
       "get": {
         "description": "External signals scored against this merchant's actual revenue exposure. Deliberately not a general news feed.",
@@ -17516,6 +18777,606 @@
         ]
       }
     },
+    "/api/v1/supply/alternatives": {
+      "post": {
+        "description": "Alternatives to one of your products (Channel3 search + similar).",
+        "operationId": "product_alternatives",
+        "parameters": [
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlternativesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Alternatives to one of your products (Channel3 search + similar)",
+        "tags": [
+          "supply-intelligence"
+        ]
+      }
+    },
+    "/api/v1/supply/alternatives/save": {
+      "post": {
+        "description": "Save an alternative as a recommendation for approval.",
+        "operationId": "save_alternative",
+        "parameters": [
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveAlternativeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Save an alternative as a recommendation for approval",
+        "tags": [
+          "supply-intelligence"
+        ]
+      }
+    },
+    "/api/v1/supply/assistant": {
+      "post": {
+        "description": "One turn with the conversational shopping agent (Channel3 Conversations).",
+        "operationId": "assistant_turn",
+        "parameters": [
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssistantTurn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "One turn with the conversational shopping agent (Channel3 Conversations)",
+        "tags": [
+          "supply-intelligence"
+        ]
+      }
+    },
+    "/api/v1/supply/assistant/conversations": {
+      "get": {
+        "description": "Shopping conversations.",
+        "operationId": "assistant_conversations",
+        "parameters": [
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseListDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Shopping conversations",
+        "tags": [
+          "supply-intelligence"
+        ]
+      }
+    },
+    "/api/v1/supply/assistant/conversations/{conversation_id}": {
+      "get": {
+        "description": "One shopping conversation.",
+        "operationId": "assistant_conversation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "One shopping conversation",
+        "tags": [
+          "supply-intelligence"
+        ]
+      }
+    },
+    "/api/v1/supply/assortment": {
+      "get": {
+        "description": "Assortment analysis from sales and inventory.",
+        "operationId": "assortment",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 120,
+              "minimum": 7,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Assortment analysis from sales and inventory",
+        "tags": [
+          "supply-intelligence"
+        ]
+      }
+    },
+    "/api/v1/supply/catalog-products": {
+      "get": {
+        "description": "Your catalog, for picking a product to find alternatives for.",
+        "operationId": "catalog_products",
+        "parameters": [
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseListDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Your catalog, for picking a product to find alternatives for",
+        "tags": [
+          "supply-intelligence"
+        ]
+      }
+    },
+    "/api/v1/supply/compare": {
+      "post": {
+        "description": "Compare 2-4 products side by side with evidence-backed verdicts.",
+        "operationId": "compare_products",
+        "parameters": [
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompareRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Compare 2-4 products side by side with evidence-backed verdicts",
+        "tags": [
+          "supply-intelligence"
+        ]
+      }
+    },
+    "/api/v1/supply/comparisons": {
+      "get": {
+        "description": "Recent product comparisons.",
+        "operationId": "comparisons",
+        "parameters": [
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseListDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Recent product comparisons",
+        "tags": [
+          "supply-intelligence"
+        ]
+      }
+    },
     "/api/v1/supply/demand": {
       "get": {
         "description": "Demand, stockout risk and reorder recommendations.",
@@ -17576,6 +19437,287 @@
         ]
       }
     },
+    "/api/v1/supply/discovered": {
+      "get": {
+        "description": "Products discovered so far (snapshots; refreshed on view).",
+        "operationId": "discovered_products",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 24,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "shortlisted",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseListDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Products discovered so far (snapshots; refreshed on view)",
+        "tags": [
+          "supply-intelligence"
+        ]
+      }
+    },
+    "/api/v1/supply/discovery/status": {
+      "get": {
+        "description": "Whether live Channel3 product discovery is configured.",
+        "operationId": "discovery_status",
+        "parameters": [
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Whether live Channel3 product discovery is configured",
+        "tags": [
+          "supply-intelligence"
+        ]
+      }
+    },
+    "/api/v1/supply/enrich": {
+      "post": {
+        "description": "Structured product data from a product page URL (Channel3 /v1/lookup).",
+        "operationId": "enrich_product",
+        "parameters": [
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnrichRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Structured product data from a product page URL (Channel3 /v1/lookup)",
+        "tags": [
+          "supply-intelligence"
+        ]
+      }
+    },
+    "/api/v1/supply/intelligence": {
+      "get": {
+        "description": "Supply Intelligence dashboard (no Channel3 credits spent).",
+        "operationId": "intelligence_dashboard",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 120,
+              "minimum": 7,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Supply Intelligence dashboard (no Channel3 credits spent)",
+        "tags": [
+          "supply-intelligence"
+        ]
+      }
+    },
     "/api/v1/supply/overview": {
       "get": {
         "description": "Supply command center.",
@@ -17633,6 +19775,1046 @@
         "summary": "Supply command center",
         "tags": [
           "supply-agents"
+        ]
+      }
+    },
+    "/api/v1/supply/pricing": {
+      "post": {
+        "description": "Market price intelligence: your prices vs live retail listings.",
+        "operationId": "market_pricing",
+        "parameters": [
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PricingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Market price intelligence",
+        "tags": [
+          "supply-intelligence"
+        ]
+      }
+    },
+    "/api/v1/supply/products/{product_id}": {
+      "get": {
+        "description": "Product details (fresh from Channel3) and similar products.",
+        "operationId": "product_details",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "product_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "fresh",
+            "required": false,
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Product details (fresh from Channel3) and similar products",
+        "tags": [
+          "supply-intelligence"
+        ]
+      }
+    },
+    "/api/v1/supply/products/{product_id}/shortlist": {
+      "post": {
+        "description": "Add or remove a product from the shortlist.",
+        "operationId": "shortlist_product",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "product_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShortlistRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Add or remove a product from the shortlist",
+        "tags": [
+          "supply-intelligence"
+        ]
+      }
+    },
+    "/api/v1/supply/recommendations": {
+      "get": {
+        "description": "AI recommendations and their lifecycle.",
+        "operationId": "list_recommendations",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "maxLength": 16,
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "maxLength": 32,
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseListDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "AI recommendations and their lifecycle",
+        "tags": [
+          "supply-intelligence"
+        ]
+      }
+    },
+    "/api/v1/supply/recommendations/generate": {
+      "post": {
+        "description": "Generate recommendations from sales data and Channel3.",
+        "operationId": "generate_recommendations",
+        "parameters": [
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Generate recommendations from sales data and Channel3",
+        "tags": [
+          "supply-intelligence"
+        ]
+      }
+    },
+    "/api/v1/supply/recommendations/{rec_id}": {
+      "get": {
+        "description": "One recommendation with its evidence and lifecycle.",
+        "operationId": "get_recommendation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "rec_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "One recommendation with its evidence and lifecycle",
+        "tags": [
+          "supply-intelligence"
+        ]
+      }
+    },
+    "/api/v1/supply/recommendations/{rec_id}/approve": {
+      "post": {
+        "description": "Approve a recommendation (a human decision).",
+        "operationId": "approve_recommendation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "rec_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Approve a recommendation (a human decision)",
+        "tags": [
+          "supply-intelligence"
+        ]
+      }
+    },
+    "/api/v1/supply/recommendations/{rec_id}/execute": {
+      "post": {
+        "description": "Execute an approved recommendation (add to catalog / apply the price test - no money moves).",
+        "operationId": "execute_recommendation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "rec_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupplyIntelExecuteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Execute an approved recommendation (add to catalog / apply the price test - no money moves)",
+        "tags": [
+          "supply-intelligence"
+        ]
+      }
+    },
+    "/api/v1/supply/recommendations/{rec_id}/measure": {
+      "post": {
+        "description": "Measure an executed recommendation's results.",
+        "operationId": "measure_recommendation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "rec_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Measure an executed recommendation's results",
+        "tags": [
+          "supply-intelligence"
+        ]
+      }
+    },
+    "/api/v1/supply/recommendations/{rec_id}/purchase": {
+      "post": {
+        "description": "Request approval to buy test stock through PayPal (creates an approval; pays nothing).",
+        "operationId": "request_purchase",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "rec_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurchaseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Request approval to buy test stock through PayPal (creates an approval; pays nothing)",
+        "tags": [
+          "supply-intelligence"
+        ]
+      }
+    },
+    "/api/v1/supply/recommendations/{rec_id}/reject": {
+      "post": {
+        "description": "Reject a recommendation.",
+        "operationId": "reject_recommendation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "rec_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Reject a recommendation",
+        "tags": [
+          "supply-intelligence"
+        ]
+      }
+    },
+    "/api/v1/supply/search": {
+      "post": {
+        "description": "Natural-language product discovery (live Channel3 search, AI-ranked).",
+        "operationId": "search_products",
+        "parameters": [
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Natural-language product discovery (live Channel3 search, AI-ranked)",
+        "tags": [
+          "supply-intelligence"
+        ]
+      }
+    },
+    "/api/v1/supply/searches": {
+      "get": {
+        "description": "Product search history.",
+        "operationId": "search_history",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseListDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Product search history",
+        "tags": [
+          "supply-intelligence"
+        ]
+      }
+    },
+    "/api/v1/supply/similar": {
+      "post": {
+        "description": "Similar products (Channel3 /v1/similar) with price differences.",
+        "operationId": "similar_products",
+        "parameters": [
+          {
+            "description": "Optional merchant to act on. Must be one you are a member of.",
+            "in": "query",
+            "name": "merchant_id",
+            "required": false,
+            "schema": {
+              "description": "Optional merchant to act on. Must be one you are a member of.",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Merchant-ID",
+            "required": false,
+            "schema": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimilarRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDictStrAny"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Similar products (Channel3 /v1/similar) with price differences",
+        "tags": [
+          "supply-intelligence"
         ]
       }
     },
@@ -18404,12 +21586,24 @@
       "name": "supply-agents"
     },
     {
+      "description": "Supply intelligence endpoints.",
+      "name": "supply-intelligence"
+    },
+    {
       "description": "Approval inbox, approval decisions and the payments ledger.",
       "name": "governance"
     },
     {
       "description": "PayPal: transaction sync, invoices, payouts, subscriptions (and the revenue radar), webhooks.",
       "name": "paypal"
+    },
+    {
+      "description": "Shop endpoints.",
+      "name": "shop"
+    },
+    {
+      "description": "Payments endpoints.",
+      "name": "payments"
     },
     {
       "description": "Long-term agent memory: status, semantic search, recent memories, teach and erase.",

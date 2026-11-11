@@ -8,7 +8,7 @@
 
 PayPal AI Hackathon 2026 · Idea 4 (Growth Autopilot) + Idea 5 (Supply Agents) · Team PayFlux
 
-[![Tests](https://img.shields.io/badge/backend_tests-515_passing-16a34a?style=flat-square&logo=pytest&logoColor=white)](docs/TESTING.md)
+[![Tests](https://img.shields.io/badge/backend_tests-535_passing-16a34a?style=flat-square&logo=pytest&logoColor=white)](docs/TESTING.md)
 [![Lint](https://img.shields.io/badge/ruff-clean-16a34a?style=flat-square&logo=ruff&logoColor=white)](docs/CONTRIBUTING.md)
 [![Types](https://img.shields.io/badge/typecheck-clean-16a34a?style=flat-square&logo=typescript&logoColor=white)](docs/CONTRIBUTING.md)
 [![PayPal](https://img.shields.io/badge/PayPal-Orders_v2_·_Invoicing_·_Payouts_·_Subscriptions_·_Webhooks-003087?style=flat-square&logo=paypal&logoColor=white)](docs/PAYPAL.md)
@@ -33,6 +33,8 @@ PayPal AI Hackathon 2026 · Idea 4 (Growth Autopilot) + Idea 5 (Supply Agents) �
 </div>
 
 ---
+
+![PayPilot: PayPal is the data source and the only rail money moves on](docs/architecture.svg)
 
 > **Start here:** **[docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md)** - why PayPal is central, how every sponsor tool is
 > used and where, the key features, the criteria mapped to evidence, and what is verified. Live demo:
@@ -99,6 +101,7 @@ it away and PayPilot has no data to reason over and no way to act.
 
 | Stage | PayPal | Result |
 | --- | --- | --- |
+| Start the loop | Orders v2 checkout on the online store + verified webhook | A customer pays with PayPal; the sale is recorded, stock drops and a low-stock event fires - the loop starts from a real PayPal sale, not a seeded one |
 | See the business | Transaction Search | Sales, fees, refunds and failures feed the Growth Scientist |
 | Pay a supplier | Orders v2 on PayPal's APIMatic-generated Server SDK | Supplier is the payee; payment only after a human approval **and** a three-way match |
 | Bill and reward customers | Invoicing, Payouts | Win-back invoices; approval-gated cashback |
@@ -251,7 +254,7 @@ FastAPI (Pydantic v2) ── auth → merchant scope → require_permission
 PostgreSQL 16 + pgvector (62 tables) · Redis / Render Key Value (optional) · SQLAlchemy 2 · Alembic
 ```
 
-197 API operations · 62 tables · 49 agent tools · 51 permissions · 57 dashboard screens.
+200 API operations · 62 tables · 49 agent tools · 51 permissions · 57 dashboard screens.
 
 ## Getting started
 
@@ -334,7 +337,7 @@ Full reference: [docs/CONFIGURATION.md](docs/CONFIGURATION.md).
 ## Testing
 
 ```bash
-make test-backend    # 515 tests: unit, integration, API - SQLite, no Docker, no keys
+make test-backend    # 535 tests: unit, integration, API - SQLite, no Docker, no keys
 make test-frontend   # vitest
 ```
 
@@ -403,6 +406,9 @@ Full breakdown: [docs/HACKATHON.md](docs/HACKATHON.md).
 * Analytics run on a seeded demo dataset; synced PayPal transactions are shown separately with
   their mode. CLV is an *estimate* with its assumptions returned beside it.
 * Sandbox supplier payments need a payer approval in PayPal before capture.
+* The customer checkout (`/shop`) is covered by 20 tests against the labelled simulator, including the
+  webhook-before-return and return-before-webhook cases; run it once against your PayPal sandbox (needs a
+  sandbox *personal* buyer account) before relying on it live.
 * Team to-do before submitting: record the demo video and submit on Devpost.
 * Free-plan hosting: services sleep after about 15 idle minutes (the first request takes about a minute)
   and the free database expires after 30 days.

@@ -39,6 +39,7 @@ class BusinessEvent:
     PRODUCT_MARGIN_CHANGED = "business.product_margin_changed"
     CAMPAIGN_PERFORMANCE_UPDATED = "business.campaign_performance_updated"
     EXPERIMENT_COMPLETED = "business.experiment_completed"
+    ONLINE_SALE_CAPTURED = "business.online_sale_captured"
 
     LABELS = {
         REVENUE_ANOMALY_DETECTED: "Revenue anomaly detected",
@@ -54,6 +55,7 @@ class BusinessEvent:
         PRODUCT_MARGIN_CHANGED: "Product margin changed",
         CAMPAIGN_PERFORMANCE_UPDATED: "Campaign performance updated",
         EXPERIMENT_COMPLETED: "Experiment completed",
+        ONLINE_SALE_CAPTURED: "Online sale captured via PayPal",
     }
     #: Which side of the product raised it - for the unified timeline.
     MODULE = {
@@ -70,6 +72,7 @@ class BusinessEvent:
         PRODUCT_MARGIN_CHANGED: "growth",
         CAMPAIGN_PERFORMANCE_UPDATED: "growth",
         EXPERIMENT_COMPLETED: "growth",
+        ONLINE_SALE_CAPTURED: "growth",
     }
     ALL = tuple(LABELS)
 
