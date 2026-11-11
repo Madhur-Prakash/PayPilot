@@ -19,16 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-Note on the demo dataset
-
-All merchant, customer, transaction, review, competitor and market-signal data
-in this repository is synthetically generated and entirely fictional. It is
-produced by the deterministic generator in backend/app/seed/ and does not
-represent any real business, person or transaction.
-
-This project is not affiliated with, endorsed by, or connected to One97
-Communications Limited or Paypal. It contains no integration with live Paypal
-systems, no real payment execution, and no real customer messaging.

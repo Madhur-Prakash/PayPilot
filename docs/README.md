@@ -23,7 +23,7 @@ Technical documentation for PayPilot, built by Team PayFlux.
 | Deploy it | [Deployment](DEPLOYMENT.md) -> [Configuration](CONFIGURATION.md) -> [Security](SECURITY.md) |
 | Understand the system | [Architecture](ARCHITECTURE.md) -> [Agents](AGENTS.md) -> [Supply Agents](SUPPLY_AGENTS.md) -> [PayPal integration](PAYPAL.md) |
 | Integrate with the API | [API reference](API.md) -> [API portal and SDKs](APIMATIC.md) -> [Security](SECURITY.md) |
-| Change the code | [Contributing](CONTRIBUTING.md) -> [Testing](TESTING.md) -> [Data](DATA.md) |
+| Change the code | [Architecture](ARCHITECTURE.md) -> [Testing](TESTING.md) -> [Data](DATA.md) |
 
 ---
 
@@ -56,7 +56,7 @@ Technical documentation for PayPilot, built by Team PayFlux.
 | [Supply Agents](SUPPLY_AGENTS.md) | Inventory intelligence, the financial engine, supplier agents, signed protocol, negotiation, three-way match, reconciliation |
 | [Supply Intelligence](SUPPLY_INTELLIGENCE.md) | Channel3 product discovery, ranking, comparison, recommendations and their lifecycle, approved purchases |
 | [PayPal integration](PAYPAL.md) | Modes, every PayPal API used, customer checkout, webhooks, approval gates, sandbox setup, MCP |
-| [Integrations](INTEGRATIONS.md) | Channel3, AG Grid, AG Studio, Bryntum, APIMatic, Render, Redis, Elasticsearch, Kernel, Zapier, Postman |
+| [Integrations](INTEGRATIONS.md) | Sponsor tools and services: Channel3, AG Grid, AG Studio, Bryntum, APIMatic, Render, Postman, Kernel, Elastic, Zapier, Redis |
 | [Automation](AUTOMATION.md) | The transactional outbox, the relay, the n8n workflows and signed callbacks |
 
 ### Building on it
@@ -66,7 +66,6 @@ Technical documentation for PayPilot, built by Team PayFlux.
 | [API reference](API.md) | All endpoints with their permissions, the response envelope, error codes, the permission matrix |
 | [API portal and SDKs](APIMATIC.md) | Exporting the OpenAPI spec, building the APIMatic portal, Python and TypeScript SDKs |
 | [Testing](TESTING.md) | Suite layout, fixtures, what each suite proves, writing new tests |
-| [Contributing](CONTRIBUTING.md) | Project rules, where code goes, backend and frontend conventions, adding a feature end to end |
 
 ### Diagrams
 

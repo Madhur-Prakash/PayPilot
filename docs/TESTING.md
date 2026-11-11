@@ -5,7 +5,7 @@
 The backend and frontend test suites, what each one proves, and how to extend them.
 
 [![Docs index](https://img.shields.io/badge/-Docs_index-0b2a6f?style=flat-square)](README.md)
-[![Contributing](https://img.shields.io/badge/-Contributing-64748b?style=flat-square)](CONTRIBUTING.md)
+[![Troubleshooting](https://img.shields.io/badge/-Troubleshooting-dc2626?style=flat-square)](TROUBLESHOOTING.md)
 [![Data](https://img.shields.io/badge/-Data-12805c?style=flat-square)](DATA.md#calibration)
 [![Tests](https://img.shields.io/badge/backend_tests-535-16a34a?style=flat-square&logo=pytest&logoColor=white)](#backend-suite)
 [![Vitest](https://img.shields.io/badge/frontend-vitest-6E9F18?style=flat-square&logo=vitest&logoColor=white)](#frontend-suite)
@@ -256,6 +256,6 @@ A `403` would confirm the resource exists, which is itself a disclosure.
 
 <div align="center">
 
-[Previous: Data](DATA.md) | [Docs index](README.md) | [Next: Contributing](CONTRIBUTING.md)
+[Previous: Data](DATA.md) | [Docs index](README.md) | [Next: Troubleshooting](TROUBLESHOOTING.md)
 
 </div>

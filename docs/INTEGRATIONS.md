@@ -18,6 +18,7 @@ behaves without a key, and how it was verified.
 ## Contents
 
 - [Summary](#summary)
+- [PayPal AI Hackathon sponsor tools](#paypal-ai-hackathon-sponsor-tools)
 - [Rules every integration follows](#rules-every-integration-follows)
 - [Channel3](#channel3)
 - [AG Grid and AG Studio](#ag-grid-and-ag-studio)
@@ -53,6 +54,24 @@ behaves without a key, and how it was verified.
 | **Langfuse** | Agent traces | [`langfuse.py`](../backend/app/integrations/langfuse.py) | No-op tracer | Live (hosted demo) |
 | **Vapi** | Voice assistant | [`vapi.py`](../backend/app/integrations/vapi.py) | Button explains what is missing | Live (hosted demo) |
 | **Postman** | API collection with assertions | [`postman/`](../postman) | n/a | Collection structure validated |
+
+### PayPal AI Hackathon sponsor tools
+
+| Sponsor tool | Used | Section |
+| --- | :-: | --- |
+| APIMatic | Yes | [APIMatic](#apimatic), [API portal and SDKs](APIMATIC.md) |
+| Postman | Yes | [Postman](#postman) |
+| Render | Yes | [Render and Redis](#render-and-redis), [Deployment](DEPLOYMENT.md#render-blueprint) |
+| Channel3 | Yes | [Channel3](#channel3) |
+| AG Grid | Yes | [AG Grid and AG Studio](#ag-grid-and-ag-studio) |
+| Bryntum | Yes | [Bryntum Gantt](#bryntum-gantt), [Bryntum Scheduler](#bryntum-scheduler) |
+| KERNEL | Yes | [Kernel](#kernel) |
+| Elastic | Yes, optional (off on the hosted demo) | [Elasticsearch](#elasticsearch) |
+| Zapier | Yes, optional (off on the hosted demo) | [Zapier](#zapier) |
+| Astropods | No | Not used |
+
+The PayPal integration itself is documented in [PayPal integration](PAYPAL.md), and the AI tools (LangGraph,
+Groq, pgvector, Langfuse, Vapi) in [Agents](AGENTS.md).
 
 ---
 

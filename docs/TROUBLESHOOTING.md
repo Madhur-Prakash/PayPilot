@@ -243,6 +243,6 @@ More: [Automation: checking it works](AUTOMATION.md#checking-it-works).
 
 <div align="center">
 
-[Previous: Contributing](CONTRIBUTING.md) | [Docs index](README.md) | [Back to Quick start](QUICKSTART.md)
+[Previous: Testing](TESTING.md) | [Docs index](README.md) | [Back to Quick start](QUICKSTART.md)
 
 </div>
